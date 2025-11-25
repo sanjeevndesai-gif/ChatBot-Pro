@@ -1,0 +1,45 @@
+<section class="pricing py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Simple, Transparent Pricing</h2>
+        <p class="text-muted mb-5">
+            Choose the perfect plan for your business. All plans include a 14-day free trial with no commitment.
+        </p>
+
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-6 col-lg-4" *ngFor="let plan of plans">
+                <div class="card h-100 pricing-card shadow-sm" [ngClass]="{ 'popular': plan.popular }">
+                    <div class="card-body d-flex flex-column">
+
+                        <!-- Badge -->
+                        <div *ngIf="plan.popular" class="badge mb-3">
+                            Most Popular
+                        </div>
+
+                        <!-- Title & Description -->
+                        <h4 class="fw-bold">{{ plan.name }}</h4>
+                        <p class="text-muted">{{ plan.description }}</p>
+
+                        <!-- Price -->
+                        <h2 class="fw-bold text-success">
+                            ₹ {{ plan.price }}<small class="fs-6 text-muted">{{ plan.period }}</small>
+                        </h2>
+
+                        <!-- Features -->
+                        <ul class="list-unstyled text-start mt-3 mb-4">
+                            <li *ngFor="let feature of plan.features" class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i> {{ feature }}
+                            </li>
+                        </ul>
+
+                        <!-- Button -->
+                        <div class="mt-auto">
+                            <button class="btn w-100" [ngClass]="plan.buttonClass">
+                                Get Started
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

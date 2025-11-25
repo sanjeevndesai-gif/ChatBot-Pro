@@ -1,0 +1,79 @@
+.pricing {
+    background: #f8fdfb;
+
+    .pricing-card {
+        border: 1px solid #e6e6e6;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        padding: 1.5rem;
+        position: relative;
+        /* For positioning the "Most Popular" badge */
+        min-height: 400px;
+        /* Uniform height for cards */
+
+        &:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h4 {
+            margin-bottom: 0.5rem;
+        }
+
+        .badge {
+            border-radius: 14px 14px 0 0; // pill shape
+            width: 100%;
+            padding: 8px 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            background-color: #009e76;
+            /* Set background to a brighter color */
+            color: white;
+            justify-self: anchor-center;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+
+            &.btn-outline-success {
+                border: 2px solid #009e76;
+                color: #009e76;
+                background: transparent;
+
+                &:hover {
+                    background: #009e76;
+                    color: #fff;
+                }
+            }
+
+            &.btn-success {
+                background: linear-gradient(135deg, #009e76, #0f766e);
+                border: none;
+                color: #fff;
+
+                &:hover {
+                    opacity: 0.9;
+                    transform: translateY(-2px);
+                }
+            }
+        }
+
+        &.popular {
+            border: 2px solid #009e76;
+            box-shadow: 0 10px 25px rgba(32, 201, 151, 0.2);
+
+            .badge {
+                background: #009e76;
+                color: #fff;
+            }
+        }
+    }
+
+}

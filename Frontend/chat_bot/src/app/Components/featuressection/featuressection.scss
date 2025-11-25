@@ -1,0 +1,19 @@
+.features {
+    .feature-card {
+        border: 1px solid #e6e6e6;
+        border-radius: 12px;
+        background-color: #ffffff;
+        transition: all 0.3s ease;
+
+        &:hover {
+            border-color: #25d366; // WhatsApp green
+            background-color: #f9fff8;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transform: translateY(-5px);
+        }
+
+        .card-body {
+            display: inline-grid;
+        }
+    }
+}

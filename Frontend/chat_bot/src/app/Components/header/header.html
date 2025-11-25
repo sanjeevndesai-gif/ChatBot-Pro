@@ -1,0 +1,68 @@
+<nav class="navbar navbar-expand-lg shadow-sm sticky-top header" [class.hide]="hideHeader">
+
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" routerLink="/">
+            <img src="/assets/logo.svg" height="34" class="me-2" />
+            <span class="fw-bold">MyApp</span>
+        </a>
+
+        <button class="navbar-toggler" type="button" (click)="toggleCollapse()">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" [class.show]="!isCollapsed">
+            <ul class="navbar-nav ms-auto align-items-lg-center">
+
+                <li class="nav-item">
+                    <a class="nav-link" routerLink="/features">
+                        <!-- {{ i18n.t('header.features') }} -->
+                        {{ 'header.features' | t }}
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" routerLink="/" fragment="about">
+                        {{ i18n.t('Your trusted partner') }}
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" routerLink="/" fragment="pricing">
+                        {{ i18n.t('header.pricing') }}
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" routerLink="/" fragment="testimonials">
+                        {{ i18n.t('header.testimonials') }}
+                    </a>
+                </li>
+
+                <li class="nav-item ms-3">
+                    <a class="btn btn-outline-primary btn-sm" routerLink="/signin">
+                        {{ i18n.t('header.register') }}
+                    </a>
+                </li>
+
+                <!-- Language Dropdown -->
+                <li class="nav-item ms-3 dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <span class="me-1">{{ selectedLang?.flag }}</span>
+                        {{ selectedLang?.label }}
+                    </a>
+
+                    <ul class="dropdown-menu">
+                        <li *ngFor="let lang of languages">
+                            <button class="dropdown-item d-flex align-items-center"
+                                (click)="onSelectLanguage(lang.code)">
+                                <span class="me-2">{{ lang.flag }}</span>
+                                {{ lang.label }}
+                            </button>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
