@@ -1,0 +1,102 @@
+<nav class="layout-navbar navbar navbar-expand-xl align-items-center" id="layout-navbar">
+    <div class="container-xxl">
+
+        <!-- Brand -->
+        <div class="navbar-brand app-brand d-none d-xl-flex py-0 me-4">
+            <a href="#" class="app-brand-link gap-2">
+                <span class="app-brand-logo">
+                    <!-- SVG Logo (your same SVG) -->
+                    <svg width="25" viewBox="0 0 25 42"> ... </svg>
+                </span>
+                <span class="app-brand-text fw-bold text-heading">Sneat</span>
+            </a>
+        </div>
+
+        <!-- Mobile menu toggle -->
+        <div class="layout-menu-toggle navbar-nav align-items-xl-center d-xl-none">
+            <a class="nav-item nav-link px-0" href="javascript:void(0)">
+                <i class="bi bi-list fs-3"></i>
+            </a>
+        </div>
+
+        <!-- Right Section -->
+        <div class="navbar-nav-right d-flex align-items-center ms-auto" id="navbar-collapse">
+            <ul class="navbar-nav flex-row align-items-center">
+
+                <!-- Search -->
+                <li class="nav-item me-2">
+                    <a class="nav-link" href="javascript:void(0)">
+                        <i class="bi bi-search fs-5"></i>
+                    </a>
+                </li>
+
+                <!-- Language -->
+                <li class="nav-item dropdown me-2">
+                    <a class="nav-link " data-bs-toggle="dropdown">
+                        <i class="bi bi-globe2 fs-5"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item active">English</a></li>
+                        <li><a class="dropdown-item">French</a></li>
+                        <li><a class="dropdown-item">Arabic</a></li>
+                        <li><a class="dropdown-item">German</a></li>
+                    </ul>
+                </li>
+
+                <!-- Theme Switch -->
+                <li class="nav-item dropdown me-2">
+                    <a class="nav-link " data-bs-toggle="dropdown">
+                        <i class="bi bi-brightness-high fs-5"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item active">Light</a></li>
+                        <li><a class="dropdown-item">Dark</a></li>
+                        <li><a class="dropdown-item">System</a></li>
+                    </ul>
+                </li>
+
+                <!-- Quick Links -->
+                <li class="nav-item dropdown me-2">
+                    <a class="nav-link " data-bs-toggle="dropdown">
+                        <i class="bi bi-grid fs-5"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end p-2">
+                        <li><a class="dropdown-item">Calendar</a></li>
+                        <li><a class="dropdown-item">Invoice App</a></li>
+                        <li><a class="dropdown-item">User App</a></li>
+                        <li><a class="dropdown-item">Settings</a></li>
+                    </ul>
+                </li>
+
+                <!-- Notifications -->
+                <li class="nav-item dropdown me-2">
+                    <a class="nav-link  position-relative" data-bs-toggle="dropdown">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span class="notif-dot bg-danger"></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="dropdown-header">Notifications</li>
+                        <li><a class="dropdown-item">New Message</a></li>
+                        <li><a class="dropdown-item">Order Received</a></li>
+                        <li><a class="dropdown-item">Task Completed</a></li>
+                    </ul>
+                </li>
+
+                <!-- User -->
+                <li class="nav-item dropdown ">
+                    <a class="nav-link  p-0" data-bs-toggle="dropdown">
+                        <img src="assets/user.jpg" class="rounded-circle user-img">
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item">My Profile</a></li>
+                        <li><a class="dropdown-item">Settings</a></li>
+                        <li><a class="dropdown-item">Billing</a></li>
+                        <li><a class="dropdown-item text-danger">Logout</a></li>
+                    </ul>
+                </li>
+
+            </ul>
+        </div>
+
+    </div>
+</nav>
