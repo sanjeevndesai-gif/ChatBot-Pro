@@ -1,0 +1,244 @@
+/* ------------------------------
+   HELP BANNER
+--------------------------------*/
+.help-banner {
+  width: 100%;
+  padding: 100px 0;
+  background: #cbf1d8;
+  border-radius: 12px;
+  text-align: center;
+
+  .content {
+    max-width: 600px;
+    margin: auto;
+    padding: 0 15px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  p {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 25px;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px 18px;
+    box-shadow: 0 2px 8px #d5d6f0;
+
+    i {
+      font-size: 18px;
+      color: #5c6bc0;
+    }
+
+    input {
+      border: none;
+      outline: none;
+      margin-left: 10px;
+      font-size: 16px;
+      width: 100%;
+    }
+  }
+
+  /* MOBILE */
+  @media (max-width: 480px) {
+    padding: 60px 0;
+
+    h1 {
+      font-size: 24px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+
+    .search-box {
+      padding: 10px 12px;
+    }
+  }
+}
+
+/* ------------------------------
+   FAQ LAYOUT
+--------------------------------*/
+.faq-layout {
+  display: flex;
+  gap: 30px;
+ // padding: 20px 30px 20px 30px;
+
+  /* TABLETS & MOBILE */
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 10px;
+    gap: 15px;
+  }
+}
+
+/* ------------------------------
+   SIDEBAR
+--------------------------------*/
+.sidebar {
+  width: 250px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px #d9daf1;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    cursor: pointer;
+
+    i {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+
+    &:hover {
+      background: #eef0ff;
+    }
+
+    &.active {
+      background: #187936;
+      color: #fff;
+    }
+  }
+}
+
+/* ------------------------------
+   FAQ CONTENT
+--------------------------------*/
+.faq-content {
+  flex: 1;
+
+  h2 {
+    font-size: 26px;
+    margin-bottom: 5px;
+  }
+
+  @media (max-width: 480px) {
+    h2 {
+      font-size: 22px;
+    }
+  }
+
+  .subtitle {
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  .faq-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px #e0e0f4;
+
+    @media (max-width: 480px) {
+      padding: 12px 15px;
+    }
+
+    .question {
+      display: flex;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 17px;
+
+      @media (max-width: 480px) {
+        font-size: 15px;
+      }
+    }
+
+    .answer {
+      margin-top: 10px;
+      color: #555;
+      line-height: 1.5;
+    }
+  }
+}
+
+/* ------------------------------
+   CONTACT SECTION
+--------------------------------*/
+.contact-section {
+  text-align: center;
+  margin-top: 50px;
+
+  h3 {
+    font-size: 28px;
+    margin-bottom: 10px;
+
+    @media (max-width: 480px) {
+      font-size: 22px;
+    }
+  }
+
+  p {
+    color: #666;
+    margin-bottom: 30px;
+  }
+
+  .contact-cards {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    padding: 20px;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 20px;
+      padding: 10px;
+      align-items: center;
+    }
+
+    .card {
+      width: 400px;
+      height: 160px;
+      background: #eef0f8;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px #ccc;
+
+      @media (max-width: 480px) {
+        width: 90%;
+        height: auto;
+        padding: 18px;
+      }
+
+      i {
+        font-size: 32px;
+        color: #5c6bc0;
+       // margin-bottom: 10px;
+      }
+
+      h4 {
+        margin-bottom: 6px;
+      }
+
+      p {
+        color: #555;
+      }
+    }
+  }
+}

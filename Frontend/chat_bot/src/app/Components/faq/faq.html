@@ -1,0 +1,67 @@
+<div class="help-banner ">
+  <div class="content">
+    <h1>Hello, how can we help?</h1>
+    <p>or choose a category to quickly find the help you need</p>
+
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input type="text" placeholder="Search articles..." />
+    </div>
+  </div>
+</div>
+<div class="faq-layout mx-3 p-4">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div *ngFor="let c of categories; let i = index"
+         (click)="active = i"
+         [class.active]="active === i"
+         class="menu-item">
+
+      <i class="{{c.icon}}"></i>
+      <span>{{c.name}}</span>
+    </div>
+  </div>
+
+  <!-- Main FAQ Section -->
+  <div class="faq-content">
+    <h2>{{ categories[active].name }}</h2>
+    <p class="subtitle">Get help with {{ categories[active].name.toLowerCase() }}</p>
+
+    <div *ngFor="let item of faqs; let i=index" class="faq-box">
+      <div class="question" (click)="toggle(i)">
+        <span>{{ item.q }}</span>
+        <i [class.bi-chevron-up]="item.open" class="bi-chevron-down"></i>
+      </div>
+
+      <div *ngIf="item.open" class="answer">
+        {{ item.a }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="contact-section">
+  <h3>You still have a question?</h3>
+  <p>If you can't find the answer in our FAQ, contact us. We respond quickly!</p>
+
+  <div class="contact-cards">
+    <div class="card">
+      <i class="bi bi-telephone"></i>
+      <h4>+1 2548 2568</h4>
+      <p>We are always happy to help</p>
+    </div>
+
+    <div class="card">
+      <i class="bi bi-envelope"></i>
+      <h4>help@help.com</h4>
+      <p>Best way to get a quick answer</p>
+    </div>
+    <div class="card">
+      <i class="bi bi-envelope"></i>
+      <h4>help@help.com</h4>
+      <p>Best way to get a quick answer</p>
+    </div>
+  </div>
+</div>

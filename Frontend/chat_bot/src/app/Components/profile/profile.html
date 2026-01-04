@@ -1,0 +1,79 @@
+<div class="profile-page">
+  <!-- Header -->
+  <div class="profile-header">
+    <div class="avatar">
+       <img src="https://i.pravatar.cc/150" width="32" class="rounded-circle" data-bs-toggle="dropdown" />
+    </div>
+
+    <h2> 
+      {{ user.fullName }}
+    </h2>
+
+    <p>Id: {{ user.id }}</p>
+  </div>
+
+  <!-- Content -->
+   
+  <div class="profile-content">
+  <!-- ABOUT CARD -->
+  <div class="section card-box">
+    <h3>ABOUT</h3>
+
+    <div class="item">
+      <span>Full name:</span>
+      <span>{{ user.fullName }}</span>
+    </div>
+    <div class="item">
+      <span>Starus:</span>
+      <span>{{ user.status }}</span>
+    </div>
+    <div class="item">
+      <span>Role:</span>
+      <span>{{ user.role }}</span>
+    </div>
+    <div class="item">
+      <span>Nationality:</span>
+      <span>American</span>
+    </div>
+    <div class="item">
+      <span>Languages:</span>
+      <span>{{ user.languages }}</span>
+    </div>
+    <div class="item">
+      <span>Phone Number:</span>
+      <span>(213) 555-1234</span>
+    </div>
+  </div>
+
+  <!-- CONTACTS CARD -->
+  <div class="section card-box">
+    <h3>CONTACTS</h3>
+
+    <div class="item">
+      <span>Contact:</span>
+      <span>{{ user.contact }}</span>
+    </div>
+    <div class="item">
+      <span>Email:</span>
+      <span>{{ user.email }}</span>
+    </div>
+    <div class="item">
+      <span>Skype:</span>
+      <span>{{ user.skype }}</span>
+    </div>
+    <div class="item">
+      <span>Address:</span>
+      <span>{{ user.address }}</span>
+    </div>
+    <div class="item">
+      <span>Language Preference:</span>
+      <span>English</span>
+    </div>
+    <div class="item">
+      <span>Time Zone:</span>
+      <span>GMT-5 (Eastern Time)</span>
+    </div>
+  </div>
+</div>
+
+</div>
