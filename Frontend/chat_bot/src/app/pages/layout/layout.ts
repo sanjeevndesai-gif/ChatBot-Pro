@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Horizontalmenu } from '../../Components/horizontalmenu/horizontalmenu';
 import { RouterModule } from '@angular/router';
-
+ 
 @Component({
   selector: 'app-layout',
   imports: [RouterModule, Horizontalmenu],
@@ -9,5 +9,5 @@ import { RouterModule } from '@angular/router';
   styleUrl: './layout.scss'
 })
 export class Layout {
-
+ 
 }
