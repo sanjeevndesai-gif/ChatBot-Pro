@@ -1,0 +1,158 @@
+<!-- Content wrapper -->
+<div class="content-wrapper">
+    <div class="flex-grow-1 ">
+
+        <div class="card">
+            <h5 class="card-header">Schedule Report</h5>
+            <div class="d-flex filter-container p-3">
+
+                <!-- SEARCH -->
+                <!-- <input type="text" class="form-control w-25" placeholder="Search..." [(ngModel)]="searchText"                   (input)="applyFilter()" /> -->
+                <input type="text" class="form-control search-box" placeholder="Search..." [(ngModel)]="searchText"
+                    (input)="applyFilter()" />
+
+
+                <!-- DATE + STATUS FILTER GROUP -->
+                <div class="filter-group">
+                    <!-- Date Range Options -->
+                    <select class="form-control custom-select" [(ngModel)]="dateRange" (change)="applyFilter()">
+                        <option value="">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                        <option value="custom">Custom </option>
+                    </select>
+
+                    <!-- Custom Date Range Inputs -->
+                    <ng-container *ngIf="dateRange === 'custom'">
+                        <input type="date" class="form-control" [(ngModel)]="startDate" (change)="applyFilter()" />
+                        <input type="date" class="form-control" [(ngModel)]="endDate" (change)="applyFilter()" />
+                    </ng-container>
+
+                    <select class="form-control custom-select" [(ngModel)]="statusFilter" (change)="applyFilter()">
+                        <option value="">Status</option>
+                        <option value="Active">Active</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <!-- BUTTONS -->
+                <div class="button-group">
+                    <button class="btn btn-secondary" (click)="resetFilters()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Clear Filters
+                    </button>
+                    <button class="btn btn-primary" (click)="exportCSV()">
+                        <i class="bi bi-filetype-csv"></i> Export CSV
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="table-responsive text-nowrap">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Customer ID</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Slot</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="table-border-bottom-0">
+
+                        <!-- LOOP THROUGH DATA -->
+                        <tr *ngFor="let item of pagedList">
+
+
+                            <td>{{ item.id }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.date }}</td>
+                            <td>{{ item.slot }}</td>
+
+                            <!-- Status with Bootstrap Icon + Badge -->
+                            <td>
+                                <span class="badge" [ngClass]="statusConfig[item.status].badge">
+                                    <i class="bi" [ngClass]="statusConfig[item.status].icon"></i>
+                                    {{ item.status }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td>
+                                <div class="dropdown">
+                                    <button type="button" class="btn p-0 hide-arrow" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="http://localhost:4200/layout">
+                                            <i class="bi bi-pencil me-1"></i> Edit
+                                        </a>
+                                        <a class="dropdown-item" href="http://localhost:4200/layout">
+                                            <i class="bi bi-trash me-1"></i> Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+            <!-- PAGINATION -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-3 px-3">
+
+                <!-- Page Size -->
+                <div class="d-flex align-items-center gap-2">
+                    <span>Show:</span>
+                    <select class="form-select" style="width: 80px;" [(ngModel)]="pageSize"
+                        (change)="pageSizeChanged()">
+                        <option [ngValue]="5">5</option>
+                        <option [ngValue]="10">10</option>
+                        <option [ngValue]="20">20</option>
+                        <option [ngValue]="50">50</option>
+                    </select>
+
+                </div>
+
+                <!-- Page Navigation -->
+                <nav>
+                    <ul class="pagination mb-0">
+
+                        <!-- Prev -->
+                        <li class="page-item" [class.disabled]="currentPage === 1">
+                            <button class="page-link" (click)="prevPage()">Previous</button>
+                        </li>
+
+                        <!-- Page Numbers -->
+                        <li class="page-item" *ngFor="let p of pages" [class.active]="currentPage === p">
+                            <button class="page-link" (click)="goToPage(p)">{{ p }}</button>
+                        </li>
+
+
+                        <!-- Next -->
+                        <li class="page-item" [class.disabled]="currentPage === totalPages">
+                            <button class="page-link" (click)="nextPage()">Next</button>
+                        </li>
+
+                    </ul>
+                </nav>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="content-backdrop fade"></div>
+</div>
+<!-- Content wrapper end -->

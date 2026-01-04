@@ -1,0 +1,165 @@
+<!-- TOP HEADER -->
+<div class="top-header sticky-top bg-white">
+    <div class="mx-5 px-3 d-flex justify-content-between align-items-center">
+
+        <!-- Left Logo -->
+        <h3 class="m-0 fw-bold text-success">MyApp</h3>
+
+        <!-- Mobile Toggle -->
+        <button class="mobile-toggle d-lg-none border-0 bg-transparent fs-3" (click)="toggleMobileMenu()">
+            <i class="bi" [ngClass]="mobileMenuOpen ? 'bi-x' : 'bi-list'"></i>
+        </button>
+
+        <!-- Right Icons -->
+        <div class="d-flex align-items-center gap-4 header-icons d-none d-lg-flex">
+
+            <!-- Search -->
+            <div class="dropdown icon-dropdown">
+                <i class="bi bi-search" data-bs-toggle="dropdown"></i>
+                <ul class="dropdown-menu p-3">
+                    <input type="text" class="form-control" placeholder="Search..." />
+                </ul>
+            </div>
+
+            <!-- Notifications -->
+            <div class="dropdown icon-dropdown position-relative">
+                <i class="bi bi-bell" data-bs-toggle="dropdown"></i>
+                <span class="notif-dot"></span>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item">New message</a></li>
+                    <li><a class="dropdown-item">Server alert</a></li>
+                </ul>
+            </div>
+
+            <!-- User -->
+            <div class="dropdown icon-dropdown">
+                <img src="https://i.pravatar.cc/150" width="32" class="rounded-circle" data-bs-toggle="dropdown" />
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item">My Profile</a></li>
+                    <li><a class="dropdown-item">Settings</a></li>
+                    <li><a class="dropdown-item">Logout</a></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- HORIZONTAL MENU -->
+<div class="menu-wrapper sticky-top bg-white shadow-sm">
+    <div class="mx-5 px-3">
+
+        <!-- ✅ MOBILE MENU -->
+        <div class="mobile-menu d-lg-none" [class.open]="mobileMenuOpen">
+            <ul class="mobile-nav">
+
+                <ng-container *ngFor="let m of menu; let i = index">
+                    <li class="mobile-item" [class.has-sub]="m.children?.length">
+
+                        <!-- MAIN MOBILE LINK -->
+                        <a *ngIf="m.route" [routerLink]="m.route" (click)="toggleMobileMenu()">
+                            <span><i class="bi" [ngClass]="m.icon"></i> {{ m.title }}</span>
+                        </a>
+
+                        <a *ngIf="!m.route" href="#"
+                            (click)="$event.preventDefault(); toggleMobileSubmenu(i.toString())">
+                            <span><i class="bi" [ngClass]="m.icon"></i> {{ m.title }}</span>
+                            <i class="bi ms-2"
+                                [ngClass]="isMobileSubmenuOpen(i.toString()) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </a>
+
+                        <!-- MOBILE LEVEL 1 -->
+                        <ul class="mobile-submenu" *ngIf="m.children"
+                            [class.open-sub]="isMobileSubmenuOpen(i.toString())">
+
+                            <ng-container *ngFor="let c of m.children; let j = index">
+
+                                <li class="mobile-item" [class.has-sub]="c.children?.length">
+
+                                    <a *ngIf="c.route" [routerLink]="c.route" (click)="toggleMobileMenu()">
+                                        <i class="bi" [ngClass]="c.icon"></i> {{ c.title }}
+                                    </a>
+
+                                    <a *ngIf="!c.route" href="#"
+                                        (click)="$event.preventDefault(); toggleMobileSubmenu(i + '-' + j)">
+                                        <i class="bi" [ngClass]="c.icon"></i> {{ c.title }}
+                                        <i class="bi ms-2"
+                                            [ngClass]="isMobileSubmenuOpen(i + '-' + j) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                    </a>
+
+                                    <!-- MOBILE LEVEL 2 -->
+                                    <ul class="mobile-submenu" *ngIf="c.children"
+                                        [class.open-sub]="isMobileSubmenuOpen(i + '-' + j)">
+
+                                        <li *ngFor="let cc of c.children">
+                                            <a [routerLink]="cc.route" (click)="toggleMobileMenu()">
+                                                <i class="bi" [ngClass]="cc.icon"></i> {{ cc.title }}
+                                            </a>
+                                        </li>
+
+                                    </ul>
+                                </li>
+
+                            </ng-container>
+                        </ul>
+
+                    </li>
+                </ng-container>
+
+            </ul>
+        </div>
+
+        <!-- ✅ DESKTOP MENU -->
+        <nav class="top-nav d-none d-lg-flex justify-content-start">
+            <ul class="nav gap-4">
+
+                <li class="nav-item" *ngFor="let m of menu" [class.dropdown-hover]="m.children?.length">
+
+                    <!-- MAIN DESKTOP LINK -->
+                    <a class="nav-link" *ngIf="m.route" [routerLink]="m.route" routerLinkActive="active">
+                        <i class="bi" [ngClass]="m.icon"></i>
+                        {{ m.title }}
+                        <i *ngIf="m.children" class="bi bi-chevron-down ms-1"></i>
+                    </a>
+
+                    <a class="nav-link" *ngIf="!m.route">
+                        <i class="bi" [ngClass]="m.icon"></i>
+                        {{ m.title }}
+                        <i class="bi bi-chevron-down ms-1"></i>
+                    </a>
+
+                    <!-- DESKTOP DROPDOWN -->
+                    <ul class="dropdown-menu" *ngIf="m.children">
+
+                        <ng-container *ngFor="let c of m.children">
+
+                            <li *ngIf="!c.children">
+                                <a class="dropdown-item" [routerLink]="c.route">
+                                    <i class="bi" [ngClass]="c.icon"></i> {{ c.title }}
+                                </a>
+                            </li>
+
+                            <li class="dropdown-submenu" *ngIf="c.children">
+                                <a class="dropdown-item">
+                                    <i class="bi" [ngClass]="c.icon"></i> {{ c.title }} →
+                                </a>
+
+                                <ul class="dropdown-menu">
+                                    <li *ngFor="let cc of c.children">
+                                        <a class="dropdown-item" [routerLink]="cc.route">
+                                            <i class="bi" [ngClass]="cc.icon"></i> {{ cc.title }}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                        </ng-container>
+                    </ul>
+
+                </li>
+
+            </ul>
+        </nav>
+
+    </div>
+</div>
