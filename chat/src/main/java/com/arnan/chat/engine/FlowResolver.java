@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -19,23 +18,25 @@ public class FlowResolver {
 	private final ConditionEvaluator evaluator;
 	private final ActionExecutor executor;
 
-	@Value("${chat.session.timeout-seconds:900}")
-	private long timeoutSeconds;
+	private final long timeoutSeconds;
 
 	// 🔥 Self proxy for @Cacheable to work
 	@Autowired
 	private FlowResolver self;
 
-	public FlowResolver(MongoTemplate mongo, ValidationEngine validator, ConditionEvaluator evaluator,
-			ActionExecutor executor) {
+	public FlowResolver(MongoTemplate mongo,
+				    ValidationEngine validator,
+				    ConditionEvaluator evaluator,
+				    ActionExecutor executor,
+				    com.arnan.chat.config.ChatProperties props) {
 
 		this.mongo = mongo;
 		this.validator = validator;
 		this.evaluator = evaluator;
 		this.executor = executor;
+		this.timeoutSeconds = props.getSessionTimeoutSeconds();
 	}
 
-	@SuppressWarnings("unchecked")
 	public Map<String, Object> handle(Map<String, Object> convo, String input) {
 
 		input = normalizeInput(input);

@@ -2,25 +2,20 @@ package com.arnan.chat.whatsapp;
 
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.arnan.chat.config.ChatProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 @Service
 public class ExternalApiService {
 
     private final WebClient webClient;
+    private final ChatProperties.External props;
 
-    @Value("${doctor.service.url}")
-    private String doctorServiceUrl;
-
-    @Value("${slot.service.url}")
-    private String slotServiceUrl;
-
-    public ExternalApiService(WebClient webClient) {
+    public ExternalApiService(WebClient webClient, ChatProperties props) {
         this.webClient = webClient;
+        this.props = props.getExternal();
     }
 
     /**
@@ -56,7 +51,7 @@ public class ExternalApiService {
     public JsonNode getDoctors() {
 
         return callGetApi(
-                doctorServiceUrl,
+                props.getDoctorServiceUrl(),
                 "/api/doctors",
                 null
         );
@@ -73,7 +68,7 @@ public class ExternalApiService {
         );
 
         return callGetApi(
-                slotServiceUrl,
+                props.getSlotServiceUrl(),
                 "/api/slots",
                 params
         );

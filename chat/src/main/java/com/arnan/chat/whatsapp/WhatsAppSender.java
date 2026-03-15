@@ -4,7 +4,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.arnan.chat.config.ChatProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -14,16 +16,15 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class WhatsAppSender {
 
-	@Value("${whatsapp.token}")
-	String token;
+	private static final Logger log = LoggerFactory.getLogger(WhatsAppSender.class);
 
-	@Value("${whatsapp.phoneId}")
-	String phoneId;
+	private final RestTemplate rest;
+	private final ChatProperties.WhatsApp props;
 
-	@Value("${whatsapp.graph-url}")
-	private String graphUrl;
-
-	private final RestTemplate rest = new RestTemplate();
+	public WhatsAppSender(RestTemplate rest, ChatProperties props) {
+		this.rest = rest;
+		this.props = props.getWhatsapp();
+	}
 
 	@SuppressWarnings("unchecked")
 	public void sendAuto(String to, Map<String, Object> convo) {
@@ -34,8 +35,7 @@ public class WhatsAppSender {
 		Map<String, Object> message = (Map<String, Object>) convo.get("message");
 
 		if (message == null || message.get("en") == null) {
-			System.err.println("❌ No message to send");
-			return;
+		log.warn("No message to send (missing 'en' text) for convo={}", convo);
 		}
 
 		String text = message.get("en").toString();
@@ -66,13 +66,14 @@ public class WhatsAppSender {
 	}
 
 	void sendRaw(Map<String, Object> body) {
-		String url = graphUrl + "/" + phoneId + "/messages";
+		String url = props.getGraphUrl() + "/" + props.getPhoneId() + "/messages";
 		HttpHeaders h = new HttpHeaders();
-		h.setBearerAuth(token);
+		h.setBearerAuth(props.getToken());
 		h.setContentType(MediaType.APPLICATION_JSON);
 
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, h);
 
+		log.debug("Sending WhatsApp request to {}", url);
 		rest.postForEntity(url, entity, String.class);
 	}
 }
