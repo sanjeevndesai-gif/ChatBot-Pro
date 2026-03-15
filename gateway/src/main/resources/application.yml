@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        - id: book-appointment
+          uri: lb://book_appointment
+          predicates:
+            - Path=/book/**
+          filters:
+            - StripPrefix=1
+        - id: chat-service
+          uri: lb://chat
+          predicates:
+            - Path=/chat/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: 8080
+
+# Eureka (discovery) - point at the discovery server
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true

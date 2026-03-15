@@ -1,0 +1,77 @@
+name: Build And Push ECR Images
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - auth-service/**
+      - book_appointment/**
+      - chat/**
+      - gateway/**
+      - eureka-server/**
+      - .github/workflows/build-push-ecr.yml
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_PREFIX: chatbot-pro
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth-service
+            context: auth-service
+            repository_suffix: auth-service
+          - service: book-appointment
+            context: book_appointment
+            repository_suffix: book-appointment
+          - service: chat
+            context: chat
+            repository_suffix: chat
+          - service: gateway
+            context: gateway
+            repository_suffix: gateway
+          - service: eureka
+            context: eureka-server
+            repository_suffix: eureka
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login To ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR Repository Exists
+        env:
+          REPO_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+        run: |
+          aws ecr describe-repositories --repository-names "$REPO_NAME" >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name "$REPO_NAME" >/dev/null
+
+      - name: Build And Push Image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          REPO_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+          CONTEXT: ${{ matrix.context }}
+        run: |
+          IMAGE_URI="$REGISTRY/$REPO_NAME"
+          docker build -t "$IMAGE_URI:$IMAGE_TAG" -t "$IMAGE_URI:latest" "$CONTEXT"
+          docker push "$IMAGE_URI:$IMAGE_TAG"
+          docker push "$IMAGE_URI:latest"

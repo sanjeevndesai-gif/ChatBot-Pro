@@ -1,0 +1,10 @@
+# Maven build outputs
+**/target/
+
+# Node build outputs and dependencies
+**/node_modules/
+**/dist/
+**/cdk.out/
+
+# Logs
+*.log

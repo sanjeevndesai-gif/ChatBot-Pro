@@ -1,0 +1,23 @@
+{
+  "name": "chatbot-pro-deploy",
+  "version": "0.1.0",
+  "bin": {
+    "cdk": "./node_modules/aws-cdk/bin/cdk"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "aws-cdk": "^2.99.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.99.0",
+    "constructs": "^10.0.0"
+  }
+}
