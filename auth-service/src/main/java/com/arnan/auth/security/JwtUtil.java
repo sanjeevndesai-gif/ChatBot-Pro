@@ -63,6 +63,18 @@ public class JwtUtil {
                 .compact();
     }
 
+    public String generateClientCredentialsToken(String clientId, String scope, long expirySeconds) {
+        long ttlMs = expirySeconds * 1000;
+        return Jwts.builder()
+                .setSubject(clientId)
+                .claim("scope", scope)
+                .claim("token_type", "client_credentials")
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + ttlMs))
+                .signWith(signingKey)
+                .compact();
+    }
+
     // =====================================================
     // EXTRACTION HELPERS
     // =====================================================

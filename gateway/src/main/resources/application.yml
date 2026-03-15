@@ -51,3 +51,7 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+
+oauth2:
+  jwt:
+    secret: ${JWT_SECRET:ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!}

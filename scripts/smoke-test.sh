@@ -6,6 +6,10 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-15}"
 WITH_UP="false"
 SKIP_SEND_MESSAGE="false"
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID:-chatbot-client}"
+OAUTH_CLIENT_SECRET="${OAUTH_CLIENT_SECRET:-chatbot-secret}"
+OAUTH_SCOPE="${OAUTH_SCOPE:-api.read api.write}"
+ACCESS_TOKEN=""
 
 usage() {
   cat <<'EOF'
@@ -16,6 +20,9 @@ Options:
   --base-url <url>        Base URL for gateway (default: http://localhost:8080)
   --with-up               Start stack using docker compose up -d --build
   --skip-send-message     Skip WhatsApp sendmessage endpoint check
+  --oauth-client-id <id>  OAuth2 client id (default: chatbot-client)
+  --oauth-client-secret   OAuth2 client secret (default: chatbot-secret)
+  --oauth-scope <scope>   OAuth2 scope (default: "api.read api.write")
   --timeout <seconds>     Curl timeout per request (default: 15)
   -h, --help              Show this help
 
@@ -23,6 +30,7 @@ Examples:
   ./scripts/smoke-test.sh
   ./scripts/smoke-test.sh --with-up
   ./scripts/smoke-test.sh --base-url http://localhost:8080 --timeout 20
+  ./scripts/smoke-test.sh --oauth-client-id chatbot-client --oauth-client-secret chatbot-secret
 EOF
 }
 
@@ -39,6 +47,18 @@ while [[ $# -gt 0 ]]; do
     --skip-send-message)
       SKIP_SEND_MESSAGE="true"
       shift
+      ;;
+    --oauth-client-id)
+      OAUTH_CLIENT_ID="$2"
+      shift 2
+      ;;
+    --oauth-client-secret)
+      OAUTH_CLIENT_SECRET="$2"
+      shift 2
+      ;;
+    --oauth-scope)
+      OAUTH_SCOPE="$2"
+      shift 2
       ;;
     --timeout)
       TIMEOUT_SECONDS="$2"
@@ -108,15 +128,23 @@ run_check() {
   local body="${5:-}"
   local body_regex="${6:-}"
   local content_type_regex="${7:-}"
+  local use_bearer="${8:-false}"
 
   local response_file
   response_file="$(mktemp)"
 
+  local curl_cmd=(curl -sS -m "$TIMEOUT_SECONDS" -o "$response_file" -w "%{http_code}|%{content_type}" -X "$method" "$url")
+
+  if [[ "$use_bearer" == "true" ]]; then
+    curl_cmd+=( -H "Authorization: Bearer $ACCESS_TOKEN" )
+  fi
+
   local curl_meta
   if [[ -n "$body" ]]; then
-    curl_meta="$(curl -sS -m "$TIMEOUT_SECONDS" -o "$response_file" -w "%{http_code}|%{content_type}" -X "$method" "$url" -H "Content-Type: application/json" -d "$body" 2>/dev/null)"
+    curl_cmd+=( -H "Content-Type: application/json" -d "$body" )
+    curl_meta="$("${curl_cmd[@]}" 2>/dev/null)"
   else
-    curl_meta="$(curl -sS -m "$TIMEOUT_SECONDS" -o "$response_file" -w "%{http_code}|%{content_type}" -X "$method" "$url" 2>/dev/null)"
+    curl_meta="$("${curl_cmd[@]}" 2>/dev/null)"
   fi
 
   if [[ -z "$curl_meta" ]]; then
@@ -154,6 +182,38 @@ run_check() {
 
   pass "$name"
   rm -f "$response_file"
+}
+
+fetch_access_token() {
+  local token_response_file
+  token_response_file="$(mktemp)"
+
+  local oauth_meta
+  oauth_meta="$(curl -sS -m "$TIMEOUT_SECONDS" -o "$token_response_file" -w "%{http_code}" \
+    -X POST "$BASE_URL/auth/oauth2/token" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    --data-urlencode "grant_type=client_credentials" \
+    --data-urlencode "client_id=$OAUTH_CLIENT_ID" \
+    --data-urlencode "client_secret=$OAUTH_CLIENT_SECRET" \
+    --data-urlencode "scope=$OAUTH_SCOPE" 2>/dev/null || true)"
+
+  if [[ "$oauth_meta" != "200" ]]; then
+    fail "OAuth token request (expected 200 got ${oauth_meta:-request-failed})"
+    rm -f "$token_response_file"
+    return 1
+  fi
+
+  ACCESS_TOKEN="$(sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$token_response_file" | head -n 1)"
+
+  if [[ -z "$ACCESS_TOKEN" ]]; then
+    fail "OAuth token parsing"
+    rm -f "$token_response_file"
+    return 1
+  fi
+
+  pass "OAuth token request"
+  rm -f "$token_response_file"
+  return 0
 }
 
 wait_for_gateway() {
@@ -196,18 +256,27 @@ SEND_PAYLOAD='{"number":"919999999999","message":"smoke test"}'
 run_check "Gateway readiness" "GET" "$BASE_URL/actuator/health/readiness" "200"
 run_check "Auth register" "POST" "$BASE_URL/auth/auth-service" "201" "$AUTH_REGISTER_PAYLOAD"
 run_check "Auth login" "POST" "$BASE_URL/auth/auth-service/login" "200" "$AUTH_LOGIN_PAYLOAD" "token"
-run_check "Auth list" "GET" "$BASE_URL/auth/auth-service/findall" "200"
-run_check "Appointment create" "POST" "$BASE_URL/book/api/appointments" "200" "$APPOINTMENT_PAYLOAD"
-run_check "Appointment list" "GET" "$BASE_URL/book/api/appointments" "200"
-run_check "Appointment range" "GET" "$BASE_URL/book/api/appointments/range?from=2026-03-01&to=2026-03-31" "200"
-run_check "Chat webhook" "POST" "$BASE_URL/chat/api/whatsapp/webhook" "200" "$WEBHOOK_PAYLOAD"
-run_check "QR generate" "GET" "$BASE_URL/chat/api/qr/generate?phoneNumber=919999999999&appointmentType=doctor&userId=SMOKE-${TS}" "200" "" "" "image/png"
+
+if fetch_access_token; then
+  run_check "Auth list" "GET" "$BASE_URL/auth/auth-service/findall" "200" "" "" "" "true"
+  run_check "Appointment create" "POST" "$BASE_URL/book/api/appointments" "200" "$APPOINTMENT_PAYLOAD" "" "" "true"
+  run_check "Appointment list" "GET" "$BASE_URL/book/api/appointments" "200" "" "" "" "true"
+  run_check "Appointment range" "GET" "$BASE_URL/book/api/appointments/range?from=2026-03-01&to=2026-03-31" "200" "" "" "" "true"
+  run_check "Chat webhook" "POST" "$BASE_URL/chat/api/whatsapp/webhook" "200" "$WEBHOOK_PAYLOAD" "" "" "true"
+  run_check "QR generate" "GET" "$BASE_URL/chat/api/qr/generate?phoneNumber=919999999999&appointmentType=doctor&userId=SMOKE-${TS}" "200" "" "" "image/png" "true"
+else
+  echo "SKIP: Protected endpoint checks because OAuth token request failed"
+fi
 
 if [[ "$SKIP_SEND_MESSAGE" == "true" ]]; then
   echo "SKIP: Chat sendmessage"
 else
-  # This endpoint can return 500 if external WhatsApp credentials/network are unavailable.
-  run_check "Chat sendmessage" "POST" "$BASE_URL/chat/api/whatsapp/sendmessage" "200,500" "$SEND_PAYLOAD"
+  if [[ -n "$ACCESS_TOKEN" ]]; then
+    # This endpoint can return 500 if external WhatsApp credentials/network are unavailable.
+    run_check "Chat sendmessage" "POST" "$BASE_URL/chat/api/whatsapp/sendmessage" "200,500" "$SEND_PAYLOAD" "" "" "true"
+  else
+    echo "SKIP: Chat sendmessage (no OAuth access token)"
+  fi
 fi
 
 echo ""
