@@ -51,7 +51,7 @@ class AuthServiceTests {
     @Test
     void loginWithInvalidUserShouldThrowException() {
 
-        when(authRepository.findByEmailOrUserId(anyString()))
+        when(authRepository.findByEmail(anyString()))
                 .thenReturn(null);
 
         Map<String, Object> body = Map.of(
