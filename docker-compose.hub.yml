@@ -1,0 +1,81 @@
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: chatbot-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7
+    container_name: chatbot-redis
+    ports:
+      - "6379:6379"
+
+  eureka-server:
+    image: sanjeevdesai/eventapi:chatbot-pro-eureka-server
+    container_name: chatbot-eureka
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+    depends_on:
+      - mongo
+
+  gateway:
+    image: sanjeevdesai/eventapi:chatbot-pro-gateway
+    container_name: chatbot-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+    depends_on:
+      - eureka-server
+
+  auth-service:
+    image: sanjeevdesai/eventapi:chatbot-pro-auth-service
+    container_name: chatbot-auth
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/auth-service
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+      - OAUTH2_CLIENT_ID=chatbot-client
+      - OAUTH2_CLIENT_SECRET=chatbot-secret
+    depends_on:
+      - mongo
+      - eureka-server
+
+  book-appointment:
+    image: sanjeevdesai/eventapi:chatbot-pro-book-appointment
+    container_name: chatbot-book-appointment
+    ports:
+      - "9091:9091"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/book_appointment
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+    depends_on:
+      - mongo
+      - eureka-server
+
+  chat:
+    image: sanjeevdesai/eventapi:chatbot-pro-chat
+    container_name: chatbot-chat
+    ports:
+      - "9090:9090"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chatdb
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+    depends_on:
+      - mongo
+      - redis
+      - eureka-server
+
+volumes:
+  mongo-data:
