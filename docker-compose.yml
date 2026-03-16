@@ -82,5 +82,20 @@ services:
       - redis
       - eureka-server
 
+
+  i18n-service:
+    build:
+      context: ./i18n-service
+    container_name: chatbot-i18n
+    ports:
+      - "9092:9092"
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/i18n-service
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+    depends_on:
+      - mongo
+      - eureka-server
+
 volumes:
   mongo-data:

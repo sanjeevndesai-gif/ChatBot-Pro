@@ -1,4 +1,4 @@
-package com.arnan.chat.Config;
+package com.arnan.chat.config;
 
 import java.time.Duration;
 
