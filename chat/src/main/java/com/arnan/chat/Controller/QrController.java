@@ -10,6 +10,9 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 @RestController
 @RequestMapping("/api/qr")
@@ -21,10 +24,15 @@ public class QrController {
             @RequestParam String appointmentType,
             @RequestParam String userId) throws WriterException, IOException {
 
-        // Build WhatsApp deep link
+        // Encode appointmentType and userId into a hidden Base64 token
+        String payload = appointmentType + ":" + userId;
+        String token = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(payload.getBytes(StandardCharsets.UTF_8));
+
+        // Build WhatsApp deep link — token is opaque to the end user
+        String message = "REF:" + token;
         String qrText = "https://wa.me/" + phoneNumber +
-                "?text=Hi&type=" + appointmentType +
-                "&userId=" + userId;
+                "?text=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
 
         // Generate QR code
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
