@@ -53,6 +53,7 @@ public class ChatEngine {
 
             Map<String, Object> context = new HashMap<>();
             context.put("appointment_type", appointmentType); // store type in context
+            context.put("userId", userId);
             convo.put("context", context);
 
             convo.put("lastMessageAt", Instant.now());

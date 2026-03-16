@@ -127,10 +127,6 @@ public class FlowResolver {
 		String next = evaluator.resolve(step, ctx);
 		Map<String, Object> nextStep = (Map<String, Object>) steps.get(next);
 
-		if ("BOOK_CONFIRM".equals(next) || "CANCEL_CONFIRM".equals(next)) {
-			return end(convo, "✅ Process completed.");
-		}
-
 		if (nextStep == null) {
 			return end(convo, "✅ Process completed.");
 		}

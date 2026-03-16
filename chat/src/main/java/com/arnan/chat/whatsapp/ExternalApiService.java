@@ -46,13 +46,28 @@ public class ExternalApiService {
     }
 
     /**
-     * Call Doctor Microservice
+     * Generic POST API caller
      */
-    public JsonNode getDoctors() {
+    public JsonNode callPostApi(String baseUrl,
+                                String endpoint,
+                                Object body) {
 
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder.path(baseUrl + endpoint).build())
+                .bodyValue(body)
+                .retrieve()
+                .onStatus(status -> status.isError(),
+                        response -> response.bodyToMono(String.class)
+                                .map(errorBody ->
+                                        new RuntimeException("External API Error: " + errorBody)))
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
+
+    public JsonNode getUserProfile(String userId) {
         return callGetApi(
                 props.getDoctorServiceUrl(),
-                "/api/doctors",
+                "/auth-service/find/" + userId,
                 null
         );
     }
@@ -79,5 +94,13 @@ public class ExternalApiService {
         }
 
         return null;
+    }
+
+    public JsonNode createAppointment(Map<String, Object> payload) {
+        return callPostApi(
+                props.getSlotServiceUrl(),
+                "/api/appointments",
+                payload
+        );
     }
 }

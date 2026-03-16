@@ -20,10 +20,14 @@ public class WhatsAppSender {
 
 	private final RestTemplate rest;
 	private final ChatProperties.WhatsApp props;
+	private final MessageTemplateService messageTemplateService;
 
-	public WhatsAppSender(RestTemplate rest, ChatProperties props) {
+	public WhatsAppSender(RestTemplate rest,
+					 ChatProperties props,
+					 MessageTemplateService messageTemplateService) {
 		this.rest = rest;
 		this.props = props.getWhatsapp();
+		this.messageTemplateService = messageTemplateService;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -35,10 +39,12 @@ public class WhatsAppSender {
 		Map<String, Object> message = (Map<String, Object>) convo.get("message");
 
 		if (message == null || message.get("en") == null) {
-		log.warn("No message to send (missing 'en' text) for convo={}", convo);
+			log.warn("No message to send (missing 'en' text) for convo={}", convo);
+			return;
 		}
 
-		String text = message.get("en").toString();
+		String key = message.get("en").toString();
+		String text = messageTemplateService.render(key, convo);
 
 		if (expired) {
 			sendTemplate(to);
