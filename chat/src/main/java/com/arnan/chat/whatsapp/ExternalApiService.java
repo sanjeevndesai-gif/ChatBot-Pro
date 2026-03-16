@@ -58,19 +58,26 @@ public class ExternalApiService {
     }
 
     /**
-     * Call Slot Microservice
+     * Call SchedulerController getById and return available slots for a doctor on a date.
      */
     public JsonNode getSlots(String date, String doctorId) {
 
-        Map<String, String> params = Map.of(
-                "date", date,
-                "doctorId", doctorId
+        JsonNode scheduler = callGetApi(
+                props.getSlotServiceUrl(),
+                "/api/schedulers/" + doctorId,
+                null
         );
 
-        return callGetApi(
-                props.getSlotServiceUrl(),
-                "/api/slots",
-                params
-        );
+        if (scheduler == null || !scheduler.has("daySlots") || !scheduler.get("daySlots").isArray()) {
+            return null;
+        }
+
+        for (JsonNode daySlot : scheduler.get("daySlots")) {
+            if (date.equals(daySlot.path("date").asText()) && !daySlot.path("unavailable").asBoolean(false)) {
+                return daySlot;
+            }
+        }
+
+        return null;
     }
 }
