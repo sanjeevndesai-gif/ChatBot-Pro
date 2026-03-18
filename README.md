@@ -108,29 +108,74 @@ cd i18n-service     && ./mvnw spring-boot:run   # http://localhost:9092
 
 ---
 
-### 4 — Environment variables
+### 4 — Environment variables and profiles
 
-All services have sensible defaults for local development. Override these when deploying to a shared or production environment:
+#### Active profiles
 
-| Variable | Default | Used by |
+All services support three Spring profiles. The profile controls which database the service connects to:
+
+| Profile | How to activate | Database target |
 |---|---|---|
+| *(default — no profile)* | `./mvnw spring-boot:run` — no env var needed | `localhost` MongoDB + Redis |
+| `dev` | `SPRING_PROFILES_ACTIVE=dev` | Dev-cluster MongoDB + Redis |
+| `prod` | `SPRING_PROFILES_ACTIVE=prod` | Prod-cluster MongoDB + Redis |
+
+Spring Boot automatically loads `application.properties` (shared config) and then merges the profile-specific file on top (`application-dev.properties` or `application-prod.properties`), so profile files only need to contain the overrides.
+
+#### Running locally (no profile needed)
+
+No environment variables are required. Every service defaults to `localhost:27017` (MongoDB) and `localhost:6379` (Redis):
+
+```bash
+cd auth-service && ./mvnw spring-boot:run   # connects to mongodb://localhost:27017/auth-service
+cd chat         && ./mvnw spring-boot:run   # connects to localhost Redis + MongoDB
+```
+
+#### Running for dev / prod (individual service)
+
+```bash
+export SPRING_PROFILES_ACTIVE=dev
+export SPRING_DATA_MONGODB_URI=mongodb+srv://user:pass@dev-cluster.mongodb.net/auth-service
+cd auth-service && ./mvnw spring-boot:run
+```
+
+#### Running the full stack for dev / prod (Docker Compose)
+
+1. Copy the template and fill in real values:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env with your real dev/prod MongoDB Atlas and Redis URIs
+   ```
+
+2. Bring up the stack with the correct override file:
+
+   ```bash
+   # Dev stack
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+   # Prod stack
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+   ```
+
+> **`.env` is listed in `.gitignore` and must never be committed to source control.**  
+> Use `.env.example` as the reference template for what variables are needed.
+
+#### All configurable environment variables
+
+| Variable | Default (local) | Used by |
+|---|---|---|
+| `SPRING_PROFILES_ACTIVE` | _(unset = local)_ | all services |
 | `JWT_SECRET` | `ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!` | gateway, auth-service, chat, book_appointment, i18n-service |
 | `SPRING_DATA_MONGODB_URI` | `mongodb://localhost:27017/<db>` | auth-service, chat, book_appointment, i18n-service |
 | `SPRING_DATA_REDIS_HOST` | `localhost` | chat |
 | `SPRING_DATA_REDIS_PORT` | `6379` | chat |
+| `SPRING_DATA_REDIS_PASSWORD` | _(empty)_ | chat |
 | `OAUTH2_CLIENT_ID` | `chatbot-client` | auth-service |
 | `OAUTH2_CLIENT_SECRET` | `chatbot-secret` | auth-service |
 | `EUREKA_CLIENT_SERVICEURL_DEFAULTZONE` | `http://eureka-server:8761/eureka/` | all services |
 | `WHATSAPP_TOKEN` | _(none)_ | chat — required for WhatsApp webhooks |
 | `WHATSAPP_PHONE_ID` | _(none)_ | chat — required for WhatsApp webhooks |
-
-Set them before running a service, e.g.:
-
-```bash
-export JWT_SECRET=my-strong-secret
-export SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/auth-service
-cd auth-service && ./mvnw spring-boot:run
-```
 
 ---
 

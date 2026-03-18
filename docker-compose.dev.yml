@@ -1,0 +1,39 @@
+# docker-compose.dev.yml
+# ---------------------------------------------------------------
+# Dev environment override.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# Supply real values via a .env file or CI/CD secrets.
+# See .env.example for all required variables.
+# ---------------------------------------------------------------
+
+services:
+  auth-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATA_MONGODB_URI=${DEV_MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID}
+      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET}
+
+  book-appointment:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATA_MONGODB_URI=${DEV_MONGODB_URI_BOOK}
+      - JWT_SECRET=${JWT_SECRET}
+
+  chat:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATA_MONGODB_URI=${DEV_MONGODB_URI_CHAT}
+      - SPRING_DATA_REDIS_HOST=${DEV_REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${DEV_REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${DEV_REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET}
+
+  i18n-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATA_MONGODB_URI=${DEV_MONGODB_URI_I18N}
+      - JWT_SECRET=${JWT_SECRET}

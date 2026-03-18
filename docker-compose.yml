@@ -43,6 +43,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+      - SPRING_PROFILES_ACTIVE=local
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/auth-service
       - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
       - OAUTH2_CLIENT_ID=chatbot-client
@@ -58,6 +59,7 @@ services:
     ports:
       - "9091:9091"
     environment:
+      - SPRING_PROFILES_ACTIVE=local
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/book_appointment
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
@@ -72,6 +74,7 @@ services:
     ports:
       - "9090:9090"
     environment:
+      - SPRING_PROFILES_ACTIVE=local
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chatdb
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
@@ -90,6 +93,7 @@ services:
     ports:
       - "9092:9092"
     environment:
+      - SPRING_PROFILES_ACTIVE=local
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/i18n-service
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
