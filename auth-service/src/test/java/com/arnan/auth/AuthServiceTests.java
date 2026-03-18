@@ -110,8 +110,8 @@ class AuthServiceTests {
         when(userIdGenerator.generate(anyString())).thenReturn("USR101");
         when(authRepository.findDuplicateUser(anyString(), anyString())).thenReturn(null);
 
-        Document fakeSaved = new Document("fullname", "Test User").append("password", "$2a$hashedPassword");
-        when(authRepository.findByName("Test User", "ORG1")).thenReturn(fakeSaved);
+        Document mockSavedUser = new Document("fullname", "Test User").append("password", "$2a$hashedPassword");
+        when(authRepository.findByName("Test User", "ORG1")).thenReturn(mockSavedUser);
 
         Map<String, Object> body = new HashMap<>();
         body.put("fullname", "Test User");
