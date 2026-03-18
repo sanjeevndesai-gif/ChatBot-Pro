@@ -1,0 +1,39 @@
+# docker-compose.prod.yml
+# ---------------------------------------------------------------
+# Production environment override.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# Supply real values via a .env file or CI/CD secrets.
+# See .env.example for all required variables.
+# ---------------------------------------------------------------
+
+services:
+  auth-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_MONGODB_URI=${PROD_MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID}
+      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET}
+
+  book-appointment:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_MONGODB_URI=${PROD_MONGODB_URI_BOOK}
+      - JWT_SECRET=${JWT_SECRET}
+
+  chat:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_MONGODB_URI=${PROD_MONGODB_URI_CHAT}
+      - SPRING_DATA_REDIS_HOST=${PROD_REDIS_HOST}
+      - SPRING_DATA_REDIS_PORT=${PROD_REDIS_PORT:-6379}
+      - SPRING_DATA_REDIS_PASSWORD=${PROD_REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+
+  i18n-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATA_MONGODB_URI=${PROD_MONGODB_URI_I18N}
+      - JWT_SECRET=${JWT_SECRET}

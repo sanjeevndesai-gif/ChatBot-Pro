@@ -23,12 +23,12 @@ spring:
           uri: lb://chat
           predicates:
             - Path=/chat/**
-                  - id: i18n-service
-                    uri: lb://i18n-service
-                    predicates:
-                      - Path=/i18n/**
-                    filters:
-                      - StripPrefix=1
+          filters:
+            - StripPrefix=1
+        - id: i18n-service
+          uri: lb://i18n-service
+          predicates:
+            - Path=/i18n/**
           filters:
             - StripPrefix=1
 
