@@ -24,6 +24,11 @@ public class FlowResolver {
 	@Autowired
 	private FlowResolver self;
 
+	/** Setter used in unit tests to inject a self-reference without Spring context. */
+	public void setSelf(FlowResolver self) {
+		this.self = self;
+	}
+
 	public FlowResolver(MongoTemplate mongo,
 				    ValidationEngine validator,
 				    ConditionEvaluator evaluator,
