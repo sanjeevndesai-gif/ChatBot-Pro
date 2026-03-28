@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: eureka-server
+
+server:
+  port: 8761
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    enable-self-preservation: false
+    wait-time-in-ms-when-sync-empty: 0
+
+oauth2:
+  jwt:
+    secret: ${JWT_SECRET:ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!}
