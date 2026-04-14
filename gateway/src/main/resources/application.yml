@@ -41,6 +41,13 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://eureka-server:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
+  instance:
+    # Publish browser-reachable URLs in Eureka UI via ALB host.
+    hostname: ${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}
+    prefer-ip-address: false
+    home-page-url: ${EUREKA_HOME_PAGE_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/}
+    status-page-url: ${EUREKA_STATUS_PAGE_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/actuator/info}
+    health-check-url: ${EUREKA_HEALTH_CHECK_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/actuator/health}
 
 management:
   endpoints:
@@ -62,10 +69,6 @@ logging:
     root: INFO
     org.springframework.web: WARN
     org.springframework.cloud.gateway: WARN
-
-oauth2:
-  jwt:
-    secret: ${JWT_SECRET:local-dev-only-change-me-in-production}
 
 oauth2:
   jwt:

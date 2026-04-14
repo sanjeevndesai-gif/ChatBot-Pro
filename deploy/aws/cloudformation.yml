@@ -1,36 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: >-
-  ECS + ECR full stack for ChatBot-Pro.
-
-  This template creates:
-    • ECR repositories for all 6 microservices (with lifecycle policy)
-    • AWS Secrets Manager secrets for all sensitive values
-    • An ECS Fargate cluster + IAM roles (with Secrets Manager access)
-    • CloudWatch log groups (14-day retention) for all services
-    • Security groups for internal service-to-service communication
-    • ECS Fargate task definitions + services for all 6 services
-    • Application Load Balancer exposing the gateway on port 80
-    • Startup order: eureka → auth/book/chat/i18n → gateway
-
-  Usage:
-    aws cloudformation deploy \
-      --template-file deploy/aws/cloudformation.yml \
-      --stack-name chatbot-pro \
-      --capabilities CAPABILITY_NAMED_IAM \
-      --parameter-overrides \
-          VpcId=vpc-xxxx \
-          PublicSubnetIds="subnet-aaa,subnet-bbb" \
-          PrivateSubnetIds="subnet-ccc,subnet-ddd"
-
-  After deploy, store your real secrets in Secrets Manager:
-    aws secretsmanager put-secret-value --secret-id chatbot-pro/jwt-secret \
-      --secret-string '{"JWT_SECRET":"your-real-secret"}'
+Description: ECS + ECR stack for ChatBot-Pro with ALB, ECS Fargate services, and Secrets Manager.
 
 Parameters:
   VpcId:
     Type: AWS::EC2::VPC::Id
     Default: vpc-0ac1ba06da333b881
     Description: VPC where the ECS cluster and ALB will be deployed.
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: CIDR block for the target VPC, used by security group rules.
 
   PublicSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
@@ -47,28 +27,92 @@ Parameters:
     Default: chatbot-app
     Description: Prefix for ECR repositories and all named resources.
 
+  CreateEcrRepositories:
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+    Description: Set to false when repositories are created and populated outside this stack.
+
+  DeploymentMode:
+    Type: String
+    Default: lean
+    AllowedValues:
+      - lean
+      - production
+    Description: lean minimizes monthly cost; production enables NAT and HTTPS redirect/listener.
+
   IngressCidr:
     Type: String
     Default: 0.0.0.0/0
-    Description: CIDR allowed to reach the public ALB on port 80.
+    Description: CIDR allowed to reach the public ALB on ports 80 and 443.
+
+  AcmCertificateArn:
+    Type: String
+    Description: ACM certificate ARN for the public HTTPS listener.
+
+  EurekaNamespaceName:
+    Type: String
+    Default: chatbot.local
+    Description: Private DNS namespace used by Cloud Map for service discovery.
+
+  RedisHost:
+    Type: String
+    Description: Redis endpoint used by the chat service.
+
+  RedisPort:
+    Type: Number
+    Default: 6379
+    Description: Redis port used by the chat service.
+
+  PrivateRouteTableIdA:
+    Type: String
+    Default: ''
+    Description: Optional private route table ID (AZ-A) to route 0.0.0.0/0 via NAT.
+
+  PrivateRouteTableIdB:
+    Type: String
+    Default: ''
+    Description: Optional private route table ID (AZ-B) to route 0.0.0.0/0 via NAT.
 
   EurekaDesiredCount:
     Type: Number
     Default: 1
     Description: Number of Eureka tasks. Keep at 1 (single registry).
 
+  GatewayDesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired task count for gateway service.
+
+  NonCoreServiceDesiredCount:
+    Type: Number
+    Default: 0
+    Description: Desired task count for auth, book, chat, and i18n services (0 is cheapest).
+
   ServiceDesiredCount:
     Type: Number
     Default: 1
-    Description: Desired task count for auth, book, chat, i18n, gateway.
+    Description: Legacy parameter (not used in lean mode template).
+
+Conditions:
+  IsLean: !Equals [!Ref DeploymentMode, 'lean']
+  IsProduction: !Equals [!Ref DeploymentMode, 'production']
+  ShouldCreateEcrRepositories: !Equals [!Ref CreateEcrRepositories, 'true']
+  HasPrivateRouteTableA: !Not [!Equals [!Ref PrivateRouteTableIdA, '']]
+  HasPrivateRouteTableB: !Not [!Equals [!Ref PrivateRouteTableIdB, '']]
+  HasPrivateRouteTableAInProduction: !And [!Condition IsProduction, !Condition HasPrivateRouteTableA]
+  HasPrivateRouteTableBInProduction: !And [!Condition IsProduction, !Condition HasPrivateRouteTableB]
 
 Resources:
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # ECR REPOSITORIES (all 6 services, lifecycle: keep last 20)
-  # ─────────────────────────────────────────────────────────────
+  # 
   ECRRepoGateway:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-gateway"
       LifecyclePolicy:
@@ -77,6 +121,7 @@ Resources:
 
   ECRRepoAuthService:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-auth-service"
       LifecyclePolicy:
@@ -85,6 +130,7 @@ Resources:
 
   ECRRepoBookAppointment:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-book-appointment"
       LifecyclePolicy:
@@ -93,6 +139,7 @@ Resources:
 
   ECRRepoChat:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-chat"
       LifecyclePolicy:
@@ -101,6 +148,7 @@ Resources:
 
   ECRRepoEureka:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-eureka"
       LifecyclePolicy:
@@ -109,17 +157,18 @@ Resources:
 
   ECRRepoI18n:
     Type: AWS::ECR::Repository
+    Condition: ShouldCreateEcrRepositories
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-i18n-service"
       LifecyclePolicy:
         LifecyclePolicyText: |
           {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # SECRETS MANAGER
-  # Store placeholder secrets — update values after deploy with:
+  # Store placeholder secrets  update values after deploy with:
   #   aws secretsmanager put-secret-value --secret-id <name> --secret-string '{"KEY":"value"}'
-  # ─────────────────────────────────────────────────────────────
+  # 
   SecretJwt:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -154,9 +203,9 @@ Resources:
       Description: WhatsApp Cloud API and OpenAI credentials
       SecretString: '{"WHATSAPP_TOKEN":"REPLACE_WITH_TOKEN","WHATSAPP_PHONE_ID":"REPLACE_WITH_PHONE_ID","OPENAI_API_KEY":"REPLACE_IF_USED"}'
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # ECS CLUSTER
-  # ─────────────────────────────────────────────────────────────
+  # 
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -165,13 +214,12 @@ Resources:
         - Name: containerInsights
           Value: enabled
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # IAM ROLES
-  # ─────────────────────────────────────────────────────────────
+  # 
   ECSExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${EcrRepositoryPrefix}-ecs-execution-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -199,7 +247,6 @@ Resources:
   ECSTaskRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${EcrRepositoryPrefix}-ecs-task-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -208,9 +255,9 @@ Resources:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # CLOUDWATCH LOG GROUPS (all 6 services, 14-day retention)
-  # ─────────────────────────────────────────────────────────────
+  # 
   LogGroupEureka:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -247,18 +294,22 @@ Resources:
       LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-gateway"
       RetentionInDays: 14
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # SECURITY GROUPS
-  # ─────────────────────────────────────────────────────────────
+  # 
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow HTTP from internet to ALB
+      GroupDescription: Allow HTTP and HTTPS from internet to ALB
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+          CidrIp: !Ref IngressCidr
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
           CidrIp: !Ref IngressCidr
       SecurityGroupEgress:
         - IpProtocol: -1
@@ -274,15 +325,37 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8000
           ToPort: 9999
-          CidrIp: 10.0.0.0/8
+          CidrIp: !Ref VpcCidr
+        - IpProtocol: tcp
+          FromPort: 8761
+          ToPort: 8761
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
-        - IpProtocol: -1
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 27017
+          ToPort: 27017
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 53
+          ToPort: 53
           CidrIp: 0.0.0.0/0
 
   GatewayServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Gateway ECS service — inbound from ALB only
+      GroupDescription: Gateway ECS service  inbound from ALB only
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -290,12 +363,22 @@ Resources:
           ToPort: 8080
           SourceSecurityGroupId: !Ref ALBSecurityGroup
       SecurityGroupEgress:
-        - IpProtocol: -1
+        - IpProtocol: tcp
+          FromPort: 8761
+          ToPort: 8761
+          CidrIp: !Ref VpcCidr
+        - IpProtocol: tcp
+          FromPort: 8082
+          ToPort: 9092
+          CidrIp: !Ref VpcCidr
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
           CidrIp: 0.0.0.0/0
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # ALB + TARGET GROUP + LISTENER
-  # ─────────────────────────────────────────────────────────────
+  # 
   GatewayLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -304,6 +387,35 @@ Resources:
       Subnets: !Ref PublicSubnetIds
       SecurityGroups:
         - !Ref ALBSecurityGroup
+
+  NatElasticIp:
+    Type: AWS::EC2::EIP
+    Condition: IsProduction
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Condition: IsProduction
+    Properties:
+      AllocationId: !GetAtt NatElasticIp.AllocationId
+      SubnetId: !Select [0, !Ref PublicSubnetIds]
+
+  PrivateDefaultRouteA:
+    Type: AWS::EC2::Route
+    Condition: HasPrivateRouteTableAInProduction
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableIdA
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateDefaultRouteB:
+    Type: AWS::EC2::Route
+    Condition: HasPrivateRouteTableBInProduction
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableIdB
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
 
   GatewayTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -325,6 +437,7 @@ Resources:
 
   GatewayLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: IsLean
     Properties:
       DefaultActions:
         - Type: forward
@@ -333,9 +446,56 @@ Resources:
       Port: 80
       Protocol: HTTP
 
-  # ─────────────────────────────────────────────────────────────
+  GatewayLoadBalancerHttpRedirectListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: IsProduction
+    Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            Host: '#{host}'
+            Path: '/#{path}'
+            Query: '#{query}'
+            StatusCode: HTTP_301
+      LoadBalancerArn: !Ref GatewayLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  GatewayLoadBalancerHttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: IsProduction
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref GatewayTargetGroup
+      LoadBalancerArn: !Ref GatewayLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref AcmCertificateArn
+
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Ref EurekaNamespaceName
+      Vpc: !Ref VpcId
+
+  EurekaDiscoveryService:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: eureka
+      NamespaceId: !Ref ServiceDiscoveryNamespace
+      DnsConfig:
+        RoutingPolicy: MULTIVALUE
+        DnsRecords:
+          - Type: A
+            TTL: 30
+
+  # 
   # TASK DEFINITION: eureka-server  (starts first)
-  # ─────────────────────────────────────────────────────────────
+  # 
   EurekaTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -383,14 +543,16 @@ Resources:
       HealthCheckGracePeriodSeconds: 90
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref InternalServiceSecurityGroup
+      ServiceRegistries:
+        - RegistryArn: !GetAtt EurekaDiscoveryService.Arn
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # TASK DEFINITION: auth-service
-  # ─────────────────────────────────────────────────────────────
+  # 
   AuthServiceTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -419,7 +581,7 @@ Resources:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
             - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+              Value: !Sub "http://eureka.${EurekaNamespaceName}:8761/eureka/"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -440,19 +602,19 @@ Resources:
       ServiceName: !Sub "${EcrRepositoryPrefix}-auth-service"
       Cluster: !Ref ECSCluster
       LaunchType: FARGATE
-      DesiredCount: !Ref ServiceDesiredCount
+      DesiredCount: !Ref NonCoreServiceDesiredCount
       TaskDefinition: !Ref AuthServiceTaskDefinition
       HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref InternalServiceSecurityGroup
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # TASK DEFINITION: book-appointment
-  # ─────────────────────────────────────────────────────────────
+  # 
   BookAppointmentTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -477,7 +639,7 @@ Resources:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
             - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+              Value: !Sub "http://eureka.${EurekaNamespaceName}:8761/eureka/"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -498,19 +660,19 @@ Resources:
       ServiceName: !Sub "${EcrRepositoryPrefix}-book-appointment"
       Cluster: !Ref ECSCluster
       LaunchType: FARGATE
-      DesiredCount: !Ref ServiceDesiredCount
+      DesiredCount: !Ref NonCoreServiceDesiredCount
       TaskDefinition: !Ref BookAppointmentTaskDefinition
       HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref InternalServiceSecurityGroup
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # TASK DEFINITION: chat
-  # ─────────────────────────────────────────────────────────────
+  # 
   ChatTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -541,11 +703,11 @@ Resources:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
             - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+              Value: !Sub "http://eureka.${EurekaNamespaceName}:8761/eureka/"
             - Name: SPRING_DATA_REDIS_HOST
-              Value: "REPLACE_WITH_ELASTICACHE_ENDPOINT"
+              Value: !Ref RedisHost
             - Name: SPRING_DATA_REDIS_PORT
-              Value: "6379"
+              Value: !Sub "${RedisPort}"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -566,19 +728,19 @@ Resources:
       ServiceName: !Sub "${EcrRepositoryPrefix}-chat"
       Cluster: !Ref ECSCluster
       LaunchType: FARGATE
-      DesiredCount: !Ref ServiceDesiredCount
+      DesiredCount: !Ref NonCoreServiceDesiredCount
       TaskDefinition: !Ref ChatTaskDefinition
       HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref InternalServiceSecurityGroup
 
-  # ─────────────────────────────────────────────────────────────
+  # 
   # TASK DEFINITION: i18n-service
-  # ─────────────────────────────────────────────────────────────
+  # 
   I18nTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -603,7 +765,7 @@ Resources:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
             - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+              Value: !Sub "http://eureka.${EurekaNamespaceName}:8761/eureka/"
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -624,19 +786,19 @@ Resources:
       ServiceName: !Sub "${EcrRepositoryPrefix}-i18n-service"
       Cluster: !Ref ECSCluster
       LaunchType: FARGATE
-      DesiredCount: !Ref ServiceDesiredCount
+      DesiredCount: !Ref NonCoreServiceDesiredCount
       TaskDefinition: !Ref I18nTaskDefinition
       HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: DISABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref InternalServiceSecurityGroup
 
-  # ─────────────────────────────────────────────────────────────
-  # TASK DEFINITION: gateway  (starts last — depends on all others)
-  # ─────────────────────────────────────────────────────────────
+  # 
+  # TASK DEFINITION: gateway  (starts last  depends on all others)
+  # 
   GatewayTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -659,7 +821,21 @@ Resources:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
             - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+              Value: !Sub "http://eureka.${EurekaNamespaceName}:8761/eureka/"
+            - Name: EUREKA_PUBLIC_HOSTNAME
+              Value: !GetAtt GatewayLoadBalancer.DNSName
+            - Name: EUREKA_HOME_PAGE_URL
+              Value: !Sub
+                - "http://${GatewayDns}/"
+                - GatewayDns: !GetAtt GatewayLoadBalancer.DNSName
+            - Name: EUREKA_STATUS_PAGE_URL
+              Value: !Sub
+                - "http://${GatewayDns}/actuator/info"
+                - GatewayDns: !GetAtt GatewayLoadBalancer.DNSName
+            - Name: EUREKA_HEALTH_CHECK_URL
+              Value: !Sub
+                - "http://${GatewayDns}/actuator/health"
+                - GatewayDns: !GetAtt GatewayLoadBalancer.DNSName
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -676,7 +852,6 @@ Resources:
   GatewayService:
     Type: AWS::ECS::Service
     DependsOn:
-      - GatewayLoadBalancerListener
       - EurekaService
       - AuthService
       - BookAppointmentService
@@ -686,13 +861,13 @@ Resources:
       ServiceName: !Sub "${EcrRepositoryPrefix}-gateway"
       Cluster: !Ref ECSCluster
       LaunchType: FARGATE
-      DesiredCount: !Ref ServiceDesiredCount
+      DesiredCount: !Ref GatewayDesiredCount
       TaskDefinition: !Ref GatewayTaskDefinition
       HealthCheckGracePeriodSeconds: 120
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          Subnets: !Ref PrivateSubnetIds
+          AssignPublicIp: !If [IsLean, 'ENABLED', 'DISABLED']
+          Subnets: !If [IsLean, !Ref PublicSubnetIds, !Ref PrivateSubnetIds]
           SecurityGroups:
             - !Ref GatewayServiceSecurityGroup
       LoadBalancers:
@@ -708,10 +883,15 @@ Outputs:
       Name: !Sub "${EcrRepositoryPrefix}-cluster-arn"
 
   GatewayLoadBalancerDns:
-    Description: Public DNS of the ALB — this is your application entry point
+    Description: Public DNS of the ALB  this is your application entry point
     Value: !GetAtt GatewayLoadBalancer.DNSName
     Export:
       Name: !Sub "${EcrRepositoryPrefix}-alb-dns"
+
+  GatewayHttpsUrl:
+    Condition: IsProduction
+    Description: Public HTTPS URL of the gateway entry point
+    Value: !Sub "https://${GatewayLoadBalancer.DNSName}"
 
   EurekaServiceArn:
     Description: Eureka ECS Service ARN
@@ -722,10 +902,11 @@ Outputs:
     Value: !Ref AuthService
 
   SecretJwtArn:
-    Description: ARN of the JWT Secrets Manager secret — update this with your real value
+    Description: ARN of the JWT Secrets Manager secret  update this with your real value
     Value: !Ref SecretJwt
 
   SecretMongoDBArn:
-    Description: ARN of the MongoDB Secrets Manager secret — update with your Atlas URIs
+    Description: ARN of the MongoDB Secrets Manager secret  update with your Atlas URIs
     Value: !Ref SecretMongoDB
+
 
