@@ -1,3 +1,7 @@
+# docker-compose.hub.yml — USES PRE-BUILT IMAGES FROM DOCKER HUB
+# Copy .env.example to .env and fill in your values before running.
+# Docker Compose automatically loads variables from .env in this directory.
+
 services:
   mongo:
     image: mongo:6.0
@@ -6,12 +10,24 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   redis:
     image: redis:7
     container_name: chatbot-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   eureka-server:
     image: sanjeevdesai/eventapi:chatbot-pro-eureka-server
@@ -20,9 +36,20 @@ services:
       - "8761:8761"
     environment:
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8761/actuator/health | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   gateway:
     image: sanjeevdesai/eventapi:chatbot-pro-gateway
@@ -30,9 +57,20 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health/readiness | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   auth-service:
     image: sanjeevdesai/eventapi:chatbot-pro-auth-service
@@ -40,13 +78,25 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/auth-service
-      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
-      - OAUTH2_CLIENT_ID=chatbot-client
-      - OAUTH2_CLIENT_SECRET=chatbot-secret
+      - SPRING_DATA_MONGODB_URI=${MONGO_URI_AUTH}
+      - JWT_SECRET=${JWT_SECRET}
+      - OAUTH2_CLIENT_ID=${OAUTH2_CLIENT_ID}
+      - OAUTH2_CLIENT_SECRET=${OAUTH2_CLIENT_SECRET}
     depends_on:
-      - mongo
-      - eureka-server
+      mongo:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health/readiness | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   book-appointment:
     image: sanjeevdesai/eventapi:chatbot-pro-book-appointment
@@ -54,12 +104,24 @@ services:
     ports:
       - "9091:9091"
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/book_appointment
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+      - SPRING_DATA_MONGODB_URI=${MONGO_URI_BOOK}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_URL}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - mongo
-      - eureka-server
+      mongo:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9091/actuator/health/readiness | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   chat:
     image: sanjeevdesai/eventapi:chatbot-pro-chat
@@ -67,15 +129,56 @@ services:
     ports:
       - "9090:9090"
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chatdb
+      - SPRING_DATA_MONGODB_URI=${MONGO_URI_CHAT}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - JWT_SECRET=ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - WHATSAPP_TOKEN=${WHATSAPP_TOKEN}
+      - WHATSAPP_PHONE_ID=${WHATSAPP_PHONE_ID}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
-      - mongo
-      - redis
-      - eureka-server
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9090/actuator/health/readiness | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  i18n-service:
+    image: sanjeevdesai/eventapi:chatbot-pro-i18n-service
+    container_name: chatbot-i18n
+    ports:
+      - "9092:9092"
+    environment:
+      - SPRING_DATA_MONGODB_URI=${MONGO_URI_I18N}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${EUREKA_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9092/actuator/health/readiness | grep -q UP || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
 volumes:
   mongo-data:

@@ -9,12 +9,18 @@ on:
       - chat/**
       - gateway/**
       - eureka-server/**
+      - i18n-service/**
       - .github/workflows/build-push-ecr.yml
   workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to build (leave empty to build all)'
+        required: false
+        default: ''
 
 env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY_PREFIX: chatbot-pro
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY_PREFIX: chatbot-app
 
 permissions:
   id-token: write
@@ -42,6 +48,9 @@ jobs:
           - service: eureka
             context: eureka-server
             repository_suffix: eureka
+          - service: i18n-service
+            context: i18n-service
+            repository_suffix: i18n-service
 
     steps:
       - name: Checkout
@@ -75,3 +84,15 @@ jobs:
           docker build -t "$IMAGE_URI:$IMAGE_TAG" -t "$IMAGE_URI:latest" "$CONTEXT"
           docker push "$IMAGE_URI:$IMAGE_TAG"
           docker push "$IMAGE_URI:latest"
+
+      - name: Update ECS Service
+        if: ${{ vars.ECS_CLUSTER_NAME != '' }}
+        env:
+          SERVICE_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+          CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
+        run: |
+          aws ecs update-service \
+            --cluster "$CLUSTER" \
+            --service "$SERVICE_NAME" \
+            --force-new-deployment \
+            --region "$AWS_REGION" || echo "ECS service update skipped (service may not exist yet)"

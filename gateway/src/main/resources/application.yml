@@ -35,11 +35,10 @@ spring:
 server:
   port: 8080
 
-# Eureka (discovery) - point at the discovery server
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://eureka-server:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
 
@@ -57,6 +56,16 @@ management:
       enabled: true
     readinessstate:
       enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: WARN
+    org.springframework.cloud.gateway: WARN
+
+oauth2:
+  jwt:
+    secret: ${JWT_SECRET:local-dev-only-change-me-in-production}
 
 oauth2:
   jwt:

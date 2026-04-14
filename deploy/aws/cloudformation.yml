@@ -1,82 +1,245 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  ECS + ECR starter stack for ChatBot-Pro.
+  ECS + ECR full stack for ChatBot-Pro.
 
   This template creates:
-    • ECR repositories for each microservice
-    • An ECS cluster + IAM roles
-    • A Fargate task + service for the gateway (as an example)
+    • ECR repositories for all 6 microservices (with lifecycle policy)
+    • AWS Secrets Manager secrets for all sensitive values
+    • An ECS Fargate cluster + IAM roles (with Secrets Manager access)
+    • CloudWatch log groups (14-day retention) for all services
+    • Security groups for internal service-to-service communication
+    • ECS Fargate task definitions + services for all 6 services
+    • Application Load Balancer exposing the gateway on port 80
+    • Startup order: eureka → auth/book/chat/i18n → gateway
 
-  NOTE: This is a starting point. Update VPC/Subnets/SecurityGroups to match your
-  environment and extend task definitions for other services.
+  Usage:
+    aws cloudformation deploy \
+      --template-file deploy/aws/cloudformation.yml \
+      --stack-name chatbot-pro \
+      --capabilities CAPABILITY_NAMED_IAM \
+      --parameter-overrides \
+          VpcId=vpc-xxxx \
+          PublicSubnetIds="subnet-aaa,subnet-bbb" \
+          PrivateSubnetIds="subnet-ccc,subnet-ddd"
+
+  After deploy, store your real secrets in Secrets Manager:
+    aws secretsmanager put-secret-value --secret-id chatbot-pro/jwt-secret \
+      --secret-string '{"JWT_SECRET":"your-real-secret"}'
 
 Parameters:
   VpcId:
     Type: AWS::EC2::VPC::Id
+    Default: vpc-0ac1ba06da333b881
     Description: VPC where the ECS cluster and ALB will be deployed.
 
   PublicSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Public subnets for the ALB.
+    Default: subnet-08350288927b08e2d,subnet-0e3b3e97ea31ab6ac
+    Description: Public subnets for the ALB (2 AZs minimum).
 
   PrivateSubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: Private subnets for ECS tasks.
+    Default: subnet-0c1a31b34c658a71c,subnet-0c28af64e21026239
+    Description: Private subnets for ECS tasks (2 AZs minimum).
 
   EcrRepositoryPrefix:
     Type: String
-    Default: chatbot-pro
-    Description: Prefix for created ECR repositories.
+    Default: chatbot-app
+    Description: Prefix for ECR repositories and all named resources.
 
   IngressCidr:
     Type: String
     Default: 0.0.0.0/0
-    Description: CIDR allowed to access the ALB.
+    Description: CIDR allowed to reach the public ALB on port 80.
+
+  EurekaDesiredCount:
+    Type: Number
+    Default: 1
+    Description: Number of Eureka tasks. Keep at 1 (single registry).
+
+  ServiceDesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired task count for auth, book, chat, i18n, gateway.
 
 Resources:
+
+  # ─────────────────────────────────────────────────────────────
+  # ECR REPOSITORIES (all 6 services, lifecycle: keep last 20)
+  # ─────────────────────────────────────────────────────────────
   ECRRepoGateway:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-gateway"
       LifecyclePolicy:
         LifecyclePolicyText: |
-          {
-            "rules": [{
-              "rulePriority": 1,
-              "description": "Keep last 20 images",
-              "selection": {
-                "tagStatus": "any",
-                "countType": "imageCountMoreThan",
-                "countNumber": 20
-              },
-              "action": { "type": "expire" }
-            }]
-          }
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
   ECRRepoAuthService:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-auth-service"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
   ECRRepoBookAppointment:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-book-appointment"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
   ECRRepoChat:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-chat"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
   ECRRepoEureka:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${EcrRepositoryPrefix}-eureka"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
+  ECRRepoI18n:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${EcrRepositoryPrefix}-i18n-service"
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
+
+  # ─────────────────────────────────────────────────────────────
+  # SECRETS MANAGER
+  # Store placeholder secrets — update values after deploy with:
+  #   aws secretsmanager put-secret-value --secret-id <name> --secret-string '{"KEY":"value"}'
+  # ─────────────────────────────────────────────────────────────
+  SecretJwt:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${EcrRepositoryPrefix}/jwt-secret"
+      Description: JWT signing secret shared by all ChatBot-Pro services
+      SecretString: '{"JWT_SECRET":"REPLACE_WITH_STRONG_SECRET"}'
+
+  SecretOAuth2:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${EcrRepositoryPrefix}/oauth2"
+      Description: OAuth2 client credentials
+      SecretString: '{"OAUTH2_CLIENT_ID":"chatbot-client","OAUTH2_CLIENT_SECRET":"REPLACE_WITH_STRONG_SECRET"}'
+
+  SecretMongoDB:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${EcrRepositoryPrefix}/mongodb"
+      Description: MongoDB Atlas connection URIs per database
+      SecretString: !Sub |
+        {
+          "MONGO_URI_AUTH":    "mongodb+srv://user:pass@cluster.mongodb.net/auth-service",
+          "MONGO_URI_BOOK":    "mongodb+srv://user:pass@cluster.mongodb.net/book_appointment",
+          "MONGO_URI_CHAT":    "mongodb+srv://user:pass@cluster.mongodb.net/chatdb",
+          "MONGO_URI_I18N":    "mongodb+srv://user:pass@cluster.mongodb.net/i18n-service"
+        }
+
+  SecretChat:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${EcrRepositoryPrefix}/chat"
+      Description: WhatsApp Cloud API and OpenAI credentials
+      SecretString: '{"WHATSAPP_TOKEN":"REPLACE_WITH_TOKEN","WHATSAPP_PHONE_ID":"REPLACE_WITH_PHONE_ID","OPENAI_API_KEY":"REPLACE_IF_USED"}'
+
+  # ─────────────────────────────────────────────────────────────
+  # ECS CLUSTER
+  # ─────────────────────────────────────────────────────────────
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub "${EcrRepositoryPrefix}-cluster"
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+
+  # ─────────────────────────────────────────────────────────────
+  # IAM ROLES
+  # ─────────────────────────────────────────────────────────────
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EcrRepositoryPrefix}-ecs-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Policies:
+        - PolicyName: SecretsManagerReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref SecretJwt
+                  - !Ref SecretOAuth2
+                  - !Ref SecretMongoDB
+                  - !Ref SecretChat
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${EcrRepositoryPrefix}-ecs-task-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+
+  # ─────────────────────────────────────────────────────────────
+  # CLOUDWATCH LOG GROUPS (all 6 services, 14-day retention)
+  # ─────────────────────────────────────────────────────────────
+  LogGroupEureka:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-eureka"
+      RetentionInDays: 14
+
+  LogGroupAuth:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-auth-service"
+      RetentionInDays: 14
+
+  LogGroupBook:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-book-appointment"
+      RetentionInDays: 14
+
+  LogGroupChat:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-chat"
+      RetentionInDays: 14
+
+  LogGroupI18n:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-i18n-service"
+      RetentionInDays: 14
 
   GatewayLogGroup:
     Type: AWS::Logs::LogGroup
@@ -84,10 +247,13 @@ Resources:
       LogGroupName: !Sub "/ecs/${EcrRepositoryPrefix}-gateway"
       RetentionInDays: 14
 
+  # ─────────────────────────────────────────────────────────────
+  # SECURITY GROUPS
+  # ─────────────────────────────────────────────────────────────
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ALB security group for gateway
+      GroupDescription: Allow HTTP from internet to ALB
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -98,10 +264,25 @@ Resources:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
 
+  # Shared SG for all internal ECS services (eureka, auth, book, chat, i18n)
+  InternalServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Internal ECS service communication (all ports within VPC)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 9999
+          CidrIp: 10.0.0.0/8
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
   GatewayServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: ECS service security group for gateway
+      GroupDescription: Gateway ECS service — inbound from ALB only
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -112,83 +293,9 @@ Resources:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
 
-  ECSExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: sts:AssumeRole
-      Path: "/"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-
-  ECSTaskRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: sts:AssumeRole
-      Path: "/"
-
-  GatewayTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: !Sub "${EcrRepositoryPrefix}-gateway-task"
-      Cpu: '512'
-      Memory: '1024'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
-      TaskRoleArn: !GetAtt ECSTaskRole.Arn
-      ContainerDefinitions:
-        - Name: gateway
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-gateway:latest"
-          PortMappings:
-            - ContainerPort: 8080
-          Environment:
-            - Name: SPRING_PROFILES_ACTIVE
-              Value: prod
-            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
-              Value: !Sub "http://eureka-service:8761/eureka/"
-            - Name: MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED
-              Value: "true"
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-gateway"
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: gateway
-
-  GatewayService:
-    Type: AWS::ECS::Service
-    DependsOn: GatewayLoadBalancerListener
-    Properties:
-      Cluster: !Ref ECSCluster
-      LaunchType: FARGATE
-      DesiredCount: 1
-      TaskDefinition: !Ref GatewayTaskDefinition
-      HealthCheckGracePeriodSeconds: 120
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          Subnets: !Ref PrivateSubnetIds
-          SecurityGroups:
-            - !Ref GatewayServiceSecurityGroup
-      LoadBalancers:
-        - ContainerName: gateway
-          ContainerPort: 8080
-          TargetGroupArn: !Ref GatewayTargetGroup
-
+  # ─────────────────────────────────────────────────────────────
+  # ALB + TARGET GROUP + LISTENER
+  # ─────────────────────────────────────────────────────────────
   GatewayLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -226,10 +333,399 @@ Resources:
       Port: 80
       Protocol: HTTP
 
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: eureka-server  (starts first)
+  # ─────────────────────────────────────────────────────────────
+  EurekaTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-eureka-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: eureka-server
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-eureka:latest"
+          PortMappings:
+            - ContainerPort: 8761
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_SERVER_ENABLE_SELF_PRESERVATION
+              Value: "true"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-eureka"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: eureka
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:8761/actuator/health | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  EurekaService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-eureka"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref EurekaDesiredCount
+      TaskDefinition: !Ref EurekaTaskDefinition
+      HealthCheckGracePeriodSeconds: 90
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref InternalServiceSecurityGroup
+
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: auth-service
+  # ─────────────────────────────────────────────────────────────
+  AuthServiceTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-auth-service-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: auth-service
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-auth-service:latest"
+          PortMappings:
+            - ContainerPort: 8082
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+            - Name: OAUTH2_CLIENT_ID
+              ValueFrom: !Sub "${SecretOAuth2}:OAUTH2_CLIENT_ID::"
+            - Name: OAUTH2_CLIENT_SECRET
+              ValueFrom: !Sub "${SecretOAuth2}:OAUTH2_CLIENT_SECRET::"
+            - Name: SPRING_DATA_MONGODB_URI
+              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_AUTH::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-auth-service"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: auth-service
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health/readiness | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  AuthService:
+    Type: AWS::ECS::Service
+    DependsOn: EurekaService
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-auth-service"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref ServiceDesiredCount
+      TaskDefinition: !Ref AuthServiceTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref InternalServiceSecurityGroup
+
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: book-appointment
+  # ─────────────────────────────────────────────────────────────
+  BookAppointmentTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-book-appointment-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: book-appointment
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-book-appointment:latest"
+          PortMappings:
+            - ContainerPort: 9091
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+            - Name: SPRING_DATA_MONGODB_URI
+              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_BOOK::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-book-appointment"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: book-appointment
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:9091/actuator/health/readiness | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  BookAppointmentService:
+    Type: AWS::ECS::Service
+    DependsOn: EurekaService
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-book-appointment"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref ServiceDesiredCount
+      TaskDefinition: !Ref BookAppointmentTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref InternalServiceSecurityGroup
+
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: chat
+  # ─────────────────────────────────────────────────────────────
+  ChatTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-chat-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: chat
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-chat:latest"
+          PortMappings:
+            - ContainerPort: 9090
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+            - Name: SPRING_DATA_MONGODB_URI
+              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_CHAT::"
+            - Name: WHATSAPP_TOKEN
+              ValueFrom: !Sub "${SecretChat}:WHATSAPP_TOKEN::"
+            - Name: WHATSAPP_PHONE_ID
+              ValueFrom: !Sub "${SecretChat}:WHATSAPP_PHONE_ID::"
+            - Name: OPENAI_API_KEY
+              ValueFrom: !Sub "${SecretChat}:OPENAI_API_KEY::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+            - Name: SPRING_DATA_REDIS_HOST
+              Value: "REPLACE_WITH_ELASTICACHE_ENDPOINT"
+            - Name: SPRING_DATA_REDIS_PORT
+              Value: "6379"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-chat"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: chat
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:9090/actuator/health/readiness | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  ChatService:
+    Type: AWS::ECS::Service
+    DependsOn: EurekaService
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-chat"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref ServiceDesiredCount
+      TaskDefinition: !Ref ChatTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref InternalServiceSecurityGroup
+
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: i18n-service
+  # ─────────────────────────────────────────────────────────────
+  I18nTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-i18n-service-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: i18n-service
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-i18n-service:latest"
+          PortMappings:
+            - ContainerPort: 9092
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+            - Name: SPRING_DATA_MONGODB_URI
+              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_I18N::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-i18n-service"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: i18n-service
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:9092/actuator/health/readiness | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+
+  I18nService:
+    Type: AWS::ECS::Service
+    DependsOn: EurekaService
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-i18n-service"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref ServiceDesiredCount
+      TaskDefinition: !Ref I18nTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref InternalServiceSecurityGroup
+
+  # ─────────────────────────────────────────────────────────────
+  # TASK DEFINITION: gateway  (starts last — depends on all others)
+  # ─────────────────────────────────────────────────────────────
+  GatewayTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${EcrRepositoryPrefix}-gateway-task"
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities: [FARGATE]
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: gateway
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepositoryPrefix}-gateway:latest"
+          PortMappings:
+            - ContainerPort: 8080
+          Secrets:
+            - Name: JWT_SECRET
+              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: prod
+            - Name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+              Value: !Sub "http://${EcrRepositoryPrefix}-eureka.${EcrRepositoryPrefix}-cluster.internal:8761/eureka/"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub "/ecs/${EcrRepositoryPrefix}-gateway"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: gateway
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -sf http://localhost:8080/actuator/health/readiness | grep -q UP || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 90
+
+  GatewayService:
+    Type: AWS::ECS::Service
+    DependsOn:
+      - GatewayLoadBalancerListener
+      - EurekaService
+      - AuthService
+      - BookAppointmentService
+      - ChatService
+      - I18nService
+    Properties:
+      ServiceName: !Sub "${EcrRepositoryPrefix}-gateway"
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      DesiredCount: !Ref ServiceDesiredCount
+      TaskDefinition: !Ref GatewayTaskDefinition
+      HealthCheckGracePeriodSeconds: 120
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref GatewayServiceSecurityGroup
+      LoadBalancers:
+        - ContainerName: gateway
+          ContainerPort: 8080
+          TargetGroupArn: !Ref GatewayTargetGroup
+
 Outputs:
   ClusterArn:
+    Description: ECS Cluster ARN
     Value: !Ref ECSCluster
-  GatewayServiceArn:
-    Value: !Ref GatewayService
+    Export:
+      Name: !Sub "${EcrRepositoryPrefix}-cluster-arn"
+
   GatewayLoadBalancerDns:
+    Description: Public DNS of the ALB — this is your application entry point
     Value: !GetAtt GatewayLoadBalancer.DNSName
+    Export:
+      Name: !Sub "${EcrRepositoryPrefix}-alb-dns"
+
+  EurekaServiceArn:
+    Description: Eureka ECS Service ARN
+    Value: !Ref EurekaService
+
+  AuthServiceArn:
+    Description: Auth ECS Service ARN
+    Value: !Ref AuthService
+
+  SecretJwtArn:
+    Description: ARN of the JWT Secrets Manager secret — update this with your real value
+    Value: !Ref SecretJwt
+
+  SecretMongoDBArn:
+    Description: ARN of the MongoDB Secrets Manager secret — update with your Atlas URIs
+    Value: !Ref SecretMongoDB
+

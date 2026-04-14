@@ -9,5 +9,5 @@
 # Logs
 *.log
 
-# Local environment secrets — never commit this file
+# Local secrets — never commit this
 .env

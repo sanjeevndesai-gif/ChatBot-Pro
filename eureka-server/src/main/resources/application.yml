@@ -10,9 +10,32 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
   server:
+    # Set EUREKA_SERVER_ENABLE_SELF_PRESERVATION=true in production
     enable-self-preservation: false
     wait-time-in-ms-when-sync-empty: 0
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: WARN
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN
+
 oauth2:
   jwt:
-    secret: ${JWT_SECRET:ARNAN_AUTH_SERVICE_ULTRA_SECURE_SECRET_2026!!}
+    secret: ${JWT_SECRET:local-dev-only-change-me-in-production}

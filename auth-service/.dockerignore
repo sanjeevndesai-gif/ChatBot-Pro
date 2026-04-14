@@ -1,0 +1,10 @@
+target/
+.git
+.gitignore
+*.md
+bin/
+*.cmd
+.idea/
+*.iml
+*.log
+test-output/
