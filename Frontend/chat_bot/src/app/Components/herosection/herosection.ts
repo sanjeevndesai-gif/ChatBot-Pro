@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { TranslatePipe } from '../../pipes/translate.pipe';
+// import { TranslatePipe } from '../../pipes/translate.pipe';
 // import { I18nService } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-herosection',
-  imports: [TranslatePipe],
+  // imports: [TranslatePipe],
   templateUrl: './herosection.html',
   styleUrl: './herosection.scss'
 })

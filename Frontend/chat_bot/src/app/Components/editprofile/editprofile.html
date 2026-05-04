@@ -1,65 +1,50 @@
 <div class="profile-wrapper">
-  <div class="profile-card">
+
+  <!-- ================= PROFILE DETAILS ================= -->
+  <div class="profile-card mb-4">
 
     <!-- Profile Image -->
     <div class="photo-section">
-      <img src="https://i.pravatar.cc/150" width="32"  data-bs-toggle="dropdown" />
+      <img src="https://i.pravatar.cc/150" />
       <div class="actions">
-        <button class="btn primary">Upload new photo</button>
-        <button class="btn light">Reset</button>
-        <div class="note">
-        <!-- <p >Allowed JPG, GIF or PNG. Max size of 800K</p> -->
-        </div>
+        <button class="btn primary" type="button">Upload new photo</button>
+        <button class="btn light" type="button">Reset</button>
       </div>
     </div>
 
-    <!-- Form -->
-    <form>
+    <!-- PROFILE FORM -->
+    <form (ngSubmit)="saveProfile()">
       <div class="form-grid">
-        <div class="form-group">
-          <label>First Name</label>
-          <input type="text" value="John" />
-        </div>
 
         <div class="form-group">
-          <label>Last Name</label>
-          <input type="text" value="Doe" />
+          <label>Full Name</label>
+          <input type="text" [(ngModel)]="user.fullname" name="fullname" required />
         </div>
 
         <div class="form-group">
           <label>E-mail</label>
-          <input type="email" value="john.doe@example.com" />
+          <input type="email" [(ngModel)]="user.email" name="email" required />
         </div>
 
         <div class="form-group">
           <label>Organization</label>
-          <input type="text" value="ThemeSelection" />
+          <input type="text" [value]="user.orgId" disabled />
         </div>
 
         <div class="form-group">
           <label>Phone Number</label>
-          <input type="text" value="US (+1) 202 555 0111" />
+          <input type="text" [(ngModel)]="user.phone" name="phone" />
         </div>
 
         <div class="form-group">
           <label>Address</label>
-          <input type="text" placeholder="Address" />
-        </div>
-
-        <div class="form-group">
-          <label>State</label>
-          <input type="text" placeholder="California" />
-        </div>
-
-        <div class="form-group">
-          <label>Zip Code</label>
-          <input type="text" placeholder="231465" />
+          <input type="text" [(ngModel)]="user.address" name="address" />
         </div>
 
         <div class="form-group">
           <label>Country</label>
-          <select>
-            <option>Select</option>
+          <select [(ngModel)]="user.country" name="country">
+            <option value="">Select</option>
             <option>India</option>
             <option>USA</option>
           </select>
@@ -67,65 +52,59 @@
 
         <div class="form-group">
           <label>Language</label>
-          <select>
-            <option>Select Language</option>
+          <select [(ngModel)]="user.language" name="language">
             <option>English</option>
             <option>Hindi</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label>Timezone</label>
-          <select>
-            <option>Select Timezone</option>
-          </select>
-        </div>
+      </div>
 
-        <div class="form-group">
-          <label>Currency</label>
-          <select>
-            <option>Select Currency</option>
-          </select>
-        </div>
+      <div class="actions">
+        <button type="submit" class="btn primary">Save changes</button>
+        <button type="button" class="btn light" (click)="cancel()">Cancel</button>
       </div>
     </form>
+  </div>
+
+  <!-- ================= CHANGE PASSWORD ================= -->
+  <div class="profile-card">
+
     <form>
+      <h4>Change Password</h4>
+
       <div class="form-grid">
-        <p style="padding-top: 30px;">Change Password</p>
-       <h6></h6>
         <div class="form-group">
           <label>Current Password</label>
-          <input type="password" name="password" required placeholder="*********" />
-      
+          <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
         </div>
-        <h4></h4>
 
         <div class="form-group">
           <label>New Password</label>
-          <input type="password" name="password" required placeholder="*********" />
+          <input type="password" [(ngModel)]="newPassword" name="newPassword" />
         </div>
 
         <div class="form-group">
           <label>Confirm New Password</label>
-          <input type="password" name="password" required placeholder="*********" />
+          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" />
         </div>
-
       </div>
 
       <p>Password Requirements:</p>
       <ul>
-        <li> <p>Minimum 8 characters long - the more, the better</p> </li>
-        <li> <p>At least one lowercase character</p> </li>
-        <li> <p>At least one number, symbol, or whitespace character</p> </li>
+        <li>Minimum 8 characters</li>
+        <li>At least one lowercase letter</li>
+        <li>At least one number or symbol</li>
       </ul>
 
-      <!-- Buttons -->
       <div class="actions">
-        <button type="submit" class="btn primary">Save changes</button>
+        <button type="button" class="btn primary" disabled>
+          Save changes
+        </button>
         <button type="button" class="btn light">Cancel</button>
       </div>
     </form>
 
   </div>
-</div>
 
+</div>

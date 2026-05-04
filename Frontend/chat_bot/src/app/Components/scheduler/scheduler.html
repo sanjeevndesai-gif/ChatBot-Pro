@@ -1,0 +1,349 @@
+<!-- calendar.html -->
+
+<div class="calendar-wrapper">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="left-panel">
+    <button class="add-event-btn" (click)="onAddButtonClicked()">
+      <i class="bi bi-plus-circle"></i>
+      <span>Add Schedule</span>
+    </button>
+
+    <div class="mini-calendar">
+      <div class="mini-header">
+        <button class="mini-nav" (click)="prevMini()">&lt;</button>
+        <div class="mini-title">{{ miniMonth }}</div>
+        <button class="mini-nav" (click)="nextMini()">&gt;</button>
+      </div>
+
+      <div class="mini-weekdays">
+        <div>Sun</div>
+        <div>Mon</div>
+        <div>Tue</div>
+        <div>Wed</div>
+        <div>Thu</div>
+        <div>Fri</div>
+        <div>Sat</div>
+      </div>
+
+      <div class="mini-grid">
+        <div *ngFor="let d of miniCalendarDays" class="mini-cell" [class.today]="d.isToday"
+          [class.selected]="d.isSelected" (click)="miniDateClick(d)">
+          {{ d.day }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Doctor selection -->
+    <div class="doctor-filter">
+
+      <div class="filter-header" (click)="toggleUserDropdown()">
+        <b>Filter Doctors</b>
+        <span>{{ selectedUsers.length }} selected</span>
+      </div>
+
+      <div *ngIf="userDropdownOpen" class="filter-dropdown">
+
+        <!-- Search -->
+        <input type="text" [(ngModel)]="userSearchText" placeholder="Search doctor..." class="form-control mb-2" />
+
+        <!-- Select All -->
+        <label>
+          <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
+          Select All
+        </label>
+
+        <hr />
+
+        <!-- Doctor List -->
+        <div *ngFor="let user of filteredUsers()">
+
+          <label>
+            <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
+            {{ user.name }}
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+    <!-- Doctor selection End -->
+
+    <div class="filters">
+      <h5>Schedule Filters</h5>
+      <div class="filter-item" *ngFor="let c of categories" (click)="toggleCategory(c)">
+        <span class="dot" [style.background]="c.color"></span>
+        <span [class.inactive]="!c.active">{{ c.name }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN RIGHT CALENDAR -->
+  <div class="right-panel">
+    <div class="header-row">
+      <div class="nav-controls">
+        <div class="header-title">
+          {{ currentView === 'timeGridDay' ? currentDayFullTitle : currentMonth }}
+        </div>
+        <button class="nav-btn" (click)="prev()">&lt;</button>
+        <button class="nav-btn" (click)="next()">&gt;</button>
+      </div>
+
+      <div class="views">
+        <button [class.active]="currentView==='dayGridMonth'" (click)="changeView('dayGridMonth')">Month</button>
+        <button [class.active]="currentView==='timeGridWeek'" (click)="changeView('timeGridWeek')">Week</button>
+        <button [class.active]="currentView==='timeGridDay'" (click)="changeView('timeGridDay')">Day</button>
+        <button [class.active]="currentView==='listMonth'" (click)="changeView('listMonth')">List</button>
+      </div>
+    </div>
+
+    <div class="calendar-area">
+      <full-calendar #calendarRef [options]="calendarOptions"></full-calendar>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-backdrop" *ngIf="drawerOpen" (click)="closeDrawer()"></div>
+
+<aside class="drawer" [class.open]="drawerOpen" (click)="$event.stopPropagation()">
+  <div class="drawer-header">
+    <h3>{{ isNewEvent ? 'Add Event & Schedule' : 'Update Event & Schedule' }}</h3>
+    <button class="close-x" (click)="closeDrawer()">
+      <i class="bi bi-x-circle"></i>
+    </button>
+  </div>
+
+  <section class="left-col">
+    <h2 class="page-heading">Bookable appointment schedule</h2>
+
+    <!-- Title -->
+    <label class="label">Add title</label>
+    <input class="title-input" [(ngModel)]="title" placeholder="Add title (will not be displayed here)" />
+
+    <!-- ================= USERS (NEW SECTION) ================= -->
+    <!-- USERS DROPDOWN -->
+    <div class="custom-dropdown">
+
+      <div class="dropdown-header" (click)="toggleUserDropdown()">
+        <span *ngIf="selectedUsers.length === 0">Select users</span>
+        <span *ngIf="selectedUsers.length > 0">
+          {{ selectedUsers.length }} user(s) selected
+        </span>
+        <i class="bi bi-chevron-down"></i>
+      </div>
+
+      <div class="dropdown-body" *ngIf="userDropdownOpen">
+
+        <!-- Search -->
+        <input type="text" placeholder="Search user..." [(ngModel)]="userSearchText" class="search-input" />
+
+        <!-- User List -->
+        <div class="dropdown-list">
+
+          <!-- ✅ Select All -->
+          <label class="dropdown-item select-all">
+            <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
+            <span>Select All</span>
+          </label>
+
+          <hr />
+          <label class="dropdown-item" *ngFor="let user of filteredUsers()">
+
+            <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
+
+            {{ user.name }}
+          </label>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= END USERS ================= -->
+
+    <!-- Appointment duration -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Appointment duration</span>
+          <div class="sec-sub">How long should each appointment last?</div>
+        </div>
+      </div>
+
+      <select class="select" [(ngModel)]="selectedDuration" (ngModelChange)="selectDurationChange($event)">
+        <option *ngFor="let d of durationOptions" [value]="d.minutes">
+          {{ d.label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Repeat -->
+    <div class="section">
+      <label class="label">Repeat</label>
+
+      <select class="select" [(ngModel)]="repeatOption" (ngModelChange)="onRepeatChange()">
+
+        <option value="none">Do not repeat</option>
+        <option value="weekly">Repeat weekly</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+
+    <!-- Weekly Repeat Input -->
+    <div *ngIf="repeatOption === 'weekly'" class="section">
+      <label class="label">Repeat for how many weeks?</label>
+      <input type="number" min="1" [(ngModel)]="repeatWeeks" class="max-input" />
+    </div>
+
+    <!-- Custom Date Range -->
+    <div *ngIf="repeatOption === 'custom'" class="section">
+      <label class="label">From Date</label>
+      <input type="date" [(ngModel)]="customFromDate" class="max-input" />
+
+      <label class="label">To Date</label>
+      <input type="date" [(ngModel)]="customToDate" class="max-input" />
+    </div>
+
+    <!-- FULL DAY TIMING -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Full Day Timing</span>
+          <div class="sec-sub">Define start & end window to auto-generate slots.</div>
+        </div>
+      </div>
+
+      <div class="control-row horizontal-times">
+        <div class="time-field">
+          <label class="label small-label">Start</label>
+          <input type="time" [(ngModel)]="fullDayStart" (ngModelChange)="onFullDayTimeChange()" />
+        </div>
+
+        <div class="time-field">
+          <label class="label small-label">End</label>
+          <input type="time" [(ngModel)]="fullDayEnd" (ngModelChange)="onFullDayTimeChange()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking limits -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Maximum bookings per day</span>
+          <div class="sec-sub">Limit appointments allowed each day.</div>
+        </div>
+      </div>
+
+      <input type="number" min="1" [(ngModel)]="maxBookingsPerDay" (ngModelChange)="onMaxBookingsChange($event)"
+        class="max-input" />
+    </div>
+
+    <!-- Daywise Slots -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Day-wise availability & slots</span>
+          <div class="sec-sub">Mark available days and configure slots.</div>
+        </div>
+      </div>
+
+      <div class="availability-list">
+        <div class="day-row" *ngFor="let d of daySlots; let di = index">
+
+          <div class="day-header">
+            <div class="day-left">
+              <strong>{{ d.label }}</strong>
+
+              <div class="mini-note" *ngIf="d.unavailable">
+                Unavailable
+              </div>
+
+              <div class="mini-note" *ngIf="!d.unavailable">
+                Total: {{ getCombinedSlots(d).length }}/{{ maxBookingsPerDay }}
+              </div>
+            </div>
+
+            <button class="link" (click)="toggleDayAvailability(di)">
+              {{ d.unavailable ? 'Make available' : 'Unavailable' }}
+            </button>
+          </div>
+
+          <ng-container *ngIf="!d.unavailable">
+            <div class="day-group">
+
+              <div class="sub-label">
+                Slots (General + Emergency)
+                <button class="icon" (click)="copySlotsToAllDays(di)">
+                  <i class="bi bi-copy"></i>
+                </button>
+              </div>
+
+              <div class="slot-row" *ngFor="let s of getCombinedSlots(d)" [class.emergency-border]="isEmergency(d, s)">
+
+                <input type="time" [(ngModel)]="s.start" (change)="onSlotChange(di, s)" />
+
+                <span class="dash">–</span>
+
+                <input type="time" [(ngModel)]="s.end" (change)="onSlotChange(di, s)" />
+
+                <label class="em-label">
+                  <input type="checkbox" [(ngModel)]="s.emergency" (change)="onSlotChange()" />
+                  Emergency
+                </label>
+
+                <button class="icon" (click)="deleteSlot(di, s)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+
+              <button class="btn add" (click)="addSlot(di)">
+                <i class="bi bi-plus-circle"></i> Add Slot
+              </button>
+
+            </div>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Description</span>
+          <div class="sec-sub">Add additional details here.</div>
+        </div>
+      </div>
+
+      <textarea rows="4" [(ngModel)]="description" placeholder="Add description">
+      </textarea>
+    </div>
+
+  </section>
+
+  <div class="drawer-footer">
+    <button class="btn-primary" *ngIf="isNewEvent" (click)="onSaveClicked()">
+      Save
+    </button>
+
+    <button class="btn-primary" *ngIf="!isNewEvent" (click)="onUpdateClicked()">
+      Update
+    </button>
+
+    <button class="btn-secondary" (click)="closeDrawer()">
+      Cancel
+    </button>
+
+    <button class="btn-danger" *ngIf="!isNewEvent" (click)="deleteEvent()">
+      Delete
+    </button>
+  </div>
+</aside>
+
+<!-- Toast -->
+<div class="toast" [class.show]="toastVisible">
+  {{ toastMessage }}
+</div>

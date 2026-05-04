@@ -1,0 +1,163 @@
+<div class="appointment-wrapper">
+
+  <!-- MINI CALENDAR -->
+  <aside class="mini-calendar">
+    <div class="mini-header">
+      <button class="nav-btn" (click)="prevWeek()">‹</button>
+      <h3>{{ miniMonthYear }}</h3>
+      <button class="nav-btn" (click)="nextWeek()">›</button>
+    </div>
+
+    <div class="mini-week">
+      <span *ngFor="let d of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']">
+        {{ d }}
+      </span>
+    </div>
+
+    <div class="calendar-grid">
+      <span *ngFor="let d of miniDays" [class.empty]="!d.day" [class.today]="d.isToday" [class.selected]="d.isSelected"
+        (click)="onMiniDateClick(d)">
+        {{ d.day || '' }}
+      </span>
+    </div>
+
+    <div class="doctor-select">
+      <label>Select Doctor</label>
+
+      <select [(ngModel)]="selectedDoctor" (change)="onDoctorChange()">
+
+        <option value="">Choose doctor</option>
+
+        <option *ngFor="let d of doctors" [value]="d">
+
+          {{ d }}
+
+        </option>
+
+      </select>
+    </div>
+  </aside>
+
+  <!-- MAIN CALENDAR -->
+  <section class="main-calendar">
+
+    <div class="header">
+      <h2>Select an appointment time</h2>
+      <span class="timezone">(GMT+05:30) India Standard Time - Kolkata</span>
+    </div>
+
+    <div class="calendar-grid-header">
+      <div class="day-head" *ngFor="let d of weekDays">
+        <div class="day-name">{{ d.date | date:'EEE' }}</div>
+        <div class="day-number">{{ d.date | date:'M/d' }}</div>
+      </div>
+    </div>
+
+    <div class="calendar-grid-body">
+      <div class="day-column" *ngFor="let day of weekDays">
+
+        <ng-container *ngIf="day.slots.length; else empty">
+          <div class="slot-wrapper" *ngFor="let slot of day.slots">
+
+            <button class="slot-btn" [disabled]="slot.status === 'booked'" (click)="openBooking(slot, day.date)">
+              {{ slot.time }}
+            </button>
+
+            <!-- HOVER DETAILS -->
+            <div class="slot-tooltip" *ngIf="slot.status === 'booked'">
+              <span>{{ slot.bookingInfo?.fullName }}&nbsp;{{ slot.bookingInfo?.phone }}</span>
+            </div>
+
+          </div>
+        </ng-container>
+
+        <ng-template #empty>
+          <div class="dash">—</div>
+        </ng-template>
+
+      </div>
+    </div>
+
+  </section>
+</div>
+
+
+<!-- ===================== MODAL FORM ===================== -->
+<div class="modal-backdrop" *ngIf="showModal">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h3>Book an Appointment</h3>
+      <button class="close-btn" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-slot">
+        <strong>{{ selectedDay | date:'fullDate' }}</strong> • {{ selectedSlot.time }}
+      </p>
+
+      <h4 class="section-title">Your contact info</h4>
+
+      <!-- FULL NAME -->
+      <div class="form-group">
+        <label>Full Name <span class="req">*</span></label>
+        <input type="text" [(ngModel)]="patient.fullName" name="fullName" placeholder="Enter full name" />
+
+        <small class="error" *ngIf="submitted && !patient.fullName">
+          Full name is required
+        </small>
+      </div>
+
+      <!-- PHONE -->
+      <div class="form-group">
+        <label>Contact Number <span class="req">*</span></label>
+
+        <div class="phone-row">
+          <select [(ngModel)]="patient.countryCode" name="countryCode">
+            <option value="+91">+91</option>
+            <option value="+1">+1</option>
+            <option value="+44">+44</option>
+          </select>
+
+          <input type="text" [(ngModel)]="patient.phone" name="phone" maxlength="10" placeholder="Enter phone"
+            (keypress)="allowOnlyNumbers($event)" />
+        </div>
+
+        <small class="error" *ngIf="submitted && !patient.phone">
+          Phone number is required
+        </small>
+
+        <small class="error" *ngIf="submitted && patient.phone && patient.phone.length < 10">
+          Phone number must be 10 digits
+        </small>
+      </div>
+
+      <!-- EMAIL -->
+      <div class="form-group">
+        <label>Email Address <span class="req">*</span></label>
+        <input type="email" [(ngModel)]="patient.email" name="email" placeholder="Enter email" />
+
+        <small class="error" *ngIf="submitted && !patient.email">
+          Email is required
+        </small>
+
+        <small class="error" *ngIf="submitted && patient.email && !isValidEmail(patient.email)">
+          Enter valid email address
+        </small>
+      </div>
+
+      <!-- MESSAGE -->
+      <div class="form-group">
+        <label>Message</label>
+        <textarea [(ngModel)]="patient.message" name="message" placeholder="Enter message" rows="3"></textarea>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+      <button class="btn-confirm" (click)="confirmBooking()">Confirm Booking</button>
+    </div>
+
+  </div>
+</div>

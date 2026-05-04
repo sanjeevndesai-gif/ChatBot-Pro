@@ -2,6 +2,10 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
+import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
+import { downloadProfileQr } from '../../utils/qr-utils';
+import { AuthService } from '../../services/auth.service';
+
 interface MenuItem {
   title: string;
   icon: string;
@@ -12,60 +16,34 @@ interface MenuItem {
 @Component({
   selector: 'app-horizontalmenu',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    NgbDropdownModule
+  ],
   templateUrl: './horizontalmenu.html',
   styleUrls: ['./horizontalmenu.scss']
 })
 export class Horizontalmenu {
 
   mobileMenuOpen: boolean = false;
-
-  // NEW → fix missing variable
   openMobileSubmenus: Set<string> = new Set();
 
+  constructor(public authService: AuthService) {}
+
+  // ✅ IMPORTANT: Replace this with your real profileUrl logic
+  // Example:
+  // profileUrl = `https://yourdomain.com/profile/${userId}`;
+  profileUrl: string = 'https://example.com/profile/1234';
+
   menu: MenuItem[] = [
-    { title: 'Dashboards', icon: 'bi-house-door', route: '/customer-report' },
-    {
-      title: 'Booked appointments',
-      icon: 'bi-calendar2-week',
-      children: [
-        { title: "Today's appointments", icon: 'bi-pie-chart' },
-        {
-          title: 'Manual Appointments',
-          icon: 'bi-collection',
-          children: [
-            { title: 'Reschedule appointments', icon: 'bi-people' },
-            { title: 'Cancel Appointments', icon: 'bi-x-circle' }
-          ]
-        }
-      ]
-    },
-    { title: 'Reports', icon: 'bi-file-earmark-bar-graph', route: '/reports' },
-    {
-      title: 'Help',
-      icon: 'bi-info-circle',
-      children: [
-        { title: 'Chat with us', icon: 'bi-chat' },
-        {
-          title: 'FAQ',
-          icon: 'bi-question-circle',
-          children: [
-            { title: 'General', icon: 'bi-file-earmark-text' },
-            { title: 'Billing', icon: 'bi-wallet2' }
-          ]
-        },
-        { title: 'Call back', icon: 'bi-telephone' }
-      ]
-    },
-    {
-      title: 'Settings',
-      icon: 'bi-gear',
-      children: [
-        { title: 'Report', icon: 'bi-flag' },
-        { title: 'Message settings', icon: 'bi-envelope' },
-        { title: 'Plan', icon: 'bi-card-list' }
-      ]
-    }
+    // { title: 'Dashboards', icon: 'bi-house-door', route: '/appointments' },
+    { title: 'Appointments', icon: 'bi-calendar2-week', route: '/book-appointment' },
+    { title: 'Scheduler', icon: 'bi-calendar', route: '/scheduler' },
+    { title: 'Reports', icon: 'bi-file-earmark-bar-graph', route: '/schedulereport' },
+    { title: 'Help', icon: 'bi-info-circle', route: '/help' },
+    { title: 'Settings', icon: 'bi-gear', route: '/settings' },
+    { title: 'Plan & Billing', icon: 'bi-credit-card', route: '/plan-billing' }
   ];
 
   toggleMobileMenu() {
@@ -83,4 +61,19 @@ export class Horizontalmenu {
   isMobileSubmenuOpen(path: string) {
     return this.openMobileSubmenus.has(path);
   }
+
+  // ✅ WORKS FROM ANY PAGE
+  async downloadQr() {
+    try {
+      await downloadProfileQr(this.profileUrl, 220, 'profile-qr.png');
+    } catch (error) {
+      console.error('QR download error:', error);
+      alert('Unable to download QR. Please try again.');
+    }
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+
 }

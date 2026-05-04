@@ -157,4 +157,29 @@
       padding: 1.5rem 1rem;
     }
   }
+    .country-code {
+      width: 80px;
+      text-align: center;
+      font-weight: 500;
+    }
+  
+    .password-field {
+      position: relative;
+  
+      i.bi {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+        font-size: 1.1rem;
+      }
+    }
+  
+    .form-control,
+    .form-select {
+      height: 45px;
+      border-radius: 6px;
+    }
 }

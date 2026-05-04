@@ -1,63 +1,83 @@
 <div class="container register-container min-vh-100 d-flex align-items-center justify-content-center py-4">
   <div class="row container-box shadow-lg rounded overflow-hidden w-100">
 
-    <!-- Left Column -->
-    <div class="col-md-5 info-panel text-white d-flex flex-column justify-content-center p-5">
-      <div class="text-center">
-        <img src="assets/images/chatconceptreg.png" alt="Chat Concept" class="img-fluid" />
-      </div>
+    <!-- LEFT PANEL -->
+    <div class="col-md-5 info-panel text-white d-flex align-items-center justify-content-center p-5">
+      <img src="assets/images/chatconceptreg.png" alt="Chat Concept" class="img-fluid" />
     </div>
 
-    <!-- Right Column -->
+    <!-- RIGHT PANEL -->
     <div class="col-md-7 d-flex align-items-center p-4 form-panel">
       <div class="w-100">
+
         <h3 class="fw-bold mb-1">Create your account</h3>
         <p class="text-muted mb-4 small">Start building amazing WhatsApp chatbots today</p>
 
-        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="row g-3" novalidate>
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="row g-3">
 
           <!-- Full Name -->
           <div class="col-md-6">
-            <input type="text" class="form-control" formControlName="fullname" placeholder="Full Name" />
-            <div *ngIf="f['fullname'].touched && f['fullname'].invalid" class="text-danger small">
-              Full Name is required.
-            </div>
+            <input class="form-control" placeholder="Full Name" formControlName="fullname">
+            <small class="text-danger" *ngIf="f['fullname'].touched && f['fullname'].invalid">
+              Full name is required
+            </small>
           </div>
 
           <!-- Email -->
           <div class="col-md-6">
-            <input type="email" class="form-control" formControlName="email" placeholder="Email" />
-            <div *ngIf="f['email'].touched && f['email'].errors?.['required']" class="text-danger small">
-              Email is required.
-            </div>
-            <div *ngIf="f['email'].touched && f['email'].errors?.['email']" class="text-danger small">
-              Invalid email format.
-            </div>
+            <input class="form-control" placeholder="Email" formControlName="email">
+            <small class="text-danger" *ngIf="f['email'].touched && f['email'].errors?.['required']">
+              Email is required
+            </small>
+            <small class="text-danger" *ngIf="f['email'].touched && f['email'].errors?.['email']">
+              Enter a valid email
+            </small>
           </div>
 
-          <!-- Phone Number -->
+          <!-- Country -->
           <div class="col-md-6">
-            <input type="text" class="form-control" formControlName="phone_number" placeholder="Phone Number" />
-            <div *ngIf="f['phone_number'].touched && f['phone_number'].errors" class="text-danger small">
-              <div *ngIf="f['phone_number'].errors['required']">Phone number is required.</div>
-              <div *ngIf="f['phone_number'].errors['pattern']">Enter a valid 10-digit number.</div>
+            <select class="form-select" formControlName="country">
+              <option value="">Select Country</option>
+              <option *ngFor="let c of countries" [value]="c.name">{{ c.name }}</option>
+            </select>
+            <small class="text-danger" *ngIf="f['country'].touched && f['country'].invalid">
+              Country is required
+            </small>
+          </div>
+
+          <!-- Phone (NO country selected) -->
+          <div class="col-md-6" *ngIf="!f['country'].value">
+            <input class="form-control" placeholder="Phone Number" formControlName="phone_number">
+            <small class="text-danger" *ngIf="f['phone_number'].touched && f['phone_number'].errors?.['required']">
+              Phone number is required
+            </small>
+          </div>
+
+          <!-- Phone (AFTER country selected) -->
+          <div class="col-md-6" *ngIf="f['country'].value">
+            <div class="d-flex gap-2">
+              <input class="form-control country-code" formControlName="country_code" readonly>
+              <input class="form-control" placeholder="Phone Number" formControlName="phone_number">
             </div>
+            <small class="text-danger" *ngIf="f['phone_number'].touched && f['phone_number'].errors?.['pattern']">
+              Enter a valid phone number
+            </small>
           </div>
 
           <!-- Address -->
           <div class="col-md-6">
-            <input type="text" class="form-control" formControlName="address" placeholder="Address" />
-            <div *ngIf="f['address'].touched && f['address'].invalid" class="text-danger small">
-              Address is required.
-            </div>
+            <input class="form-control" placeholder="Address" formControlName="address">
+            <small class="text-danger" *ngIf="f['address'].touched && f['address'].invalid">
+              Address is required
+            </small>
           </div>
 
-          <!-- Company -->
+          <!-- Organisation -->
           <div class="col-md-6">
-            <input type="text" class="form-control" formControlName="orgname" placeholder="Organisation Name" />
-            <div *ngIf="f['orgname'].touched && f['address'].invalid" class="text-danger small">
-              Organisation Name is required.
-            </div>
+            <input class="form-control" placeholder="Organisation Name" formControlName="orgname">
+            <small class="text-danger" *ngIf="f['orgname'].touched && f['orgname'].invalid">
+              Organisation name is required
+            </small>
           </div>
 
           <!-- Occupation -->
@@ -70,78 +90,58 @@
               <option value="student">Student</option>
               <option value="other">Other</option>
             </select>
-            <div *ngIf="f['occupation'].touched && f['occupation'].invalid" class="text-danger small">
-              Occupation is required.
-            </div>
-          </div>
-
-          <!-- Other Occupation -->
-          <div class="col-12" *ngIf="f['occupation'].value === 'other'">
-            <input type="text" class="form-control" formControlName="otherOccupation"
-              placeholder="Please specify occupation" />
-            <div *ngIf="f['otherOccupation'].touched && f['otherOccupation'].invalid" class="text-danger small">
-              Please specify your occupation.
-            </div>
+            <small class="text-danger" *ngIf="f['occupation'].touched && f['occupation'].invalid">
+              Occupation is required
+            </small>
           </div>
 
           <!-- Password -->
-          <div class="col-md-6 position-relative">
-            <input [type]="getPasswordType('password')" class="form-control" formControlName="password"
-              placeholder="Password" />
-            <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'" (click)="togglePassword('password')"
-              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
-            <div *ngIf="f['password'].touched && f['password'].errors" class="text-danger small">
-              <div *ngIf="f['password'].errors['required']">Password is required.</div>
-              <div *ngIf="f['password'].errors['minlength']">At least 8 characters required.</div>
-              <div *ngIf="f['password'].errors['pattern']">
-                Must include uppercase, lowercase, number, and special character.
-              </div>
-            </div>
+          <div class="col-md-6 position-relative password-field">
+            <input [type]="showPassword ? 'text' : 'password'" class="form-control" placeholder="Password"
+              formControlName="password" />
+            <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+              (click)="showPassword = !showPassword"></i>
+
+            <small class="text-danger" *ngIf="f['password'].touched && f['password'].errors?.['required']">
+              Password is required
+            </small>
+            <small class="text-danger" *ngIf="f['password'].touched && f['password'].errors?.['minlength']">
+              Minimum 6 characters required
+            </small>
           </div>
 
           <!-- Confirm Password -->
-          <div class="col-md-6 position-relative">
-            <input [type]="getPasswordType('confirm')" class="form-control" formControlName="confirmPassword"
-              placeholder="Confirm Password" />
+          <div class="col-md-6 position-relative password-field">
+            <input [type]="showConfirmPassword ? 'text' : 'password'" class="form-control"
+              placeholder="Confirm Password" formControlName="confirmPassword" />
             <i class="bi" [ngClass]="showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'"
-              (click)="togglePassword('confirm')"
-              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
-            <div *ngIf="registerForm.hasError('passwordMismatch') && f['confirmPassword'].touched"
-              class="text-danger small">
-              Passwords do not match.
-            </div>
+              (click)="showConfirmPassword = !showConfirmPassword"></i>
+
+            <small class="text-danger"
+              *ngIf="registerForm.hasError('passwordMismatch') && f['confirmPassword'].touched">
+              Passwords do not match
+            </small>
           </div>
 
           <!-- Terms -->
           <div class="col-12 d-flex align-items-center">
-            <input type="checkbox" class="form-check-input me-2 mb-1" formControlName="terms" id="termsCheck" />
-            <label for="termsCheck" class="form-check-label small">
-              I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-            </label>
+            <input type="checkbox" class="form-check-input me-2" formControlName="terms">
+            <label class="small">I agree to the Terms & Privacy Policy</label>
           </div>
-          <div *ngIf="f['terms'].touched && f['terms'].errors?.['required']" class="text-danger small">
-            You must accept the terms.
-          </div>
+          <small class="text-danger" *ngIf="f['terms'].touched && f['terms'].invalid">
+            You must accept the terms
+          </small>
 
-          <!-- Submit Button -->
+          <!-- Submit -->
           <div class="col-12">
-            <button type="submit" class="btn btn-primary w-100">Create Account</button>
+            <button class="btn btn-primary w-100" type="submit">
+              Create Account
+            </button>
           </div>
 
-          <hr class="my-3" />
-
-          <!-- Footer -->
-          <div class="col-12 d-flex flex-column flex-md-row justify-content-between text-center text-md-start">
-            <a routerLink="/" class="mb-2 mb-md-0" style="text-decoration: none; color: #009878;">← Back to Home</a>
-            <div>
-              <p class="small mb-1">Already have an account?</p>
-              <a routerLink="/login" class="btn btn-outline-primary">Sign in to your account</a>
-            </div>
-          </div>
         </form>
 
       </div>
     </div>
-
   </div>
 </div>

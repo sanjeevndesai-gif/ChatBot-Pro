@@ -1,0 +1,20 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: settingservice
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/ats
+      database: ats
+
+app:
+  security:
+    api-key: my-secret-api-key
+
+logging:
+  level:
+    root: INFO
+    com.arnan.settingservice: DEBUG
+    org.springframework.security: INFO

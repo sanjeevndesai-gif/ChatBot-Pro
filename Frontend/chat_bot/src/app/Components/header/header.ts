@@ -1,14 +1,15 @@
 import { Component, Input, Output, EventEmitter, HostListener, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { I18nService } from '../../services/i18n.service';
+// import { I18nService } from '../../services/i18n.service';
 import { Language } from '../../models/language.model';
-import { TranslatePipe } from '../../pipes/translate.pipe';
+// import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, TranslatePipe],
+  // imports: [CommonModule, RouterModule, TranslatePipe],
+  imports: [CommonModule, RouterModule],
   templateUrl: './header.html',
   styleUrls: ['./header.scss']
 })
@@ -24,26 +25,26 @@ export class Header implements OnInit {
   selectedLang: Language | null = null;
 
   constructor(
-    private router: Router,
-    public i18n: I18nService
+    private router: Router
+    // public i18n: I18nService
   ) { }
 
 
   ngOnInit() {
     console.log("Header INIT");
 
-    this.i18n.loadLanguages().subscribe((langs: Language[]) => {
-      console.log("Languages from API =", langs);
+    // this.i18n.loadLanguages().subscribe((langs: Language[]) => {
+    //   console.log("Languages from API =", langs);
 
-      if (langs.length > 0) {
-        this.languages = langs;
+    //   if (langs.length > 0) {
+    //     this.languages = langs;
 
-        const current = this.i18n.currentLang$.value;
-        this.selectedLang = langs.find(l => l.code === current) || langs[0];
+    //     const current = this.i18n.currentLang$.value;
+    //     this.selectedLang = langs.find(l => l.code === current) || langs[0];
 
-        console.log("Selected Lang =", this.selectedLang);
-      }
-    });
+    //     console.log("Selected Lang =", this.selectedLang);
+    //   }
+    // });
   }
 
 
@@ -52,14 +53,14 @@ export class Header implements OnInit {
     this.isCollapsed = !this.isCollapsed;
   }
 
-  onSelectLanguage(code: string) {
-    this.selectedLang =
-      this.languages.find(l => l.code === code) || this.languages[0];
+  // onSelectLanguage(code: string) {
+  //   this.selectedLang =
+  //     this.languages.find(l => l.code === code) || this.languages[0];
 
-    this.i18n.setLanguage(code);
-    this.languageChange.emit(code);
-    this.isCollapsed = true;
-  }
+  //   this.i18n.setLanguage(code);
+  //   this.languageChange.emit(code);
+  //   this.isCollapsed = true;
+  // }
 
   @HostListener('window:scroll', [])
   onWindowScroll() {

@@ -16,31 +16,31 @@
                 <li class="nav-item">
                     <a class="nav-link" routerLink="/features">
                         <!-- {{ i18n.t('header.features') }} -->
-                        {{ 'header.features' | t }}
+                        {{ 'header.features'}}
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a class="nav-link" routerLink="/" fragment="about">
-                        {{ i18n.t('Your trusted partner') }}
+                        <!-- {{ i18n.t('Your trusted partner') }} --> Your trusted partner
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a class="nav-link" routerLink="/" fragment="pricing">
-                        {{ i18n.t('header.pricing') }}
+                        <!-- {{ i18n.t('header.pricing') }} --> Pricing
                     </a>
                 </li>
 
                 <li class="nav-item">
                     <a class="nav-link" routerLink="/" fragment="testimonials">
-                        {{ i18n.t('header.testimonials') }}
+                        <!-- {{ i18n.t('header.testimonials') }} --> Testimonials
                     </a>
                 </li>
 
                 <li class="nav-item ms-3">
                     <a class="btn btn-outline-primary btn-sm" routerLink="/signin">
-                        {{ i18n.t('header.register') }}
+                        <!-- {{ i18n.t('header.register') }} --> Register
                     </a>
                 </li>
 
@@ -53,8 +53,12 @@
 
                     <ul class="dropdown-menu">
                         <li *ngFor="let lang of languages">
-                            <button class="dropdown-item d-flex align-items-center"
+                            <!-- <button class="dropdown-item d-flex align-items-center"
                                 (click)="onSelectLanguage(lang.code)">
+                                <span class="me-2">{{ lang.flag }}</span>
+                                {{ lang.label }}
+                            </button> -->
+                            <button class="dropdown-item d-flex align-items-center">
                                 <span class="me-2">{{ lang.flag }}</span>
                                 {{ lang.label }}
                             </button>

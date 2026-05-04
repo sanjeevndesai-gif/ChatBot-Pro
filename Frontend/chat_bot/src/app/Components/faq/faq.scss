@@ -76,7 +76,7 @@
 .faq-layout {
   display: flex;
   gap: 30px;
- // padding: 20px 30px 20px 30px;
+  // padding: 20px 30px 20px 30px;
 
   /* TABLETS & MOBILE */
   @media (max-width: 768px) {
@@ -213,12 +213,18 @@
 
     .card {
       width: 400px;
-      height: 160px;
+      height: 200px;
       background: #eef0f8;
       padding: 25px;
       border-radius: 12px;
       text-align: center;
       box-shadow: 0 2px 8px #ccc;
+
+      /* ✅ FIX: Center content inside card properly */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
 
       @media (max-width: 480px) {
         width: 90%;
@@ -229,15 +235,40 @@
       i {
         font-size: 32px;
         color: #5c6bc0;
-       // margin-bottom: 10px;
       }
 
       h4 {
-        margin-bottom: 6px;
+        margin: 6px 0;
       }
 
       p {
         color: #555;
+        margin: 0; /* ✅ prevent overflow spacing */
+      }
+    }
+
+    /* ✅ QR CARD EXTRA STYLING */
+    .qr-card {
+      text-align: center;
+
+      h4 {
+        margin-top: 18px;
+        color: #187936;
+        font-weight: 600;
+      }
+
+      .qr-img {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        margin: 2px;
+        display: block;
+      }
+
+      p {
+        margin-bottom: 18px;
+        font-size: 14px;
+
       }
     }
   }

@@ -1,0 +1,7 @@
+package com.arnan.settingservice.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}

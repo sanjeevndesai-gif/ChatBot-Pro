@@ -204,10 +204,10 @@ a {
 
 /* Sign In button aligned with theme */
 .btn-outline-primary {
-    border: 2px solid $cb-btn-primary;
+    border: 1px solid $cb-btn-primary;
     color: $cb-btn-primary;
     font-weight: 500;
-    padding: 0.35rem 0.9rem;
+    // padding: 0.35rem 0.9rem;
     border-radius: 6px;
     transition: 0.3s ease !important;
 
