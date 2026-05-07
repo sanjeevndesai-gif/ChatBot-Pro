@@ -1,0 +1,109 @@
+<!-- TOP HEADER -->
+<div class="top-header sticky-top bg-white">
+    <div class="mx-5 px-3 d-flex justify-content-between align-items-center">
+
+        <!-- Left Logo -->
+        <h3 class="m-0 fw-bold text-success">MyApp</h3>
+
+        <!-- Mobile Toggle -->
+        <button class="mobile-toggle d-lg-none border-0 bg-transparent fs-3" (click)="toggleMobileMenu()">
+            <i class="bi" [ngClass]="mobileMenuOpen ? 'bi-x' : 'bi-list'"></i>
+        </button>
+
+        <!-- DESKTOP ICONS -->
+        <div class="d-flex align-items-center gap-4 d-none d-lg-flex">
+
+            <!-- SEARCH -->
+            <!-- <div ngbDropdown class="icon-dropdown">
+                <i class="bi bi-search fs-5" ngbDropdownToggle></i>
+                <div ngbDropdownMenu class="p-3">
+                    <input type="text" class="form-control" placeholder="Search..." />
+                </div>
+            </div> -->
+
+            <!-- Download QR (same QR as profile) -->
+            <button class="icon-btn" title="Download QR" (click)="downloadQr()">
+                <i class="bi bi-qr-code"></i>
+            </button>
+
+
+            <!-- NOTIFICATIONS -->
+            <div ngbDropdown class="icon-dropdown position-relative">
+                <i class="bi bi-bell" ngbDropdownToggle></i>
+                <span class="notif-dot"></span>
+
+                <ul ngbDropdownMenu>
+                    <li>
+                        <button ngbDropdownItem>New message</button>
+                    </li>
+                    <li>
+                        <button ngbDropdownItem>Server alert</button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- USER -->
+            <div ngbDropdown class="icon-dropdown">
+                <img src="https://i.pravatar.cc/150" width="32" class="rounded-circle" ngbDropdownToggle />
+
+                <ul ngbDropdownMenu>
+                    <li>
+                        <button ngbDropdownItem [routerLink]="'/profile'">
+                            <i class="bi bi-person me-2"></i>
+                            My Profile
+                        </button>
+                    </li>
+
+                    <li>
+                        <button ngbDropdownItem (click)="logout()">Logout</button>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- HORIZONTAL MENU -->
+<div class="menu-wrapper sticky-top bg-white shadow-sm">
+    <div class="mx-5 px-3">
+
+        <!-- MOBILE MENU -->
+        <div class="mobile-menu d-lg-none" [class.open]="mobileMenuOpen">
+            <ul class="mobile-nav">
+
+                <li class="mobile-item" *ngFor="let m of menu; let i = index">
+
+                    <a *ngIf="m.route" [routerLink]="m.route" (click)="toggleMobileMenu()">
+                        <i class="bi" [ngClass]="m.icon"></i>
+                        {{ m.title }}
+                    </a>
+
+                    <a *ngIf="!m.route" href="#" (click)="$event.preventDefault(); toggleMobileSubmenu(i.toString())">
+                        <i class="bi" [ngClass]="m.icon"></i>
+                        {{ m.title }}
+                    </a>
+
+                </li>
+
+            </ul>
+        </div>
+
+        <!-- DESKTOP MENU -->
+        <nav class="top-nav d-none d-lg-flex">
+            <ul class="nav gap-4">
+
+                <li class="nav-item" *ngFor="let m of menu">
+
+                    <a class="nav-link" [routerLink]="m.route" routerLinkActive="active">
+                        <i class="bi" [ngClass]="m.icon"></i>
+                        {{ m.title }}
+                    </a>
+
+                </li>
+
+            </ul>
+        </nav>
+
+    </div>
+</div>

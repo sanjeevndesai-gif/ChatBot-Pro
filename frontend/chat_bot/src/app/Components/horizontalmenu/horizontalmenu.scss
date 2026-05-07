@@ -1,0 +1,198 @@
+/* ===============================
+   TOP HEADER
+================================*/
+
+.top-header {
+    height: 60px;
+    z-index: 1035;
+    border-bottom: 1px solid #eaeaea;
+    align-content: center;
+}
+
+.header-icons i {
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+        color: #696cff;
+    }
+}
+
+.notif-dot {
+    position: absolute;
+    top: 2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: red;
+    border-radius: 50%;
+}
+
+/* ===============================
+   HORIZONTAL MENU
+================================*/
+.menu-wrapper {
+    margin-top: -1px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.top-nav {
+    height: 62px;
+    display: flex;
+    align-items: center;
+}
+
+/* Nav items */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    color: #3a3a3c;
+    transition: 0.2s ease;
+
+    i {
+        font-size: 16px;
+    }
+
+    &:hover {
+        background: #f1efff;
+        color: #696cff;
+    }
+}
+
+.nav-link.active {
+    background: #ece8ff;
+    color: #696cff;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    padding: 10px 0;
+    border-radius: 8px !important;
+    min-width: 180px;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+    border: none;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    font-size: 16px;
+    color: #444;
+
+    i {
+        font-size: 16px;
+    }
+
+    &:hover {
+        background: #f7f7fc;
+    }
+}
+
+.dropdown-hover {
+    position: relative;
+
+    &:hover>.dropdown-menu {
+        display: block !important;
+    }
+}
+
+.dropdown-submenu {
+    position: relative;
+
+    >.dropdown-menu {
+        top: 0;
+        left: 100%;
+        margin-left: -4px;
+        display: none;
+    }
+
+    &:hover>.dropdown-menu {
+        display: block !important;
+    }
+}
+
+/* ===============================
+   MOBILE / RESPONSIVE
+================================*/
+
+.mobile-toggle {
+    display: none;
+}
+
+@media (max-width: 992px) {
+    .mobile-toggle {
+        display: block !important;
+    }
+
+    .header-icons {
+        display: none !important;
+    }
+
+    .top-nav {
+        display: none !important;
+    }
+
+    .mobile-menu {
+        display: none;
+        overflow: hidden;
+        background: #ffffff;
+        padding: 0.5rem 0;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        transition: all 0.28s ease;
+    }
+
+    .mobile-menu.open {
+        display: block;
+    }
+
+    .mobile-nav {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+    .mobile-item>a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        font-size: 16px;
+        color: #333;
+        font-weight: 500;
+        border-bottom: 1px solid #f1f1f1;
+        justify-content: space-between;
+    }
+
+    .mobile-item.has-sub>a {
+        justify-content: space-between;
+    }
+
+    .mobile-submenu {
+        display: none;
+        padding-left: 18px;
+        background: #fafafa;
+    }
+
+    .mobile-item.open-sub .mobile-submenu {
+        display: block;
+    }
+
+    .mobile-submenu li a {
+        padding: 12px 18px;
+        font-size: 15px;
+        display: block;
+        color: #666;
+    }
+}
+
+.nav .nav-item {
+    cursor: default;
+}

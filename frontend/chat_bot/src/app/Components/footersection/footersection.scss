@@ -1,0 +1,77 @@
+// footer.component.scss
+.footer {
+    background-color: #0e0f1a;
+    color: #ccc;
+    font-size: 0.95rem;
+
+    .brand {
+        font-weight: bold;
+        font-size: 1.5rem;
+
+        span {
+            color: #009e76;
+        }
+    }
+
+    .description {
+        margin-top: 10px;
+        color: #aaa;
+    }
+
+    .footer-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #fff;
+    }
+
+    ul {
+        padding-left: 0;
+
+        li {
+            margin-bottom: 8px;
+
+            a {
+                color: #ccc;
+                text-decoration: none;
+
+                &:hover {
+                    color: #fff;
+                }
+            }
+        }
+    }
+
+    .social-icons {
+        a {
+            color: #999;
+            font-size: 1.3rem;
+            margin-right: 12px;
+            transition: color 0.3s;
+
+            &:hover {
+                color: #6f5cf1;
+            }
+        }
+    }
+
+    .footer-bottom {
+        font-size: 0.85rem;
+        color: #999;
+
+        a {
+            color: #999;
+            margin-left: 15px;
+            text-decoration: none;
+
+            &:hover {
+                color: #fff;
+            }
+        }
+    }
+
+    .policy-links {
+        display: flex;
+        gap: 1.2rem;
+        flex-wrap: wrap;
+    }
+}

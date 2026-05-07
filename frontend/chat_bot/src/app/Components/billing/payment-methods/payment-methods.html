@@ -1,0 +1,117 @@
+<div class="card mb-6">
+  <h5 class="card-header">Payment Methods</h5>
+
+  <div class="card-body">
+
+    <!-- MESSAGE -->
+    <div *ngIf="message"
+         class="alert"
+         [ngClass]="{
+           'alert-success': messageType === 'success',
+           'alert-warning': messageType === 'cancel'
+         }">
+      {{ message }}
+    </div>
+
+    <div class="row gx-6">
+
+      <!-- LEFT SIDE FORM -->
+      <div class="col-md-6">
+        <form [formGroup]="paymentForm" (ngSubmit)="savePayment()">
+
+          <!-- Payment Type -->
+          <div class="my-2">
+            <label class="form-label">Choose Method</label><br>
+
+            <div class="form-check form-check-inline">
+              <input type="radio" class="form-check-input"
+                     formControlName="method" value="card">
+              Credit / Debit Card
+            </div>
+
+            <div class="form-check form-check-inline">
+              <input type="radio" class="form-check-input"
+                     formControlName="method" value="upi"
+                     (change)="onUPIMethodSelected()">
+              UPI
+            </div>
+          </div>
+
+          <!-- ================= CARD FORM ================= -->
+          <div *ngIf="paymentForm.value.method === 'card'">
+
+            <label class="form-label">Card Number</label>
+            <input type="text" class="form-control mb-3" placeholder="Enter Card Number"
+                   creditCardMask formControlName="cardNumber">
+
+            <label class="form-label">Name on Card</label>
+            <input type="text" class="form-control mb-3" placeholder="Enter Name on Card"
+                   formControlName="name">
+
+            <div class="row">
+              <div class="col-6">
+                <label class="form-label">Expiry</label>
+                <input type="text" class="form-control" placeholder="MM/YY"
+                       expiryDateMask formControlName="expiry">
+              </div>
+
+              <div class="col-6">
+                <label class="form-label">CVV</label>
+                <input type="text" class="form-control" placeholder="XXX"
+                       cvvMask formControlName="cvv">
+              </div>
+            </div>
+
+            <div class="form-check form-switch mt-3">
+              <input type="checkbox" class="form-check-input"
+                     formControlName="saveCard">
+              Save card for future billing
+            </div>
+
+            <button class="btn btn-primary mt-4" type="submit">
+              Save Changes
+            </button>
+
+            <!-- ❗ FIXED CANCEL -->
+            <button class="btn btn-outline-secondary mt-4 ms-2"
+                    type="button"
+                    (click)="cancelPayment()">
+              Cancel
+            </button>
+          </div>
+
+          <!-- ================= UPI ================= -->
+          <div *ngIf="paymentForm.value.method === 'upi'" class="upi-box mt-3">
+            <h6>Pay using UPI</h6>
+
+            <div class="form-check mb-3">
+              <input type="radio" class="form-check-input"
+                     (change)="onScanPaySelected()">
+              Scan & Pay
+            </div>
+
+            <button class="btn btn-primary w-100"
+                    [disabled]="!scanPaySelected"
+                    (click)="proceedToUPIPayment()">
+              Pay Now
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- RIGHT SIDE -->
+      <div class="col-md-6" *ngIf="paymentForm.value.method === 'card'">
+        <h6 class="mb-3">My Cards</h6>
+
+        <div *ngFor="let c of cards()" class="saved-card p-4 mb-3">
+          <strong>{{ c.name }}</strong>
+          <span *ngIf="c.primary" class="badge bg-primary ms-2">Primary</span>
+          <div>**** **** {{ c.last4 }}</div>
+          <small>Expires {{ c.expiry }}</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,62 @@
+// .cta-section {
+//     background: linear-gradient(135deg, #009b72, #01684a); // WhatsApp-style gradient
+//     border-radius: 0;
+
+//     h2 {
+//         font-size: 2.2rem;
+//     }
+
+//     .btn {
+//         border-radius: 10px;
+//         transition: all 0.3s ease;
+
+//         &:hover {
+//             background: #25d366;
+//             color: #fff;
+//             transform: translateY(-2px);
+//             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+//         }
+//     }
+// }
+
+.cta-section {
+    background: linear-gradient(135deg, #009b72, #01684a);
+    border-radius: 0;
+
+    h2 {
+        font-size: 2.2rem;
+        color: #fff;
+    }
+
+    .btn-custom {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        text-decoration: none;
+
+        background: linear-gradient(135deg, #20c997, #0f766e);
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.1rem;
+
+        border: none;
+        border-radius: 8px; // pill shape
+        padding: 14px 32px;
+
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1); // white glow
+            text-decoration: none;
+            color: #fff;
+        }
+
+        i {
+            font-size: 1.2rem;
+            color: #fff; // keep arrow always white
+        }
+    }
+}

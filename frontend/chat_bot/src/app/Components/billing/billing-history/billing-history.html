@@ -1,0 +1,118 @@
+<div class="card">
+  <h5 class="card-header text-md-start text-center">Billing History</h5>
+
+  <div class="card-body border-top">
+
+    <!-- Filters -->
+    <div class="d-flex flex-wrap gap-3 mb-3 justify-content-between">
+
+      <input
+        type="text"
+        class="form-control w-auto"
+        style="min-width: 220px"
+        placeholder="Search Invoice"
+        (input)="onSearch($event)">
+
+      <select class="form-select w-auto" style="min-width: 180px" (change)="filterStatus($event)">
+        <option value="">All Status</option>
+        <option value="Paid">Paid</option>
+        <option value="Partial">Partial Payment</option>
+        <option value="Due">Past Due</option>     
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading()" class="text-center py-4">
+      <div class="spinner-border text-primary"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive" *ngIf="!loading()">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Status</th>
+            <th>Client</th>
+            <th>Total</th>
+            <th>Issued Date</th>
+            <th>Balance</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let inv of invoices()">
+
+            <td>
+              <a class="fw-medium text-primary" href="javascript:void(0)">
+                #{{ inv.invoiceNumber }}
+              </a>
+            </td>
+
+            <td>
+              <span class="badge"
+                [ngClass]="{
+                  'bg-success': inv.status === 'Paid',
+                  'bg-warning': inv.status === 'Partial',
+                  'bg-danger': inv.status === 'Due'
+                }">
+                {{ inv.status }}
+              </span>
+            </td>
+
+            <td>
+              <div class="fw-medium">{{ inv.clientName }}</div>
+              <div class="text-muted small">{{ inv.service }}</div>
+            </td>
+
+            <td>${{ inv.total }}</td>
+            <td>{{ inv.issuedDate | date:'dd MMM yyyy' }}</td>
+
+            <td>
+              <span [ngClass]="{ 'text-danger': inv.balance < 0 }">
+                {{ inv.balance | currency:'USD':'symbol' }}
+              </span>
+            </td>
+
+            <!-- UPDATED ACTIONS COLUMN -->
+            <td class="text-end">
+
+              <!-- Delete -->
+              <button
+                class="btn btn-sm btn-outline-danger me-1"
+                (click)="deleteInvoice(inv.id)">
+                <i class="bi bi-trash"></i>
+              </button>
+
+              <!-- Preview -->
+              <button
+                class="btn btn-sm btn-outline-primary me-1"
+                (click)="previewInvoice(inv)">
+                <i class="bi bi-eye"></i>
+              </button>
+
+              <!-- Direct Download Icon -->
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                (click)="downloadPDF(inv)">
+                <i class="bi bi-download"></i>
+              </button>
+
+            </td>
+
+          </tr>
+
+          <tr *ngIf="invoices().length === 0">
+            <td colspan="7" class="text-center py-4 text-muted">
+              No invoices found.
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

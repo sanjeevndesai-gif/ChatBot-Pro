@@ -1,0 +1,113 @@
+<div class="calendar-wrapper">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- <button class="add-btn" (click)="onAddSchedule()">
+      + Add Schedule
+    </button> -->
+
+    <!-- MINI CALENDAR -->
+    <div class="mini-calendar-box">
+      <div class="mini-header">
+        <button class="mini-nav" (click)="prevMini()">&lt;</button>
+        <div class="mini-title">{{ miniMonth }}</div>
+        <button class="mini-nav" (click)="nextMini()">&gt;</button>
+      </div>
+
+      <div class="mini-weekdays">
+        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      </div>
+
+      <div class="mini-grid">
+        <button
+          class="mini-day"
+          *ngFor="let d of miniCalendarDays"
+          [disabled]="d.day === ''"
+          [class.today]="d.isToday"
+          [class.selected]="d.isSelected"
+          (click)="miniDateClick(d)"
+        >
+          {{ d.day }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <h4>Schedule Filters</h4>
+
+      <label class="filter-item">
+        <span class="dot general"></span>
+        General
+      </label>
+
+      <label class="filter-item">
+        <span class="dot emergency"></span>
+        Emergency
+      </label>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Header -->
+    <div class="header-row">
+
+      <div class="nav-controls">
+        <button (click)="prev()">&lt;</button>
+        <span class="title">{{ currentTitle }}</span>
+        <button (click)="next()">&gt;</button>
+      </div>
+
+      <div class="views">
+        <button (click)="changeView('dayGridMonth')" [class.active]="currentView==='dayGridMonth'">Month</button>
+        <button (click)="changeView('timeGridWeek')" [class.active]="currentView==='timeGridWeek'">Week</button>
+        <button (click)="changeView('timeGridDay')" [class.active]="currentView==='timeGridDay'">Day</button>
+        <button (click)="changeView('listWeek')" [class.active]="currentView==='listWeek'">List</button>
+      </div>
+    </div>
+
+    <full-calendar #calendarRef [options]="calendarOptions"></full-calendar>
+
+  </div>
+</div>
+
+
+<!-- ACTION MODAL -->
+<!-- <div class="modal-backdrop" *ngIf="actionModalOpen">
+  <div class="modal">
+    <h3>Appointment Action</h3>
+
+    <button class="primary" (click)="openReschedule()">Reschedule</button>
+    <button class="danger" (click)="cancelSlot()">Cancel Slot</button>
+    <button class="link" (click)="closeAllModals()">Close</button>
+  </div>
+</div> -->
+<div class="modal-backdrop" *ngIf="actionModalOpen" (click)="closeAllModals()">
+
+  <div class="modal" (click)="$event.stopPropagation()">
+
+
+<!-- RESCHEDULE MODAL -->
+<!-- <div class="modal-backdrop" *ngIf="rescheduleModalOpen">
+  <div class="modal">
+    <h3>Reschedule Appointment</h3>
+
+    <label>Date</label>
+    <input type="date" [(ngModel)]="rescheduleDate" />
+
+    <label>Start Time</label>
+    <input type="time" [(ngModel)]="rescheduleStart" />
+
+    <label>End Time</label>
+    <input type="time" [(ngModel)]="rescheduleEnd" />
+
+    <button class="primary" (click)="saveReschedule()">Save</button>
+    <button class="link" (click)="closeAllModals()">Cancel</button>
+  </div>
+</div> -->
+<div class="modal-backdrop" *ngIf="rescheduleModalOpen" (click)="closeAllModals()">
+
+  <div class="modal" (click)="$event.stopPropagation()">

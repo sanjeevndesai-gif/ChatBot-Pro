@@ -1,0 +1,171 @@
+<!-- CURRENT PLAN CARD -->
+<div class="card plan-card mb-5">
+  <h5 class="card-header">Current Plan</h5>
+
+  <div class="card-body">
+    <div class="row g-4 align-items-center">
+
+      <!-- LEFT -->
+      <div class="col-md-6">
+        <h5 class="fw-semibold mb-1">
+          Your Current Plan is {{ plan().name }}
+        </h5>
+        <p class="text-muted mb-1">A simple start for everyone</p>
+        <p class="text-muted small">
+          Active until {{ plan().activeUntil | date:'mediumDate' }}
+        </p>
+
+        <h4 class="fw-bold mt-3">
+          {{ plan().currency }}{{ plan().price }}
+          <span class="fs-6 fw-normal text-muted">/ month</span>
+        </h4>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="col-md-6">
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+          <div>
+            <strong>Action required</strong><br />
+            <small>Your plan will expire soon</small>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between small mb-1">
+          <span>Usage</span>
+          <span>{{ daysUsed() }} / {{ daysTotal() }} days</span>
+        </div>
+
+        <div class="progress">
+          <div class="progress-bar" [style.width.%]="progressPercent"></div>
+        </div>
+
+        <p class="small text-muted mt-2">
+          {{ daysTotal() - daysUsed() }} days remaining
+        </p>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="col-12 d-flex gap-3 mt-2">
+        <button class="btn btn-primary px-4"
+                (click)="openPricingModal(pricingModal)">
+          Upgrade Plan
+        </button>
+
+        <button class="btn btn-outline-danger px-4"
+                (click)="openSmallModal(cancelConfirmModal)">
+          Cancel Subscription
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= PRICING MODAL ================= -->
+<ng-template #pricingModal let-modal>
+  <div class="modal-header border-0">
+    <h4 class="w-100 text-center fw-semibold">Choose Your Plan</h4>
+    <button class="btn-close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="pricing-grid">
+
+      <!-- LITE -->
+      <div class="pricing-card">
+        <h6 class="plan-title">Lite</h6>
+        <div class="plan-price">$29</div>
+        <div class="plan-period">per month</div>
+
+        <ul class="plan-features">
+          <li>Unlimited sending</li>
+          <li>Email marketing</li>
+          <li>Up to 5 users</li>
+        </ul>
+
+        <button class="btn btn-outline-success w-100">
+          Choose Plan
+        </button>
+      </div>
+
+      <!-- PLUS -->
+      <div class="pricing-card popular">
+        <div class="popular-tag">Most Popular</div>
+
+        <h6 class="plan-title">Plus</h6>
+        <div class="plan-price">$89</div>
+        <div class="plan-period">per month</div>
+
+        <ul class="plan-features">
+          <li>Unlimited sending</li>
+          <li>Email marketing</li>
+          <li>Up to 25 users</li>
+        </ul>
+
+        <button class="btn btn-primary w-100"
+                (click)="upgradePlan('Plus', upgradeSuccessModal)">
+          Choose Plan
+        </button>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="pricing-card">
+        <h6 class="plan-title">Enterprise</h6>
+        <div class="plan-price">$159</div>
+        <div class="plan-period">per month</div>
+
+        <ul class="plan-features">
+          <li>Unlimited sending</li>
+          <li>Advanced reports</li>
+          <li>Up to 50 users</li>
+        </ul>
+
+        <button class="btn btn-outline-success w-100">
+          Choose Plan
+        </button>
+      </div>
+
+    </div>
+  </div>
+</ng-template>
+
+<!-- ================= CANCEL CONFIRM ================= -->
+<ng-template #cancelConfirmModal>
+  <div class="modal-body text-center">
+    <div class="icon warning">!</div>
+    <h5 class="mb-3">Are you sure you want to cancel?</h5>
+
+    <div class="d-flex justify-content-center gap-3">
+      <button class="btn btn-danger px-4"
+              (click)="confirmCancel(unsubscribedModal)">
+        Yes, Cancel
+      </button>
+      <button class="btn btn-light px-4"
+              (click)="closeAll()">
+        Keep Plan
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ================= SUCCESS ================= -->
+<ng-template #unsubscribedModal>
+  <div class="modal-body text-center">
+    <div class="icon success">✓</div>
+    <h4>Unsubscribed</h4>
+    <p class="text-muted">Your subscription has been cancelled.</p>
+    <button class="btn btn-success px-5 mt-2"
+            (click)="closeAll()">OK</button>
+  </div>
+</ng-template>
+
+<ng-template #upgradeSuccessModal>
+  <div class="modal-body text-center">
+    <div class="icon success">✓</div>
+    <h4>Plan Upgraded</h4>
+    <p class="text-muted">Your plan was upgraded successfully.</p>
+    <button class="btn btn-success px-5 mt-2"
+            (click)="closeAll()">OK</button>
+  </div>
+</ng-template>

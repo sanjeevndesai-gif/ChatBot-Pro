@@ -1,0 +1,89 @@
+<div class="card mb-6">
+  <h5 class="card-header">Billing Address</h5>
+
+  <div class="card-body">
+    <form [formGroup]="addressForm" (ngSubmit)="save()" novalidate>
+      <div class="row g-3">
+
+        <div class="col-sm-6">
+          <label for="companyName" class="form-label">Company Name</label>
+          <input id="companyName" formControlName="companyName" class="form-control" />
+          <div *ngIf="addressForm.get('companyName')?.touched && addressForm.get('companyName')?.invalid" class="invalid-feedback d-block">
+            Company name is required.
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="billingEmail" class="form-label">Billing Email</label>
+          <input id="billingEmail" formControlName="billingEmail" class="form-control" />
+          <div *ngIf="addressForm.get('billingEmail')?.touched && addressForm.get('billingEmail')?.invalid" class="invalid-feedback d-block">
+            <span *ngIf="addressForm.get('billingEmail')?.errors?.['required']">Email is required.</span>
+            <span *ngIf="addressForm.get('billingEmail')?.errors?.['email']">Enter a valid email.</span>
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="taxId" class="form-label">Tax ID</label>
+          <input id="taxId" formControlName="taxId" class="form-control" />
+        </div>
+
+        <div class="col-sm-6">
+          <label for="vatNumber" class="form-label">VAT Number</label>
+          <input id="vatNumber" formControlName="vatNumber" class="form-control" />
+        </div>
+
+        <div class="col-sm-6">
+          <label for="country" class="form-label">Country</label>
+          <select id="country" formControlName="country" class="form-select">
+            <option>India</option>
+            <option>USA</option>
+            <option>Canada</option>
+            <option>UK</option>
+            <option>Germany</option>
+            <option>France</option>
+          </select>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="mobileNumber" class="form-label">Mobile</label>
+          <div class="input-group">
+            <span class="input-group-text">IND (+91)</span>
+            <input id="mobileNumber" formControlName="mobileNumber" class="form-control" />
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label for="billingAddress" class="form-label">Billing Address</label>
+          <input id="billingAddress" formControlName="billingAddress" class="form-control" />
+          <div *ngIf="addressForm.get('billingAddress')?.touched && addressForm.get('billingAddress')?.invalid" class="invalid-feedback d-block">
+            Billing address is required.
+          </div>
+        </div>
+
+        <div class="col-sm-6">
+          <label for="state" class="form-label">State</label>
+          <input id="state" formControlName="state" class="form-control" />
+        </div>
+
+        <div class="col-sm-6">
+          <label for="zipCode" class="form-label">Zip Code</label>
+          <input id="zipCode" formControlName="zipCode" class="form-control" maxlength="10" />
+        </div>
+
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          Save changes
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" (click)="discard()" [disabled]="saving">Discard</button>
+
+        <div *ngIf="saved" class="alert alert-success mb-0 ms-3 py-2">
+          Billing address saved.
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,185 @@
+.register-container {
+  .container-box {
+    background: #fff;
+
+    .info-panel {
+      background-color: #009878;
+      color: #fff;
+      text-align: center;
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
+
+      .feature {
+        .icon-box {
+          font-size: 24px;
+        }
+
+        h5 {
+          margin-bottom: 0.25rem;
+        }
+
+        p {
+          font-size: 0.9rem;
+          margin: 0;
+        }
+      }
+    }
+
+    .form-panel {
+      position: relative;
+
+      input,
+      select {
+        height: 45px;
+        font-size: 0.95rem;
+      }
+
+      .form-check-input {
+        width: 18px;
+        height: 18px;
+      }
+
+      .form-check-label {
+        font-size: 0.85rem;
+
+        a {
+          color: #009878;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+
+      i.bi {
+        padding-right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+      }
+
+      button.btn-primary {
+        background-color: #009878;
+        border-color: #009878;
+
+        &:hover {
+          background-color: (#009878, 7%);
+        }
+      }
+
+      .btn-outline-primary {
+        color: #009878;
+        border-color: #009878;
+
+        &:hover {
+          background-color: #009878;
+          color: #fff;
+        }
+      }
+    }
+  }
+
+  // 🔽 Responsive Adjustments 🔽
+
+  @media (max-width: 991.98px) {
+    .container-box {
+      flex-direction: column;
+
+      .info-panel {
+        padding: 2rem 1rem;
+        text-align: center;
+
+        img {
+          max-width: 300px;
+          margin: 0 auto;
+        }
+      }
+
+      .form-panel {
+        padding: 2rem 1rem;
+      }
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .form-panel {
+
+      input,
+      select {
+        font-size: 0.9rem;
+        height: 42px;
+      }
+
+      .form-check-label {
+        font-size: 0.8rem;
+      }
+
+      .btn,
+      .btn-outline-primary {
+        font-size: 0.9rem;
+        padding: 0.6rem 1.2rem;
+      }
+
+      i.bi {
+        font-size: 1rem;
+        right: 0.75rem;
+      }
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .container-box {
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    .form-panel {
+      padding: 1.5rem 1rem;
+
+      .btn,
+      .btn-outline-primary {
+        font-size: 0.875rem;
+      }
+
+      input,
+      select {
+        font-size: 0.85rem;
+        height: 40px;
+      }
+    }
+
+    .info-panel {
+      padding: 1.5rem 1rem;
+    }
+  }
+    .country-code {
+      width: 80px;
+      text-align: center;
+      font-weight: 500;
+    }
+  
+    .password-field {
+      position: relative;
+  
+      i.bi {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+        font-size: 1.1rem;
+      }
+    }
+  
+    .form-control,
+    .form-select {
+      height: 45px;
+      border-radius: 6px;
+    }
+}

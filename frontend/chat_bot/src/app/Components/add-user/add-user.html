@@ -1,0 +1,65 @@
+<div class="modal-header">
+    <h5 class="modal-title">
+        {{ isEditMode ? 'Edit User' : 'Add User' }}
+    </h5>
+    <button type="button" class="btn-close" (click)="cancel()"></button>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="userForm">
+
+        <!-- Name -->
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="name" placeholder="Name" formControlName="name" />
+            <label for="name">Full Name</label>
+            <div class="text-danger small mt-1" *ngIf="f.name.touched && f.name.invalid">
+                Minimum 3 characters required
+            </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="phone" maxlength="10" placeholder="Phone"
+                formControlName="phone" (input)="allowOnlyNumbers($event)" />
+            <label for="phone">Phone Number</label>
+            <div class="text-danger small mt-1" *ngIf="f.phone.touched && f.phone.invalid">
+                Enter valid 10 digit number
+            </div>
+        </div>
+
+        <!-- Specialization -->
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="spec" placeholder="Specialization"
+                formControlName="specialization" />
+            <label for="spec">Specialization</label>
+            <div class="text-danger small mt-1" *ngIf="f.specialization.touched && f.specialization.invalid">
+                Minimum 3 characters required
+            </div>
+        </div>
+
+        <!-- Role -->
+        <div class="form-floating mb-3">
+            <select class="form-select" id="role" formControlName="role">
+                <option value="">Select Role</option>
+                <option *ngFor="let role of roles" [value]="role">
+                    {{ role }}
+                </option>
+            </select>
+            <label for="role">Role</label>
+            <div class="text-danger small mt-1" *ngIf="f.role.touched && f.role.invalid">
+                Role is required
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<div class="modal-footer">
+    <button class="btn btn-secondary" (click)="cancel()">
+        Cancel
+    </button>
+
+    <button class="btn btn-primary" (click)="submit()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update' : 'Save') }}
+    </button>
+</div>

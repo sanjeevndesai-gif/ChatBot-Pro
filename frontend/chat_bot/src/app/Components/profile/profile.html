@@ -1,0 +1,71 @@
+<ngb-toast *ngIf="showToast" [autohide]="true" [delay]="3000" class="position-fixed top-0 end-0 m-3"
+  (hidden)="showToast = false">
+  {{ toastMessage }}
+</ngb-toast>
+
+<div class="profile-page" *ngIf="user">
+
+  <div class="profile-header p-5">
+    <div class="profile-left">
+      <div class="avatar">
+        <img src="https://i.pravatar.cc/150" class="rounded-circle" />
+      </div>
+
+      <h2>{{ user.fullname }}</h2>
+      <p>ID: {{ user.userId }}</p>
+
+      <button class="btn btn-primary" routerLink="/editprofile">
+        <i class="bi bi-pencil-square me-2"></i>
+        Edit Profile
+      </button>
+    </div>
+
+    <!-- RIGHT SIDE CONTAINER -->
+    <div class="right-section">
+
+      <!-- ACTION BUTTONS -->
+      <div class="action-buttons">
+        <button class="action-card" (click)="openAddUser()">
+          <i class="bi bi-person-plus-fill"></i>
+          <span>Add Users</span>
+        </button>
+
+        <button class="action-card" (click)="openViewUsers()">
+          <i class="bi bi-people-fill"></i>
+          <span>View Users</span>
+        </button>
+      </div>
+
+      <!-- QR BOX -->
+      <div class="qr-box">
+        <canvas #qrCanvas width="150" height="150"></canvas>
+
+        <small class="qr-text">Scan to view profile</small>
+
+        <button class="btn btn-outline-primary btn-sm mt-2" (click)="downloadQR()">
+          Download QR
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <div class="profile-content">
+
+    <div class="section card-box">
+      <h3>ABOUT</h3>
+      <div class="item"><span>Name:</span><span>{{ user.fullname }}</span></div>
+      <div class="item"><span>Status:</span><span>Active</span></div>
+      <div class="item"><span>Occupation:</span><span>{{ user.occupation }}</span></div>
+    </div>
+
+    <div class="section card-box">
+      <h3>CONTACTS</h3>
+      <div class="item"><span>Email:</span><span>{{ user.email }}</span></div>
+      <div class="item"><span>Phone:</span><span>{{ user.phone }}</span></div>
+      <div class="item"><span>Address:</span><span>{{ user.address }}</span></div>
+    </div>
+
+  </div>
+</div>
