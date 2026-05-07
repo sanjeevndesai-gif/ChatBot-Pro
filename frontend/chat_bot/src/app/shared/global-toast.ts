@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToastService, ToastMessage } from '../services/toast.service';
 
 @Component({
@@ -12,14 +13,19 @@ import { ToastService, ToastMessage } from '../services/toast.service';
 export class GlobalToast {
   toasts: ToastMessage[] = [];
 
-  constructor(private toastService: ToastService) {
-    this.toastService.toast$.subscribe(msg => {
-      this.toasts.push(msg);
-      setTimeout(() => this.remove(msg), 10000);
-    });
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly toastService = inject(ToastService);
+
+  constructor() {
+    this.toastService.toast$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(msg => {
+        this.toasts.push(msg);
+        setTimeout(() => this.remove(msg), 10000);
+      });
   }
 
-  remove(msg: ToastMessage) {
+  remove(msg: ToastMessage): void {
     this.toasts = this.toasts.filter(t => t !== msg);
   }
 }

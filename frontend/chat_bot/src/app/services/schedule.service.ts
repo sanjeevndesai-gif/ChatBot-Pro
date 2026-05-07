@@ -4,45 +4,42 @@ import { ConfigService } from './config.service';
 import { LoggerService } from './logger.service';
 import { isValidSchedule } from './schedule.validator';
 import { ScheduleItem } from '../models/schedule.model';
+import { StorageService } from '../core/services/storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class ScheduleService {
 
-    private CACHE_KEY = 'schedules';
-    private SCHEMA_VERSION = 'v1';  // bump this when fields change
-    private VERSION_KEY = 'schedules_version';
-
+    private readonly CACHE_KEY = 'schedules';
+    private readonly SCHEMA_VERSION = 'v1';
+    private readonly VERSION_KEY = 'schedules_version';
 
     constructor(
-        private http: HttpClient,
-        private config: ConfigService,
-        private logger: LoggerService
+        private readonly http: HttpClient,
+        private readonly config: ConfigService,
+        private readonly logger: LoggerService,
+        private readonly storage: StorageService
     ) { }
 
     fetchSchedules() {
         return this.http.get<any[]>(`${this.config.apiBaseUrl}/api/schedules`);
     }
 
-    saveToLocal(data: ScheduleItem[]) {
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
-        localStorage.setItem(this.VERSION_KEY, this.SCHEMA_VERSION);
+    saveToLocal(data: ScheduleItem[]): void {
+        this.storage.setItem(this.CACHE_KEY, data);
+        this.storage.setString(this.VERSION_KEY, this.SCHEMA_VERSION);
     }
 
     loadFromLocal(): ScheduleItem[] {
-        const version = localStorage.getItem(this.VERSION_KEY);
+        const version = this.storage.getString(this.VERSION_KEY);
 
-        // If version mismatch → clear
         if (version !== this.SCHEMA_VERSION) {
-            console.warn('❗ Schema changed → Clearing old localStorage');
-            localStorage.removeItem(this.CACHE_KEY);
-            localStorage.setItem(this.VERSION_KEY, this.SCHEMA_VERSION);
+            this.storage.removeItem(this.CACHE_KEY);
+            this.storage.setString(this.VERSION_KEY, this.SCHEMA_VERSION);
             return [];
         }
 
-        const raw = localStorage.getItem(this.CACHE_KEY);
-        return raw ? JSON.parse(raw) : [];
+        return this.storage.getItem<ScheduleItem[]>(this.CACHE_KEY) ?? [];
     }
-
 
     processApiData(data: any[]): ScheduleItem[] {
         const valid = data.filter(isValidSchedule);

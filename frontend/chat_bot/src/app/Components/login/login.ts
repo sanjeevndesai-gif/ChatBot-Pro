@@ -64,11 +64,7 @@ export class Login {
       },
       error: (err) => {
         this.isSubmitting = false;
-
-        this.apiErrorMessage =
-          err?.error?.message || 'Invalid Email or Password ❌';
-
-        console.error('Login API error:', err);
+        this.apiErrorMessage = err?.error?.message || 'Invalid Email or Password ❌';
       }
     });
   }

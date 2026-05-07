@@ -18,36 +18,46 @@
                 <p class="text-muted mb-4 small">Start building amazing WhatsApp chatbots today</p>
 
                 <!-- ✅ API Messages -->
-                <div *ngIf="apiErrorMessage" class="alert alert-danger py-2">
+                @if (apiErrorMessage) {
+                <div class="alert alert-danger py-2">
                     {{ apiErrorMessage }}
                 </div>
+                }
 
-                <div *ngIf="apiSuccessMessage" class="alert alert-success py-2">
+                @if (apiSuccessMessage) {
+                <div class="alert alert-success py-2">
                     {{ apiSuccessMessage }}
                 </div>
+                }
 
                 <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="row g-2" novalidate>
 
                     <!-- Email -->
                     <div class="mb-3">
-                        <input type="email" formControlName="email" class="form-control" placeholder="Email" />
-                        <div *ngIf="f['email'].touched && f['email'].invalid" class="text-danger mt-1">
-                            <div *ngIf="f['email'].errors?.['required']">Email is required.</div>
-                            <div *ngIf="f['email'].errors?.['email']">Invalid email format.</div>
+                        <label for="email" class="visually-hidden">Email</label>
+                        <input id="email" type="email" formControlName="email" class="form-control" placeholder="Email" />
+                        @if (f['email'].touched && f['email'].invalid) {
+                        <div class="text-danger mt-1">
+                            @if (f['email'].errors?.['required']) { <div>Email is required.</div> }
+                            @if (f['email'].errors?.['email']) { <div>Invalid email format.</div> }
                         </div>
+                        }
                     </div>
 
                     <!-- Password -->
                     <div class="mb-3 position-relative">
-                        <input [type]="showPassword ? 'text' : 'password'" formControlName="password"
+                        <label for="password" class="visually-hidden">Password</label>
+                        <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
                             class="form-control" placeholder="Password" />
 
-                        <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'" (click)="togglePassword()"
-                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;"></i>
+                        <i class="bi password-toggle" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
+                            (click)="togglePassword()" aria-label="Toggle password visibility"></i>
 
-                        <div *ngIf="f['password'].touched && f['password'].invalid" class="text-danger mt-1">
+                        @if (f['password'].touched && f['password'].invalid) {
+                        <div class="text-danger mt-1">
                             Password is required.
                         </div>
+                        }
                     </div>
 
                     <!-- Submit Button -->

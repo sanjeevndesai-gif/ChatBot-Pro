@@ -1,14 +1,17 @@
-<ngb-toast *ngIf="showToast" [autohide]="true" [delay]="3000" class="position-fixed top-0 end-0 m-3"
+@if (showToast) {
+<ngb-toast [autohide]="true" [delay]="3000" class="position-fixed top-0 end-0 m-3"
   (hidden)="showToast = false">
   {{ toastMessage }}
 </ngb-toast>
+}
 
-<div class="profile-page" *ngIf="user">
+@if (user) {
+<div class="profile-page">
 
   <div class="profile-header p-5">
     <div class="profile-left">
       <div class="avatar">
-        <img src="https://i.pravatar.cc/150" class="rounded-circle" />
+        <img src="https://i.pravatar.cc/150" class="rounded-circle" alt="Profile Avatar" />
       </div>
 
       <h2>{{ user.fullname }}</h2>
@@ -69,3 +72,4 @@
 
   </div>
 </div>
+}

@@ -30,22 +30,22 @@ $error-color: #dc3545;
 // ==========================================
 
 .cb-bg-gradient {
-    background: linear-gradient(135deg, $gradient-start, $gradient-end) !important;
-    color: $text-light !important;
+    background: linear-gradient(135deg, $gradient-start, $gradient-end);
+    color: $text-light;
 }
 
 .bg-white {
     background-color: #ffffff;
-    color: $text-dark !important;
+    color: $text-dark;
 }
 
 // Force text color for contrast
 .text-white {
-    color: $text-light !important;
+    color: $text-light;
 }
 
 .text-black {
-    color: $text-dark !important;
+    color: $text-dark;
 }
 
 // ==========================================

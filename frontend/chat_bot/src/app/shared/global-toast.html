@@ -1,11 +1,10 @@
 <div class="toast-container">
-    <div *ngFor="let t of toasts" class="toast" [ngClass]="t.type">
-
+    @for (t of toasts; track t) {
+    <div class="toast" [ngClass]="t.type">
         <div class="toast-text">
             {{ t.text }}
         </div>
-
         <button class="toast-close" (click)="remove(t)">✕</button>
-
     </div>
+    }
 </div>

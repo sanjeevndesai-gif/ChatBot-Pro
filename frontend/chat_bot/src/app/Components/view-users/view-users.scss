@@ -25,10 +25,21 @@ th {
     user-select: none;
 }
 
+th.sortable {
+    cursor: pointer;
+}
+
+.page-size-select {
+    width: 80px;
+}
+
+/* Table header */
+$table-header-bg: #89c9b9;
+
 .table thead th {
     height: 50px;
     font-weight: 600;
-    background-color: #89c9b9;
+    background-color: $table-header-bg;
     vertical-align: middle;
     user-select: none;
 }

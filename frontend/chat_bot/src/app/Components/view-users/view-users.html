@@ -24,14 +24,18 @@
             </div>
 
             <!-- 🔵 LOADING -->
-            <div *ngIf="loading" class="alert alert-info m-3">
+            @if (loading) {
+            <div class="alert alert-info m-3">
                 Loading users from server...
             </div>
+            }
 
             <!-- 🟡 ERROR -->
-            <div *ngIf="errorMessage" class="alert alert-warning m-3">
+            @if (errorMessage) {
+            <div class="alert alert-warning m-3">
                 {{ errorMessage }} (Showing cached data)
             </div>
+            }
 
 
 
@@ -41,7 +45,7 @@
                         <tr>
                             <th width="120">Sl. No</th>
 
-                            <th (click)="sort('name')" style="cursor:pointer;">
+                            <th (click)="sort('name')" class="sortable">
                                 <div class="d-flex align-items-center gap-2">
                                     Name
                                     <i class="bi" [ngClass]="
@@ -54,7 +58,7 @@
                             </th>
 
 
-                            <th (click)="sort('phone')" style="cursor:pointer;">
+                            <th (click)="sort('phone')" class="sortable">
                                 <div class="d-flex align-items-center gap-2">
                                     Phone
                                     <i class="bi" [ngClass]="
@@ -66,7 +70,7 @@
                                 </div>
                             </th>
 
-                            <th (click)="sort('specialization')" style="cursor:pointer;">
+                            <th (click)="sort('specialization')" class="sortable">
                                 <div class="d-flex align-items-center gap-2">
                                     Specialization
                                     <i class="bi" [ngClass]="
@@ -78,7 +82,7 @@
                                 </div>
                             </th>
 
-                            <th (click)="sort('role')" style="cursor:pointer;">
+                            <th (click)="sort('role')" class="sortable">
                                 <div class="d-flex align-items-center gap-2">
                                     Role
                                     <i class="bi" [ngClass]="
@@ -98,7 +102,8 @@
                     <tbody class="table-border-bottom-0">
 
                         <!-- LOOP THROUGH DATA -->
-                        <tr *ngFor="let user of pagedList; let i = index">
+                        @for (user of pagedList; track user.usersId; let i = $index) {
+                        <tr>
                             <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
                             <td>{{ user.name }}</td>
                             <td>{{ user.phone }}</td>
@@ -113,12 +118,14 @@
                                 </button>
                             </td>
                         </tr>
-
-                        <tr *ngIf="pagedList.length === 0">
+                        }
+                        @if (pagedList.length === 0) {
+                        <tr>
                             <td colspan="5" class="text-center text-muted">
                                 No users found
                             </td>
                         </tr>
+                        }
 
                     </tbody>
 
@@ -130,7 +137,7 @@
                 <!-- Page Size -->
                 <div class="d-flex align-items-center gap-2">
                     <span>Show:</span>
-                    <select class="form-select" style="width: 80px;" [(ngModel)]="pageSize"
+                    <select class="form-select page-size-select" [(ngModel)]="pageSize"
                         (change)="pageSizeChanged()">
                         <option [ngValue]="5">5</option>
                         <option [ngValue]="10">10</option>
@@ -150,9 +157,11 @@
                         </li>
 
                         <!-- Page Numbers -->
-                        <li class="page-item" *ngFor="let p of pages" [class.active]="currentPage === p">
+                        @for (p of pages; track p) {
+                        <li class="page-item" [class.active]="currentPage === p">
                             <button class="page-link" (click)="goToPage(p)">{{ p }}</button>
                         </li>
+                        }
 
 
                         <!-- Next -->

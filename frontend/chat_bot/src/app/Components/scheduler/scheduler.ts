@@ -1,6 +1,7 @@
-import { Component, ViewChild, AfterViewInit, OnInit } from '@angular/core';
+import { Component, ViewChild, AfterViewInit, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FullCalendarComponent, FullCalendarModule } from '@fullcalendar/angular';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -8,6 +9,8 @@ import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import { SchedulerService } from '../../services/scheduler.service';
+import { StorageService } from '../../core/services/storage.service';
+import { AuthService } from '../../services/auth.service';
 
 /* ---------------- TYPES ---------------- */
 interface Slot {
@@ -38,7 +41,12 @@ interface MiniDay {
 })
 export class Scheduler implements AfterViewInit, OnInit {
 
-  constructor(private schedulerService: SchedulerService) { }
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly schedulerService = inject(SchedulerService);
+  private readonly storage = inject(StorageService);
+  private readonly authService = inject(AuthService);
+
+  constructor() { }
 
   /* ---------------- BACKEND STATE ---------------- */
   userId!: string;
@@ -151,8 +159,6 @@ export class Scheduler implements AfterViewInit, OnInit {
       const doctorId = info.event.extendedProps['doctorId'];
       const schedulerId = info.event.extendedProps['schedulerId'];
 
-      console.log("EDIT CLICK 👉", doctorId, schedulerId);
-
       this.openEditByDoctor(doctorId, schedulerId);
     },
 
@@ -220,23 +226,11 @@ export class Scheduler implements AfterViewInit, OnInit {
   private autoGenTimer: any;
 
   /* ---------------- LIFECYCLE ---------------- */
-  // ngOnInit() {
-  //   const authUser = localStorage.getItem('auth_user');
-  //   if (!authUser) return;
-
-  //   this.userId = JSON.parse(authUser).userId;
-  //   this.loadFromCache();
-  //   this.loadFromBackend();
-  // }
   ngOnInit() {
-
-    const authUser = localStorage.getItem('auth_user');
-
+    const authUser = this.authService.getCurrentUser();
     if (authUser) {
-      this.userId = JSON.parse(authUser).userId;
+      this.userId = authUser.userId;
     }
-
-    // ✅ ALWAYS LOAD
     this.loadFromCache();
     this.loadFromBackend();
   }
@@ -254,7 +248,6 @@ export class Scheduler implements AfterViewInit, OnInit {
 
     setTimeout(() => {
       if (this.schedulers.length > 0) {
-        console.log("✅ VIEW READY SYNC");
         this.syncCalendar();
       }
     }, 500);
@@ -263,19 +256,16 @@ export class Scheduler implements AfterViewInit, OnInit {
 
   /* ---------------- BACKEND LOADERS ---------------- */
   loadFromCache() {
-    const cached = localStorage.getItem('schedule_data');
-    if (cached) this.schedulers = JSON.parse(cached);
+    const cached = this.storage.getItem<any[]>('schedule_data');
+    if (cached) this.schedulers = cached;
   }
 
   loadFromBackend() {
     this.schedulerService.getSchedulers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((res: any[]) => {
-
         this.schedulers = res;
-
-        // ✅ AUTO SELECT ALL DOCTORS
         this.selectedUsers = [...this.users];
-
         setTimeout(() => {
           if (this.calendar) {
             this.syncCalendar();
@@ -609,7 +599,7 @@ export class Scheduler implements AfterViewInit, OnInit {
       description: this.description
     };
 
-    console.log("FINAL PAYLOAD 👉", payload);
+
 
     // ✅ FIX: delay ONLY validation, not API
     Promise.resolve().then(() => {

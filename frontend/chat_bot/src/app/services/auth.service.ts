@@ -1,26 +1,26 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, map } from 'rxjs';
+import { Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { StorageService } from '../core/services/storage.service';
+import { AuthUser, AuthResponse } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private baseUrl = environment.auth_apiBaseUrl;
-  private storageKey = 'auth_user';
+  private readonly baseUrl = environment.auth_apiBaseUrl;
+  private readonly storageKey = 'auth_user';
+  private readonly accessTokenKey = 'accessToken';
+  private readonly refreshTokenKey = 'refreshToken';
 
   constructor(
-    private http: HttpClient,
-    private router: Router
+    private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly storage: StorageService
   ) { }
 
-  /* =====================================================
-     COMMON ERROR HANDLER
-  ===================================================== */
-  private handleError(error: any) {
-    console.error('AuthService ERROR:', error);
-
+  private handleError(error: any): Observable<never> {
     let message = 'Something went wrong. Please try again.';
 
     if (error?.error?.message) {
@@ -29,145 +29,57 @@ export class AuthService {
       message = 'Cannot connect to server';
     } else if (error?.status === 401) {
       message = 'Session expired. Please login again';
-      this.logout(); // auto logout if unauthorized
+      this.logout();
     }
 
     return throwError(() => new Error(message));
   }
 
-  /* =====================================================
-     RESPONSE VALIDATION
-  ===================================================== */
-  private validateAuthResponse(res: any) {
-
-    if (!res) throw new Error('Empty response from server');
-    if (!res.token) throw new Error('Token missing in response');
-    if (!res.user) throw new Error('User data missing in response');
-
-    return res;
-  }
-
-  /* =====================================================
-     REGISTER
-  ===================================================== */
-  // register(payload: any): Observable<any> {
-  //   return this.http.post(`${this.baseUrl}/auth-service`, payload)
-  //     .pipe(catchError(err => this.handleError(err)));
-  // }
-
-  register(formValue: any) {
-
+  register(formValue: Record<string, string>): Observable<unknown> {
     const payload = {
-      email: formValue.email,
-      password: formValue.password,
-
-      // everything else will go to payload automatically
-      fullname: formValue.fullname,
-      country: formValue.country,
-      country_code: formValue.country_code,
-      phone: formValue.phone_number,
-      address: formValue.address,
-      orgname: formValue.orgname,
-      occupation: formValue.occupation
+      email: formValue['email'],
+      password: formValue['password'],
+      fullname: formValue['fullname'],
+      country: formValue['country'],
+      country_code: formValue['country_code'],
+      phone: formValue['phone_number'],
+      address: formValue['address'],
+      orgname: formValue['orgname'],
+      occupation: formValue['occupation']
     };
 
-    return this.http.post(`${environment.auth_apiBaseUrl}/register`, payload);
+    return this.http.post(`${this.baseUrl}/register`, payload).pipe(
+      catchError(err => this.handleError(err))
+    );
   }
 
-  /* =====================================================
-     LOGIN
-  ===================================================== */
-  // login(payload: any): Observable<any> {
-  //   return this.http.post(`${this.baseUrl}/auth-service/login`, payload)
-  //     .pipe(
-  //       map(res => this.validateAuthResponse(res)),
-  //       tap(res => this.storeAuthUser(res)),
-  //       catchError(err => this.handleError(err))
-  //     );
-  // }
-
-  login(credentials: any) {
-    return this.http.post(`${environment.auth_apiBaseUrl}/login`, credentials)
-      .pipe(
-        tap((res: any) => {
-          localStorage.setItem('accessToken', res.accessToken);
-          localStorage.setItem('refreshToken', res.refreshToken);
-        })
-      );
+  login(credentials: { email: string; password: string }): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/login`, credentials).pipe(
+      tap((res) => {
+        this.storage.setString(this.accessTokenKey, res.accessToken);
+        this.storage.setString(this.refreshTokenKey, res.refreshToken);
+      }),
+      catchError(err => this.handleError(err))
+    );
   }
 
-  /* =====================================================
-     STORE AUTH USER SAFELY
-  ===================================================== */
-  private storeAuthUser(res: any) {
-    try {
-      const authUser = {
-        token: res.token ?? '',
-        userId: res.user?.userId ?? '',
-        fullname: res.user?.fullname ?? '',
-        email: res.user?.email ?? '',
-        phone: res.user?.phone_number ?? '',
-        occupation: res.user?.occupation ?? '',
-        orgId: res.user?.orgId ?? '',
-        address: res.user?.address ?? ''
-      };
-
-      localStorage.setItem(this.storageKey, JSON.stringify(authUser));
-      console.log('Auth user stored successfully');
-    } catch (e) {
-      console.error('Failed to store auth user', e);
-    }
-  }
-
-  /* =====================================================
-     SAFE GETTERS
-  ===================================================== */
-  private safeParse(json: string | null) {
-    try {
-      return json ? JSON.parse(json) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  // getToken(): string | null {
-  //   return this.safeParse(localStorage.getItem(this.storageKey))?.token ?? null;
-  // }
-
-  // getToken(): string | null {
-  //   const token = this.safeParse(localStorage.getItem(this.storageKey))?.token;
-
-  //   if (token) return token;
-
-  //   // 🔥 DEV AUTO LOGIN (remove in production)
-  //   if (!environment.production) {
-  //     console.warn('⚠️ Dev token injected');
-  //     return 'dev-token-123';
-  //   }
-
-  //   return null;
-  // }
   getToken(): string | null {
-    return localStorage.getItem('accessToken');
+    return this.storage.getString(this.accessTokenKey);
   }
 
   getUserId(): string | null {
-    return this.safeParse(localStorage.getItem(this.storageKey))?.userId ?? null;
+    return this.storage.getItem<AuthUser>(this.storageKey)?.userId ?? null;
   }
 
-  // isLoggedIn(): boolean {
-  //   return !!this.getToken();
-  // }
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('accessToken');
+    return !!this.storage.getString(this.accessTokenKey);
   }
 
-  getCurrentUser() {
-    const user = this.safeParse(localStorage.getItem(this.storageKey));
+  getCurrentUser(): AuthUser | null {
+    const user = this.storage.getItem<AuthUser>(this.storageKey);
 
     if (user) return user;
 
-    // dev fallback
     if (!environment.production) {
       return {
         userId: 'DEV123',
@@ -182,17 +94,12 @@ export class AuthService {
     return null;
   }
 
-  /* =====================================================
-     LOGOUT
-  ===================================================== */
-  logout() {
-
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem(this.storageKey);
-
+  logout(): void {
+    this.storage.removeItem(this.accessTokenKey);
+    this.storage.removeItem(this.refreshTokenKey);
+    this.storage.removeItem(this.storageKey);
     this.router.navigate(['/login']);
-
   }
 
 }
+
