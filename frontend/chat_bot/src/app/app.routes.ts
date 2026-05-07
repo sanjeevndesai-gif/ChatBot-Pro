@@ -2,10 +2,11 @@ import { Routes } from '@angular/router';
 import { Login } from './Components/login/login';
 import { Register } from './Components/register/register';
 import { Layout } from './pages/layout/layout';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
 
-    // ✅ 1. Landing Page (Default Public Page)
+    // 1. Landing Page (Default Public Page)
     {
         path: '',
         pathMatch: 'full',
@@ -13,7 +14,7 @@ export const routes: Routes = [
             import('./pages/landing/landing').then(m => m.Landing),
     },
 
-    // ✅ 2. Public Auth Pages
+    // 2. Public Auth Pages
     {
         path: 'login',
         component: Login,
@@ -23,26 +24,18 @@ export const routes: Routes = [
         component: Register,
     },
 
-    // ✅ 3. PRIVATE AREA with Horizontal Menu (Layout)
+    // 3. Private Area with Layout (requires authentication)
     {
         path: '',
         component: Layout,
+        canActivate: [authGuard],
         children: [
-
-            // ✅ Dashboard
-            // {
-            //     path: 'appointments',
-            //     loadComponent: () =>
-            //         import('./Components/appointments/appointments')
-            //             .then(m => m.Appointments),
-            // },
             {
                 path: 'book-appointment',
                 loadComponent: () =>
                     import('./Components/book-appointment/book-appointment')
                         .then(m => m.BookAppointment),
             },
-
             {
                 path: 'schedulereport',
                 loadComponent: () =>
@@ -55,14 +48,12 @@ export const routes: Routes = [
                     import('./Components/scheduler/scheduler')
                         .then(m => m.Scheduler),
             },
-            // ✅ Help Page
             {
                 path: 'help',
                 loadComponent: () =>
                     import('./Components/faq/faq')
                         .then(m => m.Faq),
             },
-            //✅ settings Page
             {
                 path: 'settings',
                 loadComponent: () =>
@@ -75,7 +66,6 @@ export const routes: Routes = [
                     import('./Components/billing/billing-page/billing-page')
                         .then(m => m.BillingPage),
             },
-            //✅ profile Page
             {
                 path: 'profile',
                 loadComponent: () =>
