@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppointmentService } from '../../services/appointment.service';
 import { SchedulerService } from '../../services/scheduler.service';
+import { UserService } from '../../services/user.service';
 
 interface BookingInfo {
   fullName: string;
@@ -38,10 +39,11 @@ export class BookAppointment implements OnInit {
 
   constructor(
     private appointmentService: AppointmentService,
-    private schedulerService: SchedulerService
+    private schedulerService: SchedulerService,
+    private userService: UserService
   ) { }
 
-  doctors: string[] = [];
+  doctors: { id: string; name: string; specialization: string }[] = [];
   selectedDoctor: string = '';
 
   currentWeekStart!: Date;
@@ -74,29 +76,25 @@ export class BookAppointment implements OnInit {
     this.setWeekStart(today);
     this.buildMiniCalendar(today);
 
-    this.loadSlots();
+    this.loadDoctors();
   }
 
-  /** LOAD SLOTS FROM SCHEDULER */
-  loadSlots() {
-
-    this.schedulerService.getSchedulers()
-      .subscribe((schedulers: any[]) => {
-
-        const doctorSet = new Set<string>();
-
-        schedulers.forEach(s => {
-
-          if (s.doctorIds) {
-            s.doctorIds.forEach((d: string) => doctorSet.add(d));
-          }
-
-        });
-
-        this.doctors = Array.from(doctorSet);
-
-      });
-
+  /** LOAD DOCTORS FROM BACKEND USERS */
+  loadDoctors() {
+    this.userService.getUsers(0, 100, '').subscribe((res: any) => {
+      const allUsers: any[] = res?.content ?? [];
+      this.doctors = allUsers
+        .filter(u => (u.payload?.role ?? '').toLowerCase() === 'doctor')
+        .map(u => ({
+          id: u.id,
+          name: u.payload?.name || u.payload?.fullname || 'Unknown',
+          specialization: u.payload?.specialization || ''
+        }));
+      if (this.doctors.length === 1) {
+        this.selectedDoctor = this.doctors[0].id;
+        this.loadSlotsForDoctor(this.selectedDoctor);
+      }
+    });
   }
 
   /** LOAD BOOKED APPOINTMENTS */

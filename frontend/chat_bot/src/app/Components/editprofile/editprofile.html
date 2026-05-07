@@ -5,10 +5,13 @@
 
     <!-- Profile Image -->
     <div class="photo-section">
-      <img src="https://i.pravatar.cc/150" />
+      <img [src]="photoPreview || 'https://i.pravatar.cc/150'" alt="Profile Photo" />
       <div class="actions">
-        <button class="btn primary" type="button">Upload new photo</button>
-        <button class="btn light" type="button">Reset</button>
+        <label class="btn primary" style="cursor:pointer;">
+          Upload new photo
+          <input type="file" accept="image/*" style="display:none;" (change)="onPhotoSelected($event)" />
+        </label>
+        <button class="btn light" type="button" (click)="resetPhoto()">Reset</button>
       </div>
     </div>
 
@@ -28,7 +31,7 @@
 
         <div class="form-group">
           <label>Organization</label>
-          <input type="text" [value]="user.orgId" disabled />
+          <input type="text" [value]="user.orgname || ''" disabled />
         </div>
 
         <div class="form-group">
@@ -45,16 +48,19 @@
           <label>Country</label>
           <select [(ngModel)]="user.country" name="country">
             <option value="">Select</option>
-            <option>India</option>
-            <option>USA</option>
+            <option value="India">India</option>
+            <option value="USA">USA</option>
+            <option value="UK">UK</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
           </select>
         </div>
 
         <div class="form-group">
           <label>Language</label>
           <select [(ngModel)]="user.language" name="language">
-            <option>English</option>
-            <option>Hindi</option>
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
           </select>
         </div>
 
@@ -64,13 +70,16 @@
         <button type="submit" class="btn primary">Save changes</button>
         <button type="button" class="btn light" (click)="cancel()">Cancel</button>
       </div>
+
+      <div *ngIf="saveError" class="alert alert-danger mt-3">{{ saveError }}</div>
+      <div *ngIf="saveSuccess" class="alert alert-success mt-3">{{ saveSuccess }}</div>
     </form>
   </div>
 
   <!-- ================= CHANGE PASSWORD ================= -->
   <div class="profile-card">
 
-    <form>
+    <form (ngSubmit)="changePassword()">
       <h4>Change Password</h4>
 
       <div class="form-grid">
@@ -98,11 +107,14 @@
       </ul>
 
       <div class="actions">
-        <button type="button" class="btn primary" disabled>
+        <button type="submit" class="btn primary">
           Save changes
         </button>
-        <button type="button" class="btn light">Cancel</button>
+        <button type="button" class="btn light" (click)="cancel()">Cancel</button>
       </div>
+
+      <div *ngIf="pwdError" class="alert alert-danger mt-3">{{ pwdError }}</div>
+      <div *ngIf="pwdSuccess" class="alert alert-success mt-3">{{ pwdSuccess }}</div>
     </form>
 
   </div>

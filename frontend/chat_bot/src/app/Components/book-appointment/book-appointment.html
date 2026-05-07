@@ -2,6 +2,24 @@
 
   <!-- MINI CALENDAR -->
   <aside class="mini-calendar">
+    <div class="doctor-select">
+      <label>Select Doctor</label>
+
+      <select [(ngModel)]="selectedDoctor" (change)="onDoctorChange()">
+
+        <option value="">Choose doctor</option>
+
+        <option *ngFor="let d of doctors" [value]="d.id">
+          {{ d.name }}{{ d.specialization ? ' — ' + d.specialization : '' }}
+        </option>
+
+      </select>
+
+      <small *ngIf="doctors.length === 0" class="text-muted" style="font-size:0.75rem">
+        No doctors found. Add doctors in Users.
+      </small>
+    </div>
+
     <div class="mini-header">
       <button class="nav-btn" (click)="prevWeek()">‹</button>
       <h3>{{ miniMonthYear }}</h3>
@@ -19,22 +37,6 @@
         (click)="onMiniDateClick(d)">
         {{ d.day || '' }}
       </span>
-    </div>
-
-    <div class="doctor-select">
-      <label>Select Doctor</label>
-
-      <select [(ngModel)]="selectedDoctor" (change)="onDoctorChange()">
-
-        <option value="">Choose doctor</option>
-
-        <option *ngFor="let d of doctors" [value]="d">
-
-          {{ d }}
-
-        </option>
-
-      </select>
     </div>
   </aside>
 

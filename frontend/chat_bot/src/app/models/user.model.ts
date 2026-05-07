@@ -9,6 +9,7 @@ export interface User {
 
 export interface AuthUser {
     userId: string;
+    mongoId?: string;
     fullname: string;
     email: string;
     phone?: string;
@@ -17,6 +18,7 @@ export interface AuthUser {
     orgname?: string;
     country?: string;
     country_code?: string;
+    language?: string;
 }
 
 export interface AuthResponse {

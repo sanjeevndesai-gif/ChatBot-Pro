@@ -2,13 +2,28 @@
 <div class="card plan-card mb-5">
   <h5 class="card-header">Current Plan</h5>
 
-  <div class="card-body">
+  <!-- Loading -->
+  <div *ngIf="loading()" class="card-body text-center py-5">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <div class="card-body" *ngIf="!loading()">
+
+    <!-- ⛔ DEACTIVATED BANNER -->
+    <div *ngIf="isDeactivated()" class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+      <i class="bi bi-slash-circle-fill fs-5 mt-1"></i>
+      <div>
+        <strong>Account Deactivated</strong><br />
+        <small>Your account has been deactivated due to plan expiry or cancellation. Please upgrade to reactivate.</small>
+      </div>
+    </div>
+
     <div class="row g-4 align-items-center">
 
       <!-- LEFT -->
       <div class="col-md-6">
         <h5 class="fw-semibold mb-1">
-          Your Current Plan is {{ plan().name }}
+          Your Current Plan is <span [class.text-danger]="isDeactivated()" [class.text-success]="!isDeactivated()">{{ plan().name }}</span>
         </h5>
         <p class="text-muted mb-1">A simple start for everyone</p>
         <p class="text-muted small">
@@ -23,25 +38,32 @@
 
       <!-- RIGHT -->
       <div class="col-md-6">
-        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+
+        <!-- ⚠️ NEAR-EXPIRY WARNING (shown at 80%+ but not yet deactivated) -->
+        <div *ngIf="nearExpiry() && !isDeactivated()" class="alert alert-warning d-flex align-items-start gap-2 mb-3">
           <i class="bi bi-exclamation-triangle-fill mt-1"></i>
           <div>
             <strong>Action required</strong><br />
-            <small>Your plan will expire soon</small>
+            <small>Your plan will expire soon — only {{ daysRemaining }} days remaining. Upgrade to avoid deactivation.</small>
           </div>
         </div>
 
+        <!-- Usage progress -->
         <div class="d-flex justify-content-between small mb-1">
           <span>Usage</span>
           <span>{{ daysUsed() }} / {{ daysTotal() }} days</span>
         </div>
 
         <div class="progress">
-          <div class="progress-bar" [style.width.%]="progressPercent"></div>
+          <div class="progress-bar"
+               [class.bg-danger]="isDeactivated()"
+               [class.bg-warning]="nearExpiry() && !isDeactivated()"
+               [style.width.%]="progressPercent"></div>
         </div>
 
-        <p class="small text-muted mt-2">
-          {{ daysTotal() - daysUsed() }} days remaining
+        <p class="small mt-2" [class.text-danger]="isDeactivated()" [class.text-muted]="!isDeactivated()">
+          <ng-container *ngIf="isDeactivated()">Account deactivated</ng-container>
+          <ng-container *ngIf="!isDeactivated()">{{ daysRemaining }} days remaining</ng-container>
         </p>
       </div>
 
@@ -49,10 +71,11 @@
       <div class="col-12 d-flex gap-3 mt-2">
         <button class="btn btn-primary px-4"
                 (click)="openPricingModal(pricingModal)">
-          Upgrade Plan
+          {{ isDeactivated() ? 'Reactivate Plan' : 'Upgrade Plan' }}
         </button>
 
         <button class="btn btn-outline-danger px-4"
+                [disabled]="isDeactivated()"
                 (click)="openSmallModal(cancelConfirmModal)">
           Cancel Subscription
         </button>
@@ -77,14 +100,13 @@
         <h6 class="plan-title">Lite</h6>
         <div class="plan-price">$29</div>
         <div class="plan-period">per month</div>
-
         <ul class="plan-features">
           <li>Unlimited sending</li>
           <li>Email marketing</li>
           <li>Up to 5 users</li>
         </ul>
-
-        <button class="btn btn-outline-success w-100">
+        <button class="btn btn-outline-success w-100"
+                (click)="upgradePlan('Lite', 29, upgradeSuccessModal)">
           Choose Plan
         </button>
       </div>
@@ -92,19 +114,16 @@
       <!-- PLUS -->
       <div class="pricing-card popular">
         <div class="popular-tag">Most Popular</div>
-
         <h6 class="plan-title">Plus</h6>
         <div class="plan-price">$89</div>
         <div class="plan-period">per month</div>
-
         <ul class="plan-features">
           <li>Unlimited sending</li>
           <li>Email marketing</li>
           <li>Up to 25 users</li>
         </ul>
-
         <button class="btn btn-primary w-100"
-                (click)="upgradePlan('Plus', upgradeSuccessModal)">
+                (click)="upgradePlan('Plus', 89, upgradeSuccessModal)">
           Choose Plan
         </button>
       </div>
@@ -114,14 +133,13 @@
         <h6 class="plan-title">Enterprise</h6>
         <div class="plan-price">$159</div>
         <div class="plan-period">per month</div>
-
         <ul class="plan-features">
           <li>Unlimited sending</li>
           <li>Advanced reports</li>
           <li>Up to 50 users</li>
         </ul>
-
-        <button class="btn btn-outline-success w-100">
+        <button class="btn btn-outline-success w-100"
+                (click)="upgradePlan('Enterprise', 159, upgradeSuccessModal)">
           Choose Plan
         </button>
       </div>
@@ -130,24 +148,42 @@
   </div>
 </ng-template>
 
+<!-- ================= UPGRADE SUCCESS ================= -->
+<ng-template #upgradeSuccessModal>
+  <div class="modal-body text-center py-4">
+    <div class="icon success mb-3"><i class="bi bi-check-circle-fill text-success fs-1"></i></div>
+    <h5 class="mb-2">Plan Upgraded Successfully!</h5>
+    <p class="text-muted">Your new plan is now active for 30 days.</p>
+    <button class="btn btn-primary px-4" (click)="closeAll()">Done</button>
+  </div>
+</ng-template>
+
 <!-- ================= CANCEL CONFIRM ================= -->
 <ng-template #cancelConfirmModal>
-  <div class="modal-body text-center">
-    <div class="icon warning">!</div>
+  <div class="modal-body text-center py-4">
+    <div class="icon warning mb-3"><i class="bi bi-exclamation-triangle-fill text-warning fs-1"></i></div>
     <h5 class="mb-3">Are you sure you want to cancel?</h5>
-
-    <div class="d-flex justify-content-center gap-3">
+    <p class="text-muted small">Your account will be deactivated immediately.</p>
+    <div class="d-flex justify-content-center gap-3 mt-3">
       <button class="btn btn-danger px-4"
               (click)="confirmCancel(unsubscribedModal)">
         Yes, Cancel
       </button>
-      <button class="btn btn-light px-4"
-              (click)="closeAll()">
-        Keep Plan
-      </button>
+      <button class="btn btn-light px-4" (click)="closeAll()">Keep Plan</button>
     </div>
   </div>
 </ng-template>
+
+<!-- ================= UNSUBSCRIBED ================= -->
+<ng-template #unsubscribedModal>
+  <div class="modal-body text-center py-4">
+    <div class="icon mb-3"><i class="bi bi-slash-circle-fill text-danger fs-1"></i></div>
+    <h5 class="mb-2">Subscription Cancelled</h5>
+    <p class="text-muted">Your account has been deactivated. You can reactivate anytime by upgrading.</p>
+    <button class="btn btn-primary px-4" (click)="closeAll()">Close</button>
+  </div>
+</ng-template>
+
 
 <!-- ================= SUCCESS ================= -->
 <ng-template #unsubscribedModal>

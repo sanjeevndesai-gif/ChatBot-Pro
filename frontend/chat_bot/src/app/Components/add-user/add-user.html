@@ -51,6 +51,26 @@
             </div>
         </div>
 
+        <!-- About -->
+        <div class="mb-3">
+            <label for="about" class="form-label fw-semibold">About (Experience, Background & Professional Details)</label>
+            <textarea class="form-control" id="about" rows="4" placeholder="e.g. 10 years of experience in cardiology, worked at Apollo Hospitals..." formControlName="about"></textarea>
+        </div>
+
+        <!-- Photo -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Profile Photo</label>
+            <div class="d-flex align-items-center gap-3">
+                <img *ngIf="photoBase64" [src]="photoBase64" alt="Preview"
+                    style="width:72px;height:72px;object-fit:cover;border-radius:50%;border:2px solid #dee2e6;" />
+                <div *ngIf="!photoBase64"
+                    style="width:72px;height:72px;border-radius:50%;border:2px dashed #adb5bd;display:flex;align-items:center;justify-content:center;color:#adb5bd;font-size:24px;">
+                    &#128100;
+                </div>
+                <input type="file" class="form-control" accept="image/*" (change)="onPhotoSelected($event)" style="max-width:260px;" />
+            </div>
+        </div>
+
     </form>
 </div>
 

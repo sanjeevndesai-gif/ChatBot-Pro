@@ -66,7 +66,11 @@ export class AuthService {
           this.storage.setString(this.refreshTokenKey, refreshToken);
         }
         if ((res as any)?.user) {
-          this.storage.setItem(this.storageKey, (res as any).user);
+          const userData = {
+            ...(res as any).user,
+            mongoId: (res as any).userId
+          };
+          this.storage.setItem(this.storageKey, userData);
         }
       }),
       catchError(err => this.handleError(err))

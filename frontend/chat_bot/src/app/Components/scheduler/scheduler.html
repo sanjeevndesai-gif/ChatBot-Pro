@@ -9,6 +9,43 @@
       <span>Add Schedule</span>
     </button>
 
+    <!-- Doctor selection -->
+    <div class="doctor-filter">
+
+      <div class="filter-header" (click)="toggleUserDropdown()">
+        <b>Filter Doctors</b>
+        <span>{{ selectedUsers.length }} selected</span>
+      </div>
+
+      <div *ngIf="userDropdownOpen" class="filter-dropdown">
+
+
+        <!-- Search (only if more than one user) -->
+        <input type="text" [(ngModel)]="userSearchText" placeholder="Search doctor..." class="form-control mb-2" *ngIf="filteredUsers().length > 1" />
+
+        <!-- Select All (only if more than one doctor) -->
+        <label *ngIf="filteredUsers().length > 1">
+          <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
+          Select All
+        </label>
+
+        <hr *ngIf="filteredUsers().length > 1" />
+
+        <!-- Doctor List -->
+        <div *ngFor="let user of filteredUsers()">
+
+          <label>
+            <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
+            {{ user.name }}
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+    <!-- Doctor selection End -->
+
     <div class="mini-calendar">
       <div class="mini-header">
         <button class="mini-nav" (click)="prevMini()">&lt;</button>
@@ -33,42 +70,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Doctor selection -->
-    <div class="doctor-filter">
-
-      <div class="filter-header" (click)="toggleUserDropdown()">
-        <b>Filter Doctors</b>
-        <span>{{ selectedUsers.length }} selected</span>
-      </div>
-
-      <div *ngIf="userDropdownOpen" class="filter-dropdown">
-
-        <!-- Search -->
-        <input type="text" [(ngModel)]="userSearchText" placeholder="Search doctor..." class="form-control mb-2" />
-
-        <!-- Select All -->
-        <label>
-          <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
-          Select All
-        </label>
-
-        <hr />
-
-        <!-- Doctor List -->
-        <div *ngFor="let user of filteredUsers()">
-
-          <label>
-            <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
-            {{ user.name }}
-          </label>
-
-        </div>
-
-      </div>
-
-    </div>
-    <!-- Doctor selection End -->
 
     <div class="filters">
       <h5>Schedule Filters</h5>
@@ -136,19 +137,19 @@
 
       <div class="dropdown-body" *ngIf="userDropdownOpen">
 
-        <!-- Search -->
-        <input type="text" placeholder="Search user..." [(ngModel)]="userSearchText" class="search-input" />
+  <!-- Search (only if more than one user) -->
+  <input *ngIf="filteredUsers().length > 1" type="text" placeholder="Search user..." [(ngModel)]="userSearchText" class="search-input" />
 
         <!-- User List -->
         <div class="dropdown-list">
 
-          <!-- ✅ Select All -->
-          <label class="dropdown-item select-all">
+          <!-- ✅ Select All (only if more than one user) -->
+          <label class="dropdown-item select-all" *ngIf="filteredUsers().length > 1">
             <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
             <span>Select All</span>
           </label>
 
-          <hr />
+          <hr *ngIf="filteredUsers().length > 1" />
           <label class="dropdown-item" *ngFor="let user of filteredUsers()">
 
             <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
@@ -198,11 +199,16 @@
 
     <!-- Custom Date Range -->
     <div *ngIf="repeatOption === 'custom'" class="section">
+
       <label class="label">From Date</label>
-      <input type="date" [(ngModel)]="customFromDate" class="max-input" />
+      <input type="date" [(ngModel)]="customFromDate" class="max-input" [min]="todayString" [max]="maxToDateString" (change)="onFromDateChange()" />
 
       <label class="label">To Date</label>
-      <input type="date" [(ngModel)]="customToDate" class="max-input" />
+      <input type="date" [(ngModel)]="customToDate" class="max-input" [min]="customFromDate || todayString" [max]="maxToDateString" (change)="onToDateChange()" />
+
+      <div *ngIf="dateError" class="error-message" style="color: red; font-size: 13px;">
+        {{ dateError }}
+      </div>
     </div>
 
     <!-- FULL DAY TIMING -->

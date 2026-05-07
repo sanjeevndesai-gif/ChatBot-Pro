@@ -44,7 +44,7 @@
 
             <!-- USER -->
             <div ngbDropdown class="icon-dropdown">
-                <img src="https://i.pravatar.cc/150" width="32" class="rounded-circle" ngbDropdownToggle />
+                <img [src]="profilePhoto" width="32" height="32" class="rounded-circle" style="object-fit:cover;" ngbDropdownToggle />
 
                 <ul ngbDropdownMenu>
                     <li>

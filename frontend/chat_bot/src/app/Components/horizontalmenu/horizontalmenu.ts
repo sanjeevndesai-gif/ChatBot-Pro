@@ -36,6 +36,16 @@ export class Horizontalmenu {
   // profileUrl = `https://yourdomain.com/profile/${userId}`;
   profileUrl: string = 'https://example.com/profile/1234';
 
+  get profilePhoto(): string {
+    const user = this.authService.getCurrentUser();
+    const mongoId = (user as any)?.mongoId;
+    if (mongoId) {
+      const saved = localStorage.getItem('profile_photo_' + mongoId);
+      if (saved) return saved;
+    }
+    return 'https://i.pravatar.cc/150';
+  }
+
   menu: MenuItem[] = [
     // { title: 'Dashboards', icon: 'bi-house-door', route: '/appointments' },
     { title: 'Appointments', icon: 'bi-calendar2-week', route: '/book-appointment' },

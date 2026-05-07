@@ -1,7 +1,7 @@
 /* ===== LAYOUT ===== */
 .appointment-wrapper {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 300px 1fr;
   gap: 32px;
   padding: 24px;
   background: #fafafa;
@@ -10,7 +10,50 @@
 /* ===== MINI CALENDAR ===== */
 .mini-calendar {
   border-right: 1px solid #e5e7eb;
-  padding: 16px 20px 0 0;
+  padding: 0 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== DOCTOR SELECT ===== */
+.doctor-select {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+.doctor-select label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #059669;
+}
+
+.doctor-select select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #6ee7b7;
+  background: #fff;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #064e3b;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
 }
 
 .mini-header {
@@ -18,6 +61,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
+  margin-top: 0;
 }
 
 .mini-header h3 {

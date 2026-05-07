@@ -1,17 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
 import * as XLSX from 'xlsx';
 
 import { UserService } from '../../services/user.service';
 import { AddUser } from '../add-user/add-user';
 import { LoggerService } from '../../services/logger.service';
+import { BillingService } from '../../services/billing.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-view-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgbToastModule],
   templateUrl: './view-users.html',
   styleUrl: './view-users.scss'
 })
@@ -23,6 +25,9 @@ export class ViewUsers implements OnInit {
 
   loading = true;
   errorMessage = '';
+  planLimitToast = false;
+  planLimitMessage = '';
+  planLimitInlineMessage = '';
 
   searchText: string = '';
 
@@ -38,7 +43,9 @@ export class ViewUsers implements OnInit {
   constructor(
     private userService: UserService,
     private modalService: NgbModal,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private billingService: BillingService,
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
@@ -78,11 +85,13 @@ export class ViewUsers implements OnInit {
 
         const list = data?.content ?? [];
 
-        // flatten payload
-        this.users = list.map((u: any) => ({
-          usersId: u.id || u._id,
-          ...u.payload
-        }));
+        // flatten payload and filter out admin users
+        this.users = list
+          .map((u: any) => ({
+            usersId: u.id || u._id,
+            ...u.payload
+          }))
+          .filter((user: any) => (user.role ?? '').toLowerCase() !== 'admin');
 
         this.applyFilter();
 
@@ -121,12 +130,14 @@ export class ViewUsers implements OnInit {
 
     const text = (this.searchText || '').toLowerCase();
 
-    this.filteredList = (this.users || []).filter(u =>
-      (u?.name || '').toLowerCase().includes(text) ||
-      (u?.phone || '').toLowerCase().includes(text) ||
-      (u?.role || '').toLowerCase().includes(text) ||
-      (u?.specialization || '').toLowerCase().includes(text)
-    );
+    this.filteredList = (this.users || [])
+      .filter(u => (u.role ?? '').toLowerCase() !== 'admin') // filter out admin again for safety
+      .filter(u =>
+        (u?.name || '').toLowerCase().includes(text) ||
+        (u?.phone || '').toLowerCase().includes(text) ||
+        (u?.role || '').toLowerCase().includes(text) ||
+        (u?.specialization || '').toLowerCase().includes(text)
+      );
 
     this.applySorting();
 
@@ -194,12 +205,51 @@ export class ViewUsers implements OnInit {
      MODAL
   ===================================================== */
   openAddUser() {
-    const modalRef = this.modalService.open(AddUser, { size: 'lg', centered: true });
+    const user = this.authService.getCurrentUser();
+    const mongoId = (user as any)?.mongoId;
 
-    modalRef.result.then((result) => {
-      if (result?.success) {
-        this.logger.info(result.message);
-        this.loadUsers();
+    if (!mongoId) {
+      this.planLimitInlineMessage = 'Unable to verify your plan. Please login again.';
+      this.planLimitMessage = this.planLimitInlineMessage;
+      this.planLimitToast = true;
+      setTimeout(() => this.planLimitToast = false, 5000);
+      return;
+    }
+
+    this.billingService.getBilling(mongoId).subscribe({
+      next: (billing) => {
+        const doctorCount = this.users.filter(
+          (u: any) => (u.role ?? '').toLowerCase() === 'doctor'
+        ).length;
+
+        // Prefer backend maxDoctors; fallback keeps Basic protected if older API response is missing this field.
+        const hasMaxDoctors = typeof (billing as any)?.maxDoctors === 'number';
+        const maxDoctors = hasMaxDoctors
+          ? (billing as any).maxDoctors
+          : ((billing?.planName ?? '').toLowerCase() === 'basic' ? 1 : -1);
+
+        if (maxDoctors !== -1 && doctorCount >= maxDoctors) {
+          this.planLimitInlineMessage = 'Limit reached: your current plan allows to add  only limited users. Please upgrade to add more';
+          this.planLimitMessage = this.planLimitInlineMessage;
+          this.planLimitToast = true;
+          setTimeout(() => this.planLimitToast = false, 5000);
+          return;
+        }
+
+        this.planLimitInlineMessage = '';
+        const modalRef = this.modalService.open(AddUser, { size: 'lg', centered: true });
+        modalRef.result.then((result) => {
+          if (result?.success) {
+            this.logger.info(result.message);
+            this.loadUsers();
+          }
+        }).catch(() => {});
+      },
+      error: () => {
+        this.planLimitInlineMessage = 'Unable to verify plan limits right now. Please try again in a moment.';
+        this.planLimitMessage = this.planLimitInlineMessage;
+        this.planLimitToast = true;
+        setTimeout(() => this.planLimitToast = false, 5000);
       }
     });
   }

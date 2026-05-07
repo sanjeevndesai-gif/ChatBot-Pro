@@ -3,6 +3,15 @@
   <!-- LEFT PANEL -->
   <div class="left-panel">
 
+    <!-- Doctor selection (matches scheduler) -->
+    <div class="doctor-filter">
+      <label for="doctorSelect" class="label">Select Doctor</label>
+      <select id="doctorSelect" class="form-control" [(ngModel)]="selectedDoctor">
+        <option value="">Choose doctor</option>
+        <option *ngFor="let user of getDoctors()" [value]="user.id">{{ user.name }} — {{ user.speciality || user.role }}</option>
+      </select>
+    </div>
+
     <!-- <button class="add-btn" (click)="onAddSchedule()">
       + Add Schedule
     </button> -->

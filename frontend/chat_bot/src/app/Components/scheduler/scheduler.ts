@@ -11,6 +11,7 @@ import { CalendarOptions, EventInput } from '@fullcalendar/core';
 import { SchedulerService } from '../../services/scheduler.service';
 import { StorageService } from '../../core/services/storage.service';
 import { AuthService } from '../../services/auth.service';
+import { UserService } from '../../services/user.service';
 
 /* ---------------- TYPES ---------------- */
 interface Slot {
@@ -41,10 +42,41 @@ interface MiniDay {
 })
 export class Scheduler implements AfterViewInit, OnInit {
 
+      toggleUserDropdown() {
+        this.userDropdownOpen = !this.userDropdownOpen;
+      }
+    dateError: string = '';
+    onFromDateChange() {
+      this.dateError = '';
+      if (this.customFromDate && this.customFromDate < this.todayString) {
+        this.dateError = 'From Date cannot be less than today.';
+        this.customFromDate = this.todayString;
+      }
+      if (this.customToDate && this.customToDate < this.customFromDate) {
+        this.dateError = 'To Date cannot be less than From Date.';
+        this.customToDate = this.customFromDate;
+      }
+    }
+
+    onToDateChange() {
+      this.dateError = '';
+      if (this.customToDate && this.customToDate < (this.customFromDate || this.todayString)) {
+        this.dateError = 'To Date cannot be less than From Date.';
+        this.customToDate = this.customFromDate || this.todayString;
+      }
+    }
+  todayString: string = new Date().toISOString().split('T')[0];
+  maxToDateString: string = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 10);
+    return d.toISOString().split('T')[0];
+  })();
+
   private readonly destroyRef = inject(DestroyRef);
   private readonly schedulerService = inject(SchedulerService);
   private readonly storage = inject(StorageService);
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
 
   constructor() { }
 
@@ -60,18 +92,25 @@ export class Scheduler implements AfterViewInit, OnInit {
 
   /* ---------------- MULTI USER + CUSTOM REPEAT ---------------- */
 
-  users = [
-    { id: '1', name: 'Dr. John' },
-    { id: '2', name: 'Dr. Priya' },
-    { id: '3', name: 'Dr. Mahesh' },
-    { id: '4', name: 'Dr. Smith' }
-  ];
+  users: any[] = [];
 
   selectedUsers: any[] = [];
 
   repeatWeeks: number = 1;
-  customFromDate: string = '';
-  customToDate: string = '';
+  customFromDate: string = this.todayString;
+  customToDate: string = this.maxToDateString;
+
+  // Only show doctors in dropdown
+  getDoctors() {
+    return this.users.filter(user => user.role === 'doctor');
+  }
+
+  // Filtered users for search (doctors only)
+  filteredUsers() {
+    return this.getDoctors().filter(user =>
+      user.name.toLowerCase().includes(this.userSearchText.toLowerCase())
+    );
+  }
 
 
   /* ---------------- BASIC ---------------- */
@@ -127,6 +166,10 @@ export class Scheduler implements AfterViewInit, OnInit {
   // };
 
   calendarOptions: CalendarOptions = {
+        validRange: {
+          start: this.todayString,
+          end: this.maxToDateString
+        },
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
     initialView: 'timeGridWeek',
     headerToolbar: false,
@@ -231,8 +274,28 @@ export class Scheduler implements AfterViewInit, OnInit {
     if (authUser) {
       this.userId = authUser.userId;
     }
+    this.loadDoctors();
     this.loadFromCache();
     this.loadFromBackend();
+  }
+
+  loadDoctors() {
+    this.userService.getUsers(0, 100, '').subscribe((res: any) => {
+      const allUsers: any[] = res?.content ?? [];
+      this.users = allUsers
+        .filter(u => (u.payload?.role ?? '').toLowerCase() === 'doctor')
+        .map(u => ({
+          id: u.id,
+          name: u.payload?.name || u.payload?.fullname || 'Unknown',
+          role: (u.payload?.role ?? '').toLowerCase()
+        }));
+      if (this.users.length === 1) {
+        this.selectedUsers = [...this.users];
+        this.syncCalendar();
+      } else {
+        this.selectedUsers = [...this.users];
+      }
+    });
   }
 
   // ngAfterViewInit() {
@@ -265,7 +328,6 @@ export class Scheduler implements AfterViewInit, OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((res: any[]) => {
         this.schedulers = res;
-        this.selectedUsers = [...this.users];
         setTimeout(() => {
           if (this.calendar) {
             this.syncCalendar();
@@ -766,13 +828,9 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   getDoctorColor(id: string) {
-    const map: any = {
-      '1': '#3E7BFA',
-      '2': '#28a745',
-      '3': '#ff9800',
-      '4': '#e91e63'
-    };
-    return map[id] || '#999';
+    const palette = ['#3E7BFA', '#28a745', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
+    const idx = this.users.findIndex(u => u.id === id);
+    return palette[idx >= 0 ? idx % palette.length : 0];
   }
 
 
@@ -921,30 +979,38 @@ export class Scheduler implements AfterViewInit, OnInit {
 
   onRepeatChange() {
 
-    if (this.repeatOption === 'custom') {
-      this.calendar.getApi().changeView('dayGridMonth');
+    if (this.customFromDate && this.customFromDate < this.todayString) {
+      this.dateError = 'From Date cannot be less than today.';
+      this.customFromDate = this.todayString;
     }
-
-    if (this.repeatOption === 'weekly') {
-      this.calendar.getApi().changeView('timeGridWeek');
+    if (this.customFromDate && this.customFromDate > this.maxToDateString) {
+      this.dateError = 'From Date cannot be more than 10 days from today.';
+      this.customFromDate = this.maxToDateString;
     }
-
+    if (this.customToDate && this.customToDate < this.customFromDate) {
+      this.dateError = 'To Date cannot be less than From Date.';
+      this.customToDate = this.customFromDate;
+    }
+    if (this.customToDate && this.customToDate > this.maxToDateString) {
+      this.dateError = 'To Date cannot be more than 10 days from today.';
+      this.customToDate = this.maxToDateString;
+    }
     this.syncCalendar();
     this.calendar.getApi().changeView('timeGridWeek');
     this.currentView = 'timeGridWeek';
     this.updateTitles();
-
-  }
-
-  toggleUserDropdown() {
+    if (this.customToDate && this.customToDate < (this.customFromDate || this.todayString)) {
+      this.dateError = 'To Date cannot be less than From Date.';
+      this.customToDate = this.customFromDate || this.todayString;
+    }
+    if (this.customToDate && this.customToDate > this.maxToDateString) {
+      this.dateError = 'To Date cannot be more than 10 days from today.';
+      this.customToDate = this.maxToDateString;
+    }
     this.userDropdownOpen = !this.userDropdownOpen;
   }
 
-  filteredUsers() {
-    return this.users.filter(u =>
-      u.name.toLowerCase().includes(this.userSearchText.toLowerCase())
-    );
-  }
+  // ...existing code...
 
   isUserSelected(user: any): boolean {
     return this.selectedUsers.some(u => u.id === user.id);

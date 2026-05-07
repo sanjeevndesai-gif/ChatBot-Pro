@@ -45,8 +45,8 @@ export class Register {
         phone_number: ['', Validators.required],
         address: ['', Validators.required],
         orgname: ['', Validators.required],
-        occupation: ['', Validators.required],
-        otherOccupation: [''],
+        services: ['', Validators.required],
+        otherServices: [''],
         password: ['', [Validators.required, Validators.minLength(6)]],
         confirmPassword: ['', Validators.required],
         terms: [false, Validators.requiredTrue],
@@ -74,9 +74,9 @@ export class Register {
       phone?.updateValueAndValidity();
     });
 
-    // Other occupation validation
-    this.registerForm.get('occupation')?.valueChanges.subscribe(value => {
-      const otherCtrl = this.registerForm.get('otherOccupation');
+    // Other service validation
+    this.registerForm.get('services')?.valueChanges.subscribe(value => {
+      const otherCtrl = this.registerForm.get('otherServices');
       if (value === 'other') {
         otherCtrl?.setValidators([Validators.required]);
       } else {
@@ -113,7 +113,7 @@ export class Register {
       phone_number: `${v.country_code} ${v.phone_number}`,
       address: v.address,
       orgname: v.orgname,
-      occupation: v.occupation === 'other' ? v.otherOccupation : v.occupation,
+      services: v.services === 'other' ? v.otherServices : v.services,
       password: v.password
     };
 

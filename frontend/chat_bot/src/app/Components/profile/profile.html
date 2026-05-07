@@ -11,7 +11,7 @@
   <div class="profile-header p-5">
     <div class="profile-left">
       <div class="avatar">
-        <img src="https://i.pravatar.cc/150" class="rounded-circle" alt="Profile Avatar" />
+        <img [src]="profilePhoto" class="rounded-circle" alt="Profile Avatar" />
       </div>
 
       <h2>{{ user.fullname }}</h2>
@@ -28,9 +28,12 @@
 
       <!-- ACTION BUTTONS -->
       <div class="action-buttons">
-        <button class="action-card" (click)="openAddUser()">
+        <button class="action-card" (click)="openAddUser()"
+                [class.disabled-card]="isBasicPlanDoctorLimitReached"
+                [title]="isBasicPlanDoctorLimitReached ? 'Basic plan: 1 doctor limit reached. Upgrade to add more.' : 'Add Users'">
           <i class="bi bi-person-plus-fill"></i>
           <span>Add Users</span>
+          <small *ngIf="isBasicPlanDoctorLimitReached" class="plan-limit-badge">Limit Reached</small>
         </button>
 
         <button class="action-card" (click)="openViewUsers()">
@@ -66,7 +69,7 @@
     <div class="section card-box">
       <h3>CONTACTS</h3>
       <div class="item"><span>Email:</span><span>{{ user.email }}</span></div>
-      <div class="item"><span>Phone:</span><span>{{ user.phone_number }}</span></div>
+      <div class="item"><span>Phone:</span><span>{{ user.phone || user.phone_number }}</span></div>
       <div class="item"><span>Address:</span><span>{{ user.address }}</span></div>
     </div>
 

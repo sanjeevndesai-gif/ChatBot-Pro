@@ -49,7 +49,9 @@ export class UserService {
             name: user.name,
             phone: user.phone,
             specialization: user.specialization,
-            role: user.role
+            role: user.role,
+            about: user.about,
+            photo: user.photo
         };
 
         return this.http.put<any>(`${this.apiUrl}/${user.usersId}`, payload).pipe(

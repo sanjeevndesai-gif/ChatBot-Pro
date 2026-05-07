@@ -80,18 +80,21 @@
             </small>
           </div>
 
-          <!-- Occupation -->
+          <!-- Services -->
           <div class="col-md-6">
-            <select class="form-select" formControlName="occupation">
-              <option value="">Select your occupation</option>
-              <option value="developer">Developer</option>
-              <option value="designer">Designer</option>
-              <option value="manager">Manager</option>
-              <option value="student">Student</option>
+            <select class="form-select" formControlName="services">
+              <option value="">Select your service</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+              <option value="technology">Technology</option>
+              <option value="finance">Finance</option>
+              <option value="retail">Retail</option>
+              <option value="legal">Legal</option>
+              <option value="hospitality">Hospitality</option>
               <option value="other">Other</option>
             </select>
-            <small class="text-danger" *ngIf="f['occupation'].touched && f['occupation'].invalid">
-              Occupation is required
+            <small class="text-danger" *ngIf="f['services'].touched && f['services'].invalid">
+              Service is required
             </small>
           </div>
 

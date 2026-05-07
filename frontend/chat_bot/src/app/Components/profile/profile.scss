@@ -102,6 +102,28 @@
   transform: translateY(-3px);
 }
 
+.action-card.disabled-card {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  &:hover {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    transform: none;
+  }
+}
+
+.plan-limit-badge {
+  font-size: 10px;
+  color: #dc2626;
+  font-weight: 600;
+  background: #fee2e2;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-top: 2px;
+}
+
 
 /* RIGHT QR */
 .qr-box {

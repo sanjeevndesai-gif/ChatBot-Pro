@@ -18,6 +18,7 @@ interface UserForm {
   phone: FormControl<string>;
   specialization: FormControl<string>;
   role: FormControl<string>;
+  about: FormControl<string>;
 }
 
 @Component({
@@ -32,8 +33,9 @@ export class AddUser implements OnInit {
 
   userForm!: FormGroup<UserForm>;
   isSubmitting = false;
+  photoBase64: string | null = null;
 
-  roles = ['Admin', 'Doctor'];
+  roles = ['Doctor'];
 
   get isEditMode() {
     return !!this.userData;
@@ -67,6 +69,9 @@ export class AddUser implements OnInit {
       role: this.fb.control('', {
         validators: [Validators.required],
         nonNullable: true
+      }),
+      about: this.fb.control('', {
+        nonNullable: true
       })
     });
 
@@ -84,6 +89,16 @@ export class AddUser implements OnInit {
     this.userForm.controls.phone.setValue(input);
   }
 
+  onPhotoSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.photoBase64 = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
   submit() {
 
     if (this.userForm.invalid) {
@@ -92,7 +107,7 @@ export class AddUser implements OnInit {
     }
 
     this.isSubmitting = true;
-    const formData = this.userForm.getRawValue();
+    const formData: any = { ...this.userForm.getRawValue(), photo: this.photoBase64 };
 
     if (this.isEditMode) {
 

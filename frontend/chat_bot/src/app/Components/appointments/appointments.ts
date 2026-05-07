@@ -31,6 +31,14 @@ interface MiniDay {
 })
 export class Appointments implements AfterViewInit {
 
+  users: any[] = [];
+  selectedDoctor: string = '';
+
+  // Only show doctors in dropdown
+  getDoctors() {
+    return this.users.filter((user: any) => user.role === 'doctor');
+  }
+
   @ViewChild('calendarRef') calendarRef!: FullCalendarComponent;
 
   constructor(private cdr: ChangeDetectorRef) {}
