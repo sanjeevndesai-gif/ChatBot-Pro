@@ -97,8 +97,28 @@ public class AuthRepository {
         getCollection().updateOne(filter, update);
     }
 
+    public void updateById(ObjectId id, Document doc) {
+        Bson filter = eq("_id", id);
+        BasicDBObject update = new BasicDBObject("$set", doc);
+        getCollection().updateOne(filter, update);
+    }
+
     public void delete(ObjectId id) {
         getCollection().deleteOne(eq("_id", id));
+    }
+
+    /** Stores a billing sub-document into the user's record using $set billing */
+    public void updateBillingDocument(ObjectId id, Document billingDoc) {
+        Bson filter = eq("_id", id);
+        BasicDBObject update = new BasicDBObject("$set", new Document("billing", billingDoc));
+        getCollection().updateOne(filter, update);
+    }
+
+    /** Sets a single billing field (e.g. "billing.status") */
+    public void updateBillingField(ObjectId id, String fieldPath, Object value) {
+        Bson filter = eq("_id", id);
+        BasicDBObject update = new BasicDBObject("$set", new Document(fieldPath, value));
+        getCollection().updateOne(filter, update);
     }
 
 }

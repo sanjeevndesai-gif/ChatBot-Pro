@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.arnan.auth.repository.AuthRepository;
 
 @Service
@@ -21,6 +22,9 @@ public class UserManagementService {
 
     @Autowired
     private AuthRepository authRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     /**
      * Returns paginated user list in the format the frontend expects:
@@ -88,6 +92,69 @@ public class UserManagementService {
     }
 
     /**
+     * Updates a staff user record by MongoDB _id.
+     */
+    public void updateStaffUser(String id, Map<String, Object> body) {
+        try {
+            Document doc = new Document();
+            if (body.containsKey("name")) doc.put("name", body.get("name"));
+            if (body.containsKey("phone")) doc.put("phone", body.get("phone"));
+            if (body.containsKey("specialization")) doc.put("specialization", body.get("specialization"));
+            if (body.containsKey("role")) doc.put("role", body.get("role"));
+            if (body.containsKey("about")) doc.put("about", body.get("about"));
+            if (body.containsKey("photo")) doc.put("photo", body.get("photo"));
+            authRepository.updateById(new org.bson.types.ObjectId(id), doc);
+            log.info("Staff user updated: id={}", id);
+        } catch (Exception e) {
+            log.error("Error updating staff user id={}", id, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Updates a user's own profile fields by MongoDB _id.
+     */
+    public void updateProfile(String id, Map<String, Object> body) {
+        try {
+            Document doc = new Document();
+            if (body.containsKey("fullname")) doc.put("fullname", body.get("fullname"));
+            if (body.containsKey("email")) doc.put("email", body.get("email"));
+            if (body.containsKey("phone")) doc.put("phone", body.get("phone"));
+            if (body.containsKey("address")) doc.put("address", body.get("address"));
+            if (body.containsKey("country")) doc.put("country", body.get("country"));
+            if (body.containsKey("language")) doc.put("language", body.get("language"));
+            authRepository.updateById(new org.bson.types.ObjectId(id), doc);
+            log.info("Profile updated: id={}", id);
+        } catch (Exception e) {
+            log.error("Error updating profile id={}", id, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Changes the user's password after verifying the current password.
+     * Throws RuntimeException on bad current password (results in 400 from controller).
+     */
+    public void changePassword(String id, String currentPassword, String newPassword) {
+        try {
+            Document user = authRepository.findById(new org.bson.types.ObjectId(id));
+            if (user == null) {
+                throw new RuntimeException("User not found");
+            }
+            String stored = user.getString("password");
+            if (!passwordEncoder.matches(currentPassword, stored)) {
+                throw new RuntimeException("Current password is incorrect");
+            }
+            Document doc = new Document("password", passwordEncoder.encode(newPassword));
+            authRepository.updateById(new org.bson.types.ObjectId(id), doc);
+            log.info("Password changed for user id={}", id);
+        } catch (Exception e) {
+            log.error("Error changing password for id={}", id, e);
+            throw e;
+        }
+    }
+
+    /**
      * Saves a staff user record (name, phone, specialization, role) to the collection.
      */
     public void addStaffUser(Map<String, Object> body) {
@@ -97,6 +164,8 @@ public class UserManagementService {
             doc.put("phone", body.getOrDefault("phone", ""));
             doc.put("specialization", body.getOrDefault("specialization", ""));
             doc.put("role", body.getOrDefault("role", ""));
+            doc.put("about", body.getOrDefault("about", ""));
+            doc.put("photo", body.getOrDefault("photo", ""));
             authRepository.save(doc);
             log.info("Staff user added: {}", body.get("name"));
         } catch (Exception e) {
