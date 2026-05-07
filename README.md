@@ -1,27 +1,39 @@
 # ChatBot-Pro
 
-ChatBot-Pro is a microservice-based chatbot platform with:
-- `gateway` (Spring Cloud Gateway)
-- `auth-service` (user APIs + OAuth2 token endpoint)
-- `book_appointment`
-- `chat`
-- `eureka-server` (service discovery)
+ChatBot-Pro is a full-stack chatbot platform built with:
+- **Backend** — 6 Spring Boot microservices (Java 17, Spring Cloud)
+- **Frontend** — Angular 20 single-page application
+
+```
+ChatBot-Pro/
+├── backend/          # All Spring Boot microservices
+│   ├── auth-service/
+│   ├── book_appointment/
+│   ├── chat/
+│   ├── eureka-server/
+│   ├── gateway/
+│   ├── i18n-service/
+│   ├── build-all.ps1         # Build all services
+│   └── run-all-services.ps1  # Run all services locally
+└── frontend/
+    └── chat_bot/     # Angular 20 application
+```
 
 ## Setup and Run Application Locally
 
 ### Prerequisites
 
-Make sure the following tools are installed before running the application:
-
 | Tool | Minimum version | Notes |
 |---|---|---|
 | Java (JDK) | 17 | `java -version` |
 | Maven | 3.9 | `mvn -version` |
-| Docker | 24 | `docker -v` |
-| Docker Compose | 2.x | `docker compose version` |
+| Node.js | 18+ | `node -v` |
+| npm | 9+ | `npm -v` |
+| Angular CLI | 20 | `npm install -g @angular/cli` |
+| Docker | 24 | `docker -v` *(optional — for infra only)* |
 | Git | any | `git --version` |
 
-> **Optional:** MongoDB 6 and Redis 7 are only needed if you want to run services _without_ Docker.
+> MongoDB 6 and Redis 7 must be running locally (or via Docker) before starting backend services.
 
 ---
 
@@ -60,9 +72,7 @@ docker compose down -v       # stop containers AND delete data volumes
 
 ---
 
-### 3 — Run services individually (without Docker)
-
-Use this approach when you want to develop or debug a specific service.
+### 3 — Run backend services locally (without Docker)
 
 #### 3a — Start infrastructure
 
@@ -70,45 +80,76 @@ Use this approach when you want to develop or debug a specific service.
 # MongoDB
 docker run -d --name chatbot-mongo -p 27017:27017 mongo:6.0
 
-# Redis
+# Redis (required by chat service)
 docker run -d --name chatbot-redis -p 6379:6379 redis:7
 ```
 
-#### 3b — Start Eureka Server
+#### 3b — Build all services
+
+```powershell
+cd backend
+.\build-all.ps1
+```
+
+#### 3c — Start all services at once (Windows)
+
+```powershell
+cd backend
+.\run-all-services.ps1
+```
+
+This script starts Eureka first, waits for it to be ready, then launches all remaining services — each in its own PowerShell window.
+
+#### 3d — Or start services individually (in order)
 
 ```bash
-cd eureka-server
-./mvnw spring-boot:run
+# 1. Eureka Server (start first)
+cd backend/eureka-server
+mvn spring-boot:run
 # Eureka dashboard → http://localhost:8761
-```
 
-#### 3c — Start Auth Service
+# 2. Auth Service
+cd backend/auth-service
+./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-DEUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka/"
+# http://localhost:8082
 
-```bash
-cd auth-service
-./mvnw spring-boot:run
-# Runs on http://localhost:8082
-```
+# 3. API Gateway
+cd backend/gateway
+mvn spring-boot:run -Dspring-boot.run.jvmArguments="-DEUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka/"
+# http://localhost:8080
 
-#### 3d — Start API Gateway
-
-```bash
-cd gateway
-./mvnw spring-boot:run
-# Runs on http://localhost:8080
-```
-
-#### 3e — Start remaining microservices (each in its own terminal)
-
-```bash
-cd chat             && ./mvnw spring-boot:run   # http://localhost:9090
-cd book_appointment && ./mvnw spring-boot:run   # http://localhost:9091
-cd i18n-service     && ./mvnw spring-boot:run   # http://localhost:9092
+# 4. Remaining services (each in a separate terminal)
+cd backend/book_appointment && ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-DEUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka/"  # :9091
+cd backend/chat             && ./mvnw spring-boot:run -Dspring-boot.run.jvmArguments="-DEUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka/"  # :9090
+cd backend/i18n-service     && mvn spring-boot:run -Dspring-boot.run.jvmArguments="-DEUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://localhost:8761/eureka/"     # :9092
 ```
 
 ---
 
-### 4 — Environment variables and profiles
+### 4 — Run the Angular frontend locally
+
+```bash
+cd frontend/chat_bot
+
+# Install dependencies (first time only)
+npm install --legacy-peer-deps
+
+# Start dev server
+npm start
+# App available at → http://localhost:4200
+```
+
+#### Build for production
+
+```bash
+cd frontend/chat_bot
+npm run build
+# Output → frontend/chat_bot/dist/chatbot/
+```
+
+---
+
+### 5 — Environment variables and profiles
 
 #### Active profiles
 
@@ -179,7 +220,7 @@ cd auth-service && ./mvnw spring-boot:run
 
 ---
 
-### 5 — Verify the stack
+### 6 — Verify the stack
 
 Check that every service is healthy:
 
@@ -196,7 +237,7 @@ Each endpoint should return `{"status":"UP"}`.
 
 ---
 
-### 6 — Run the automated smoke test
+### 7 — Run the automated smoke test
 
 The repository ships a convenience script that exercises every service end-to-end via the gateway:
 
