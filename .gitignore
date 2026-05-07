@@ -11,3 +11,12 @@
 
 # Local secrets — never commit this
 .env
+
+# Eclipse IDE
+.classpath
+.project
+.settings/
+
+# VS Code
+.vscode/
+
