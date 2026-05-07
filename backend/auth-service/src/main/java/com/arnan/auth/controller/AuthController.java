@@ -9,22 +9,39 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import com.arnan.auth.service.AuthService;
+import com.arnan.auth.service.UserManagementService;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
-@RequestMapping("/auth-service")
 public class AuthController {
 
     @Autowired
     private AuthService authService;
 
-    @GetMapping("/find/{id}")
+    @Autowired
+    private UserManagementService userManagementService;
+
+    @GetMapping("/users")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Object> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search) {
+        return userManagementService.getUsersPaginated(page, size, search);
+    }
+
+    @PostMapping("/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addUser(@RequestBody Map<String, Object> body) {
+        userManagementService.addStaffUser(body);
+    }
+
+    @GetMapping({ "/find/{id}", "/auth-service/find/{id}" })
     @ResponseStatus(HttpStatus.OK)
     public Document findById(@PathVariable String id) {
         return authService.findById(id);
     }
 
-    @GetMapping("/findName")
+    @GetMapping({ "/findName", "/auth-service/findName" })
     @ResponseStatus(HttpStatus.OK)
     public Document findByName(
             @RequestParam String name,
@@ -32,20 +49,20 @@ public class AuthController {
         return authService.findByName(name, orgId);
     }
 
-    @GetMapping("/findall")
+    @GetMapping({ "/findall", "/auth-service/findall" })
     @ResponseStatus(HttpStatus.OK)
     public List<Object> findAll() {
         return authService.getList();
     }
 
     // ✅ REGISTER - DO NOT CHANGE
-    @PostMapping
+    @PostMapping({ "/register", "/auth-service" })
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
         authService.save(body);
     }
 
-    @PutMapping
+    @PutMapping({ "/users", "/auth-service" })
     @ResponseStatus(HttpStatus.OK)
     public void update(
             @RequestBody Map<String, Object> body,
@@ -54,14 +71,14 @@ public class AuthController {
         authService.update(body, orgId, id);
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping({ "/users/{id}", "/auth-service/delete/{id}" })
     @ResponseStatus(HttpStatus.OK)
     public void delete(@PathVariable String id) {
         authService.delete(id);
     }
 
     // ✅ LOGIN
-    @PostMapping("/login")
+    @PostMapping({ "/login", "/auth-service/login" })
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> login(@RequestBody Map<String, Object> body) {
         return authService.login(body);

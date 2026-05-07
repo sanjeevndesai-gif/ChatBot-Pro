@@ -42,7 +42,7 @@ export class AuthService {
       fullname: formValue['fullname'],
       country: formValue['country'],
       country_code: formValue['country_code'],
-      phone: formValue['phone_number'],
+      phone_number: formValue['phone_number'],
       address: formValue['address'],
       orgname: formValue['orgname'],
       occupation: formValue['occupation']
@@ -56,8 +56,18 @@ export class AuthService {
   login(credentials: { email: string; password: string }): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.baseUrl}/login`, credentials).pipe(
       tap((res) => {
-        this.storage.setString(this.accessTokenKey, res.accessToken);
-        this.storage.setString(this.refreshTokenKey, res.refreshToken);
+        const accessToken = (res as any)?.accessToken ?? (res as any)?.token;
+        const refreshToken = (res as any)?.refreshToken ?? accessToken;
+
+        if (accessToken) {
+          this.storage.setString(this.accessTokenKey, accessToken);
+        }
+        if (refreshToken) {
+          this.storage.setString(this.refreshTokenKey, refreshToken);
+        }
+        if ((res as any)?.user) {
+          this.storage.setItem(this.storageKey, (res as any).user);
+        }
       }),
       catchError(err => this.handleError(err))
     );

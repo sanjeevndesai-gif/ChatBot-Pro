@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 
 import com.arnan.i18n.service.LabelService;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/labels")
 public class LabelController {

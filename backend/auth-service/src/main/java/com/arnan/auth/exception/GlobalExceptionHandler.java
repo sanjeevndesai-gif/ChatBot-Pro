@@ -18,6 +18,13 @@ public class GlobalExceptionHandler {
                 .body(ex.getMessage());
     }
 
+    @ExceptionHandler(DuplicateUserException.class)
+    public ResponseEntity<String> duplicateUser(DuplicateUserException ex) {
+        log.warn(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> generic(Exception ex) {
         log.error("Unhandled exception", ex);

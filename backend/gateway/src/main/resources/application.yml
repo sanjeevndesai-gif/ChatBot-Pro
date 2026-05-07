@@ -3,30 +3,47 @@ spring:
     name: gateway
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - ${CORS_ALLOWED_ORIGIN_1:http://localhost:4200}
+              - ${CORS_ALLOWED_ORIGIN_2:http://127.0.0.1:4200}
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
       discovery:
         locator:
           enabled: false
       routes:
         - id: auth-service
-          uri: lb://auth-service
+          uri: http://localhost:8082
           predicates:
             - Path=/auth/**
           filters:
             - StripPrefix=1
         - id: book-appointment
-          uri: lb://book_appointment
+          uri: http://localhost:9091
           predicates:
             - Path=/book/**
           filters:
             - StripPrefix=1
         - id: chat-service
-          uri: lb://chat
+          uri: http://localhost:9090
           predicates:
             - Path=/chat/**
           filters:
             - StripPrefix=1
         - id: i18n-service
-          uri: lb://i18n-service
+          uri: http://localhost:9092
           predicates:
             - Path=/i18n/**
           filters:
@@ -37,17 +54,7 @@ server:
 
 eureka:
   client:
-    service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://eureka-server:8761/eureka/}
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    # Publish browser-reachable URLs in Eureka UI via ALB host.
-    hostname: ${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}
-    prefer-ip-address: false
-    home-page-url: ${EUREKA_HOME_PAGE_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/}
-    status-page-url: ${EUREKA_STATUS_PAGE_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/actuator/info}
-    health-check-url: ${EUREKA_HEALTH_CHECK_URL:http://${EUREKA_PUBLIC_HOSTNAME:${spring.application.name}}/actuator/health}
+    enabled: false
 
 management:
   endpoints:

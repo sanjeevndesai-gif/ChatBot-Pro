@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.arnan.auth.exception.DuplicateUserException;
 import com.arnan.auth.exception.NotFoundException;
 import com.arnan.auth.repository.AuthRepository;
 import com.arnan.auth.security.JwtUtil;
@@ -73,7 +74,7 @@ public class AuthService {
 			documentInfo.put("phone_number", phone);
 
 			if (authRepository.findDuplicateUser(email, phone) != null) {
-				throw new RuntimeException("User already exists with this email or phone number");
+				throw new DuplicateUserException("User already exists with this email or phone number");
 			}
 
 			String userId = userIdGenerator.generate(fullname);
@@ -167,6 +168,8 @@ public class AuthService {
 
 			Map<String, Object> response = new HashMap<>();
 			response.put("token", token);
+			response.put("accessToken", token);
+			response.put("refreshToken", token);
 			response.put("userId", user.getObjectId("_id").toHexString());
 
 			Document safeUser = new Document(user);

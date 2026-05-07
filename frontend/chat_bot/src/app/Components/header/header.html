@@ -2,11 +2,11 @@
 
     <div class="container">
         <a class="navbar-brand d-flex align-items-center" routerLink="/">
-            <img src="/assets/logo.svg" height="34" class="me-2" />
+            <img src="/assets/logo.svg" height="34" class="me-2" alt="Logo" />
             <span class="fw-bold">MyApp</span>
         </a>
 
-        <button class="navbar-toggler" type="button" (click)="toggleCollapse()">
+        <button class="navbar-toggler" type="button" (click)="toggleCollapse()" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
@@ -14,57 +14,43 @@
             <ul class="navbar-nav ms-auto align-items-lg-center">
 
                 <li class="nav-item">
-                    <a class="nav-link" routerLink="/features">
-                        <!-- {{ i18n.t('header.features') }} -->
-                        {{ 'header.features'}}
-                    </a>
+                    <a class="nav-link" routerLink="/" fragment="features">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" routerLink="/" fragment="pricing">Pricing</a>
                 </li>
 
                 <li class="nav-item">
-                    <a class="nav-link" routerLink="/" fragment="about">
-                        <!-- {{ i18n.t('Your trusted partner') }} --> Your trusted partner
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" routerLink="/" fragment="pricing">
-                        <!-- {{ i18n.t('header.pricing') }} --> Pricing
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" routerLink="/" fragment="testimonials">
-                        <!-- {{ i18n.t('header.testimonials') }} --> Testimonials
-                    </a>
+                    <a class="nav-link" routerLink="/" fragment="testimonials">Testimonials</a>
                 </li>
 
                 <li class="nav-item ms-3">
-                    <a class="btn btn-outline-primary btn-sm" routerLink="/signin">
-                        <!-- {{ i18n.t('header.register') }} --> Register
-                    </a>
+                    <a class="btn btn-outline-primary btn-sm" routerLink="/login">Login</a>
                 </li>
 
-                <!-- Language Dropdown -->
+                <li class="nav-item ms-2">
+                    <a class="btn btn-primary btn-sm" routerLink="/register">Register</a>
+                </li>
+
+                @if (languages.length > 0) {
                 <li class="nav-item ms-3 dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
                         <span class="me-1">{{ selectedLang?.flag }}</span>
                         {{ selectedLang?.label }}
                     </a>
-
                     <ul class="dropdown-menu">
-                        <li *ngFor="let lang of languages">
-                            <!-- <button class="dropdown-item d-flex align-items-center"
-                                (click)="onSelectLanguage(lang.code)">
-                                <span class="me-2">{{ lang.flag }}</span>
-                                {{ lang.label }}
-                            </button> -->
+                        @for (lang of languages; track lang.code) {
+                        <li>
                             <button class="dropdown-item d-flex align-items-center">
                                 <span class="me-2">{{ lang.flag }}</span>
                                 {{ lang.label }}
                             </button>
                         </li>
+                        }
                     </ul>
                 </li>
+                }
 
             </ul>
         </div>
