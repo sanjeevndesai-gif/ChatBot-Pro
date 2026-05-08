@@ -48,22 +48,43 @@ export class Scheduler implements AfterViewInit, OnInit {
     dateError: string = '';
     onFromDateChange() {
       this.dateError = '';
+      // Prevent selecting a date less than today
       if (this.customFromDate && this.customFromDate < this.todayString) {
         this.dateError = 'From Date cannot be less than today.';
         this.customFromDate = this.todayString;
       }
+      // Prevent selecting a to-date less than from-date
       if (this.customToDate && this.customToDate < this.customFromDate) {
         this.dateError = 'To Date cannot be less than From Date.';
         this.customToDate = this.customFromDate;
       }
     }
 
+    // Helper for template: get min date for from date input
+    get minFromDate() {
+      return this.todayString;
+    }
     onToDateChange() {
       this.dateError = '';
-      if (this.customToDate && this.customToDate < (this.customFromDate || this.todayString)) {
-        this.dateError = 'To Date cannot be less than From Date.';
-        this.customToDate = this.customFromDate || this.todayString;
+      if (this.customFromDate && this.customToDate) {
+        // Calculate minimum allowed ToDate (10 days after FromDate)
+        const fromDate = new Date(this.customFromDate);
+        const minToDate = new Date(fromDate);
+        minToDate.setDate(fromDate.getDate() + 10);
+        const minToDateString = minToDate.toISOString().split('T')[0];
+        if (this.customToDate < minToDateString) {
+          this.dateError = `To Date must be at least 10 days after From Date (${minToDateString} or later).`;
+          this.customToDate = minToDateString;
+        }
       }
+    }
+
+    // Helper for template: get min date for to date input
+    get minToDate() {
+      if (!this.customFromDate) return this.todayString;
+      const fromDate = new Date(this.customFromDate);
+      fromDate.setDate(fromDate.getDate() + 10);
+      return fromDate.toISOString().split('T')[0];
     }
   todayString: string = new Date().toISOString().split('T')[0];
   maxToDateString: string = (() => {

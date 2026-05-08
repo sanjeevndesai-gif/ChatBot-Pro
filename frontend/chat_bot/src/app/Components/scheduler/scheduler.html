@@ -201,10 +201,10 @@
     <div *ngIf="repeatOption === 'custom'" class="section">
 
       <label class="label">From Date</label>
-      <input type="date" [(ngModel)]="customFromDate" class="max-input" [min]="todayString" [max]="maxToDateString" (change)="onFromDateChange()" />
+      <input type="date" [(ngModel)]="customFromDate" class="max-input" [min]="todayString" (change)="onFromDateChange()" />
 
       <label class="label">To Date</label>
-      <input type="date" [(ngModel)]="customToDate" class="max-input" [min]="customFromDate || todayString" [max]="maxToDateString" (change)="onToDateChange()" />
+      <input type="date" [(ngModel)]="customToDate" class="max-input" [min]="minToDate" (change)="onToDateChange()" />
 
       <div *ngIf="dateError" class="error-message" style="color: red; font-size: 13px;">
         {{ dateError }}
