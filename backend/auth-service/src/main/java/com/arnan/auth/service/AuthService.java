@@ -1,10 +1,4 @@
-	public BCryptPasswordEncoder getPasswordEncoder() {
-		return passwordEncoder;
-	}
 
-	public MongoTemplate getMongoTemplate() {
-		return mongoTemplate;
-	}
 package com.arnan.auth.service;
 
 import java.util.HashMap;
@@ -33,6 +27,24 @@ import jakarta.annotation.PostConstruct;
 
 @Service
 public class AuthService {
+	
+	private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+	@Autowired
+	private AuthRepository authRepository;
+
+	@Autowired
+	private UserIdGenerator userIdGenerator;
+
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
+
+	@Autowired
+	private JwtUtil jwtUtil;
+
+	@Autowired
+	private MongoTemplate mongoTemplate;
+	
 	public Document findByEmail(String email) {
 		try {
 			return authRepository.findByEmail(email);
@@ -51,22 +63,7 @@ public class AuthService {
 		}
 	}
 
-	private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
-	@Autowired
-	private AuthRepository authRepository;
-
-	@Autowired
-	private UserIdGenerator userIdGenerator;
-
-	@Autowired
-	private BCryptPasswordEncoder passwordEncoder;
-
-	@Autowired
-	private JwtUtil jwtUtil;
-
-	@Autowired
-	private MongoTemplate mongoTemplate;
+	
 
 	@PostConstruct
 	public void debugInit() {
@@ -214,5 +211,13 @@ public class AuthService {
 			log.error("Login failed", e);
 			throw e; // ✅ MUST throw
 		}
+	}
+	
+	public BCryptPasswordEncoder getPasswordEncoder() {
+		return passwordEncoder;
+	}
+
+	public MongoTemplate getMongoTemplate() {
+		return mongoTemplate;
 	}
 }

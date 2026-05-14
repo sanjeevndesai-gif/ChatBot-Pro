@@ -76,6 +76,12 @@ public class AuthRepository {
     public Document findByEmail(String email) {
         return getCollection().find(eq("email", email)).first();
     }
+    
+    
+    public Document findByPhone(String phone) {
+        return getCollection().find(eq("phone", phone)).first();
+    }
+    
     public Document findByEmailOrUserId(String value) {
         return getCollection().find(
                 or(eq("email", value), eq("userId", value))
