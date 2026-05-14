@@ -1,4 +1,3 @@
-
 package com.arnan.auth.service;
 
 import java.util.HashMap;
@@ -14,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import com.arnan.auth.exception.DuplicateUserException;
 import com.arnan.auth.exception.NotFoundException;
@@ -219,5 +219,62 @@ public class AuthService {
 
 	public MongoTemplate getMongoTemplate() {
 		return mongoTemplate;
+	}
+	
+	/**
+	 * Handles forgot password via WhatsApp: generates temp password, updates DB, sends WhatsApp.
+	 * Returns a map with keys: status (OK/ERROR), message (string)
+	 */
+	public Map<String, Object> handleForgotPasswordWhatsApp(String identifier, String chatServiceUrl, RestTemplate restTemplate) {
+		Map<String, Object> result = new HashMap<>();
+		if (identifier == null || identifier.isBlank()) {
+			result.put("status", "ERROR");
+			result.put("message", "Identifier (email or phone) is required");
+			return result;
+		}
+
+		// Lookup user by email or phone
+		Document user = identifier.contains("@")
+			? findByEmail(identifier.trim().toLowerCase())
+			: findByPhone(identifier.trim());
+		if (user == null) {
+			result.put("status", "ERROR");
+			result.put("message", "User not found");
+			return result;
+		}
+
+		String phone = user.getString("phone_number");
+		if (phone == null || phone.isBlank()) {
+			result.put("status", "ERROR");
+			result.put("message", "No registered phone number found for this user");
+			return result;
+		}
+
+		// 1. Generate a secure random temporary password
+		String tempPassword = java.util.UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
+
+		// 2. Hash and update the user's password in the database, set mustChangePassword flag
+		org.bson.types.ObjectId userId = user.getObjectId("_id");
+		String hashed = passwordEncoder.encode(tempPassword);
+		org.bson.Document updateDoc = new org.bson.Document("password", hashed)
+			.append("mustChangePassword", true);
+		mongoTemplate.getCollection("authInfo")
+			.updateOne(new org.bson.Document("_id", userId), new org.bson.Document("$set", updateDoc));
+
+		// 3. Call chat service to send WhatsApp message
+		try {
+			String chatUrl = chatServiceUrl + "/api/whatsapp/send";
+			Map<String, Object> payload = Map.of(
+				"to", phone,
+				"message", "Your temporary password is: " + tempPassword + ". Please log in and change your password immediately."
+			);
+			restTemplate.postForEntity(chatUrl, payload, String.class);
+			result.put("status", "OK");
+			result.put("message", "If your account exists, a temporary password has been sent to your registered WhatsApp number.");
+		} catch (Exception e) {
+			result.put("status", "ERROR");
+			result.put("message", "Failed to send WhatsApp message: " + e.getMessage());
+		}
+		return result;
 	}
 }

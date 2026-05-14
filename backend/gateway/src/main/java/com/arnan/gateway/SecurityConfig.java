@@ -37,14 +37,14 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(auth -> auth
-                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .pathMatchers("/actuator/**").permitAll()
-                    .pathMatchers(HttpMethod.POST, "/auth/oauth2/token", "/auth/register", "/auth/login", "/auth/auth-service", "/auth/auth-service/login").permitAll()
-                        .anyExchange().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
-                .build();
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .authorizeExchange(auth -> auth
+                .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .pathMatchers("/actuator/**").permitAll()
+                .pathMatchers(HttpMethod.POST, "/auth/oauth2/token", "/auth/register", "/auth/login", "/auth/auth-service", "/auth/auth-service/login", "/auth/forgot-password-whatsapp").permitAll()
+                .anyExchange().authenticated())
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+            .build();
     }
 
     @Bean

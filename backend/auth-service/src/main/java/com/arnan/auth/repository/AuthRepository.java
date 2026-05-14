@@ -27,38 +27,47 @@ public class AuthRepository {
 
     private MongoClient mongoClient;
 
-    private MongoClient getMongoClient() {
+    /**
+     * Creates MongoClient using full MongoDB URI directly.
+     * Supports mongodb+srv:// Atlas connections.
+     */
+    private synchronized MongoClient getMongoClient() {
+
         if (mongoClient == null) {
 
             String mongodbUri = appConfig.getMongodbUri();
 
-            // ✅ If config already has full URI like mongodb://localhost:27017
-            if (mongodbUri != null && mongodbUri.startsWith("mongodb://")) {
-                mongoClient = MongoClients.create(mongodbUri);
+            if (mongodbUri == null || mongodbUri.isBlank()) {
+                throw new RuntimeException("MongoDB URI is missing");
             }
-            // ✅ If config is only host like localhost
-            else {
-                String host = mongodbUri; // old config value
-                int port = appConfig.getMongodbPort();
 
-                String finalUri = "mongodb://" + host + ":" + port;
-                mongoClient = MongoClients.create(finalUri);
-            }
+            System.out.println("Connecting to MongoDB using URI: " + mongodbUri);
+
+            mongoClient = MongoClients.create(mongodbUri);
         }
+
         return mongoClient;
     }
 
     private MongoCollection<Document> getCollection() {
-        MongoDatabase db = getMongoClient().getDatabase(appConfig.getMongoDatabase());
+
+        MongoDatabase db =
+                getMongoClient()
+                        .getDatabase(appConfig.getMongoDatabase());
+
         return db.getCollection(appConfig.getCollection());
     }
 
     public List<Object> getAll() {
+
         List<Object> list = new ArrayList<>();
+
         FindIterable<Document> docs = getCollection().find();
+
         for (Document d : docs) {
             list.add(d);
         }
+
         return list;
     }
 
@@ -71,41 +80,64 @@ public class AuthRepository {
     }
 
     public Document findByName(String name, String orgId) {
-        return getCollection().find(and(eq("name", name), eq("orgId", orgId))).first();
+
+        return getCollection().find(
+                and(
+                        eq("name", name),
+                        eq("orgId", orgId)
+                )
+        ).first();
     }
+
     public Document findByEmail(String email) {
         return getCollection().find(eq("email", email)).first();
     }
-    
-    
+
     public Document findByPhone(String phone) {
         return getCollection().find(eq("phone", phone)).first();
     }
-    
+
     public Document findByEmailOrUserId(String value) {
+
         return getCollection().find(
-                or(eq("email", value), eq("userId", value))
+                or(
+                        eq("email", value),
+                        eq("userId", value)
+                )
         ).first();
     }
+
     public Document findDuplicateUser(String email, String phone) {
 
         return getCollection().find(
                 or(
-                    eq("email", email),
-                    eq("phone_number", phone)
+                        eq("email", email),
+                        eq("phone_number", phone)
                 )
         ).first();
     }
 
     public void update(Document doc, String orgId, ObjectId id) {
-        Bson filter = and(eq("_id", id), eq("orgId", orgId));
-        BasicDBObject update = new BasicDBObject("$set", doc);
+
+        Bson filter =
+                and(
+                        eq("_id", id),
+                        eq("orgId", orgId)
+                );
+
+        BasicDBObject update =
+                new BasicDBObject("$set", doc);
+
         getCollection().updateOne(filter, update);
     }
 
     public void updateById(ObjectId id, Document doc) {
+
         Bson filter = eq("_id", id);
-        BasicDBObject update = new BasicDBObject("$set", doc);
+
+        BasicDBObject update =
+                new BasicDBObject("$set", doc);
+
         getCollection().updateOne(filter, update);
     }
 
@@ -113,18 +145,42 @@ public class AuthRepository {
         getCollection().deleteOne(eq("_id", id));
     }
 
-    /** Stores a billing sub-document into the user's record using $set billing */
-    public void updateBillingDocument(ObjectId id, Document billingDoc) {
+    /**
+     * Stores billing sub-document
+     */
+    public void updateBillingDocument(
+            ObjectId id,
+            Document billingDoc
+    ) {
+
         Bson filter = eq("_id", id);
-        BasicDBObject update = new BasicDBObject("$set", new Document("billing", billingDoc));
+
+        BasicDBObject update =
+                new BasicDBObject(
+                        "$set",
+                        new Document("billing", billingDoc)
+                );
+
         getCollection().updateOne(filter, update);
     }
 
-    /** Sets a single billing field (e.g. "billing.status") */
-    public void updateBillingField(ObjectId id, String fieldPath, Object value) {
+    /**
+     * Updates single billing field
+     */
+    public void updateBillingField(
+            ObjectId id,
+            String fieldPath,
+            Object value
+    ) {
+
         Bson filter = eq("_id", id);
-        BasicDBObject update = new BasicDBObject("$set", new Document(fieldPath, value));
+
+        BasicDBObject update =
+                new BasicDBObject(
+                        "$set",
+                        new Document(fieldPath, value)
+                );
+
         getCollection().updateOne(filter, update);
     }
-
 }
