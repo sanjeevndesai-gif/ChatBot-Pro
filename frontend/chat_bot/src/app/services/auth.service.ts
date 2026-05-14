@@ -115,5 +115,16 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  /**
+   * Request password to be sent to user's registered WhatsApp number.
+   * @param identifier Email or phone (as entered on login form)
+   */
+  forgotPasswordViaWhatsApp(identifier: string) {
+    // Backend endpoint should handle lookup and WhatsApp send
+    return this.http.post<any>(`${this.baseUrl}/forgot-password-whatsapp`, { identifier }).pipe(
+      catchError(err => this.handleError(err))
+    );
+  }
+
 }
 

@@ -14,6 +14,9 @@ import com.arnan.auth.service.AuthService;
 import com.arnan.auth.service.UserManagementService;
 import com.arnan.auth.service.BillingService;
 
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
+
 @RestController
 public class AuthController {
 
@@ -25,6 +28,11 @@ public class AuthController {
 
     @Autowired
     private BillingService billingService;
+
+    @Value("${chat.service.url:http://localhost:8082}")
+    private String chatServiceUrl;
+
+    private final RestTemplate restTemplate = new RestTemplate();
 
     // ─── Billing endpoints ─────────────────────────────────────────────
 
@@ -140,5 +148,56 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> login(@RequestBody Map<String, Object> body) {
         return authService.login(body);
+    }
+
+    /**
+     * Forgot password via WhatsApp: Looks up user by email or phone, sends password to registered WhatsApp number using chat service.
+     */
+    @PostMapping("/forgot-password-whatsapp")
+    public ResponseEntity<?> forgotPasswordWhatsApp(@RequestBody Map<String, String> body) {
+        String identifier = body.get("identifier");
+        if (identifier == null || identifier.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Identifier (email or phone) is required"));
+        }
+
+        // Lookup user by email or phone
+        Document user = null;
+        if (identifier.contains("@")) {
+            user = authService.findByEmail(identifier.trim().toLowerCase());
+        } else {
+            user = authService.findByPhone(identifier.trim());
+        }
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
+        }
+
+        String phone = user.getString("phone_number");
+        if (phone == null || phone.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "No registered phone number found for this user"));
+        }
+
+        // 1. Generate a secure random temporary password
+        String tempPassword = java.util.UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
+
+        // 2. Hash and update the user's password in the database, set mustChangePassword flag
+        org.bson.types.ObjectId userId = user.getObjectId("_id");
+        String hashed = authService.getPasswordEncoder().encode(tempPassword);
+        org.bson.Document updateDoc = new org.bson.Document("password", hashed)
+            .append("mustChangePassword", true);
+        authService.getMongoTemplate().getCollection("authInfo")
+            .updateOne(new org.bson.Document("_id", userId), new org.bson.Document("$set", updateDoc));
+
+        // 3. Call chat service to send WhatsApp message
+        try {
+            String chatUrl = chatServiceUrl + "/api/whatsapp/send";
+            Map<String, Object> payload = Map.of(
+                "to", phone,
+                "message", "Your temporary password is: " + tempPassword + ". Please log in and change your password immediately."
+            );
+            restTemplate.postForEntity(chatUrl, payload, String.class);
+            return ResponseEntity.ok(Map.of("message", "If your account exists, a temporary password has been sent to your registered WhatsApp number."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to send WhatsApp message: " + e.getMessage()));
+        }
     }
 }

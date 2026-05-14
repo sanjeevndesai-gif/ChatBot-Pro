@@ -1,3 +1,10 @@
+	public BCryptPasswordEncoder getPasswordEncoder() {
+		return passwordEncoder;
+	}
+
+	public MongoTemplate getMongoTemplate() {
+		return mongoTemplate;
+	}
 package com.arnan.auth.service;
 
 import java.util.HashMap;
@@ -20,10 +27,29 @@ import com.arnan.auth.repository.AuthRepository;
 import com.arnan.auth.security.JwtUtil;
 import com.arnan.auth.util.UserIdGenerator;
 
+import org.bson.Document;
+
 import jakarta.annotation.PostConstruct;
 
 @Service
 public class AuthService {
+	public Document findByEmail(String email) {
+		try {
+			return authRepository.findByEmail(email);
+		} catch (Exception e) {
+			log.error("Error finding user by email {}", email, e);
+			return null;
+		}
+	}
+
+	public Document findByPhone(String phone) {
+		try {
+			return authRepository.findByPhone(phone);
+		} catch (Exception e) {
+			log.error("Error finding user by phone {}", phone, e);
+			return null;
+		}
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
@@ -175,8 +201,12 @@ public class AuthService {
 			Document safeUser = new Document(user);
 			safeUser.remove("password");
 
+
+			// Check if user must change password
+			boolean mustChangePassword = user.getBoolean("mustChangePassword", false);
 			response.put("user", safeUser);
-			response.put("message", "Login successful");
+			response.put("mustChangePassword", mustChangePassword);
+			response.put("message", mustChangePassword ? "Login successful, password reset required" : "Login successful");
 
 			return response;
 

@@ -13,10 +13,10 @@
     </parent>
 
     <groupId>com.ats.techno</groupId>
-    <artifactId>company-service</artifactId>
+    <artifactId>auth-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>company-service</name>
-    <description>Time project for company service</description>
+    <name>auth-service</name>
+    <description>Time project for auth service</description>
 
     <properties>
         <java.version>17</java.version>

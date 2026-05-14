@@ -16,6 +16,7 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./editprofile.scss']
 })
 export class EditProfile implements OnInit {
+  mustChangePassword = false;
 
   user: any = {};
   apiUrl = environment.auth_apiBaseUrl;
@@ -37,6 +38,8 @@ export class EditProfile implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    // Check if mustChangePassword flag is set
+    this.mustChangePassword = localStorage.getItem('mustChangePassword') === 'true';
     const storedUser = this.authService.getCurrentUser();
     if (!storedUser) {
       this.authService.logout();
@@ -161,6 +164,9 @@ export class EditProfile implements OnInit {
         this.currentPassword = '';
         this.newPassword = '';
         this.confirmPassword = '';
+        // Remove mustChangePassword flag after successful change
+        localStorage.removeItem('mustChangePassword');
+        this.mustChangePassword = false;
       },
       error: (err) => {
         this.pwdError = err?.error?.message || 'Failed to change password. Please try again.';

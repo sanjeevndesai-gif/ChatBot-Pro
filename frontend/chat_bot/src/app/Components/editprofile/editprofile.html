@@ -78,24 +78,27 @@
 
   <!-- ================= CHANGE PASSWORD ================= -->
   <div class="profile-card">
-
     <form (ngSubmit)="changePassword()">
       <h4>Change Password</h4>
+
+      <div *ngIf="mustChangePassword" class="alert alert-warning mb-3">
+        <strong>Security Notice:</strong> You must change your password before continuing. Please enter your temporary password as the current password, and set a new password.
+      </div>
 
       <div class="form-grid">
         <div class="form-group">
           <label>Current Password</label>
-          <input type="password" [(ngModel)]="currentPassword" name="currentPassword" />
+          <input type="password" [(ngModel)]="currentPassword" name="currentPassword" [disabled]="!mustChangePassword && pwdSuccess" />
         </div>
 
         <div class="form-group">
           <label>New Password</label>
-          <input type="password" [(ngModel)]="newPassword" name="newPassword" />
+          <input type="password" [(ngModel)]="newPassword" name="newPassword" [disabled]="!mustChangePassword && pwdSuccess" />
         </div>
 
         <div class="form-group">
           <label>Confirm New Password</label>
-          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" />
+          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" [disabled]="!mustChangePassword && pwdSuccess" />
         </div>
       </div>
 
@@ -107,16 +110,19 @@
       </ul>
 
       <div class="actions">
-        <button type="submit" class="btn primary">
+        <button type="submit" class="btn primary" [disabled]="!mustChangePassword && pwdSuccess">
           Save changes
         </button>
-        <button type="button" class="btn light" (click)="cancel()">Cancel</button>
+        <button type="button" class="btn light" (click)="cancel()" [disabled]="mustChangePassword">Cancel</button>
       </div>
 
       <div *ngIf="pwdError" class="alert alert-danger mt-3">{{ pwdError }}</div>
       <div *ngIf="pwdSuccess" class="alert alert-success mt-3">{{ pwdSuccess }}</div>
     </form>
 
+    <div *ngIf="mustChangePassword" class="alert alert-info mt-4">
+      <strong>Note:</strong> You cannot update your profile or perform other actions until you change your password.
+    </div>
   </div>
 
 </div>

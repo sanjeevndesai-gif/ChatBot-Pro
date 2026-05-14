@@ -37,6 +37,7 @@ server:
 
 # Eureka (discovery) - point at the discovery server
 eureka:
+
   client:
     service-url:
       defaultZone: http://eureka-server:8761/eureka/

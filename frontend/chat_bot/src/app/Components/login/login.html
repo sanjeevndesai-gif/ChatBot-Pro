@@ -58,6 +58,10 @@
                             Password is required.
                         </div>
                         }
+                        <!-- Forgot Password Link -->
+                        <div class="mt-2 text-end">
+                            <a href="#" (click)="onForgotPassword($event)" class="cb-text-primary small">Forgot Password?</a>
+                        </div>
                     </div>
 
                     <!-- Submit Button -->
@@ -80,6 +84,31 @@
                         ← Back to Home
                     </a>
                 </div>
+
+                                <!-- Forgot Password Modal -->
+                                <div *ngIf="showForgotPasswordModal" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Forgot Password</h5>
+                                                <button type="button" class="btn-close" (click)="closeForgotPasswordModal()"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>We will send your password to your registered WhatsApp number if the account exists.</p>
+                                                <div class="mb-3">
+                                                    <label for="identifier" class="form-label">Email or Phone (as entered above)</label>
+                                                    <input id="identifier" type="text" class="form-control" [value]="loginForm.value.email" readonly />
+                                                </div>
+                                                <div *ngIf="forgotPasswordMessage" class="alert alert-info py-2">{{ forgotPasswordMessage }}</div>
+                                                <div *ngIf="forgotPasswordError" class="alert alert-danger py-2">{{ forgotPasswordError }}</div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" (click)="closeForgotPasswordModal()">Close</button>
+                                                <button type="button" class="btn btn-primary" (click)="sendForgotPassword()" [disabled]="isForgotSubmitting">{{ isForgotSubmitting ? 'Sending...' : 'Send Password' }}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
             </div>
         </div>

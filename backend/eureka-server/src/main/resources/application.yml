@@ -35,6 +35,10 @@ logging:
     org.springframework.web: WARN
     com.netflix.eureka: WARN
     com.netflix.discovery: WARN
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://sanjeevndesai_db_user:Sanpug%402601@chatbot.wqqueab.mongodb.net/?authMechanism=DEFAULT
 
 oauth2:
   jwt:

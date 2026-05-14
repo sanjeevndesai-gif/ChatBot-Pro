@@ -20,6 +20,12 @@ export class Login {
   apiErrorMessage = '';
   apiSuccessMessage = '';
 
+  // Forgot Password Modal State
+  showForgotPasswordModal = false;
+  isForgotSubmitting = false;
+  forgotPasswordMessage = '';
+  forgotPasswordError = '';
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -37,6 +43,41 @@ export class Login {
 
   togglePassword() {
     this.showPassword = !this.showPassword;
+  }
+
+  onForgotPassword(event: Event) {
+    event.preventDefault();
+    this.forgotPasswordMessage = '';
+    this.forgotPasswordError = '';
+    this.showForgotPasswordModal = true;
+  }
+
+  closeForgotPasswordModal() {
+    this.showForgotPasswordModal = false;
+    this.isForgotSubmitting = false;
+    this.forgotPasswordMessage = '';
+    this.forgotPasswordError = '';
+  }
+
+  sendForgotPassword() {
+    this.forgotPasswordMessage = '';
+    this.forgotPasswordError = '';
+    const identifier = this.loginForm.value.email;
+    if (!identifier) {
+      this.forgotPasswordError = 'Please enter your email or phone above.';
+      return;
+    }
+    this.isForgotSubmitting = true;
+    this.authService.forgotPasswordViaWhatsApp(identifier).subscribe({
+      next: (res: any) => {
+        this.isForgotSubmitting = false;
+        this.forgotPasswordMessage = res?.message || 'If your account exists, your password has been sent to your registered WhatsApp number.';
+      },
+      error: (err) => {
+        this.isForgotSubmitting = false;
+        this.forgotPasswordError = err?.message || 'Failed to send password. Please try again.';
+      }
+    });
   }
 
   onSubmit() {
@@ -58,6 +99,13 @@ export class Login {
         this.isSubmitting = false;
 
         this.apiSuccessMessage = res?.message || 'Login successful ✅';
+
+        // If mustChangePassword is true, set a flag in localStorage
+        if (res?.mustChangePassword) {
+          localStorage.setItem('mustChangePassword', 'true');
+        } else {
+          localStorage.removeItem('mustChangePassword');
+        }
 
         // AuthService already stored token + user
         this.router.navigate(['/profile']);
