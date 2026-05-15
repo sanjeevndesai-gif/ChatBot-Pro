@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @RestController
-@RequestMapping("/api/qr")
+@RequestMapping("/api/whatsapp/qr")
 public class QrController {
 
     @GetMapping(value = "/generate", produces = MediaType.IMAGE_PNG_VALUE)

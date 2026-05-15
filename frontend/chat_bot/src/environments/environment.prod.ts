@@ -7,5 +7,6 @@ export const environment = {
     appointment_apiBaseUrl: 'https://api.your-domain.com/book/api/appointments',
     scheduler_apiBaseUrl: 'https://api.your-domain.com/book/api/schedulers',
     chat_apiBaseUrl: 'https://api.your-domain.com/chat',
-    i18n_apiBaseUrl: 'https://api.your-domain.com/i18n'
+    i18n_apiBaseUrl: 'https://api.your-domain.com/i18n',
+    whatsappPhoneId: '1168782922978723'
 };

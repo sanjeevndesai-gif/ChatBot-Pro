@@ -261,20 +261,47 @@ public class AuthService {
 		mongoTemplate.getCollection("authInfo")
 			.updateOne(new org.bson.Document("_id", userId), new org.bson.Document("$set", updateDoc));
 
-		// 3. Call chat service to send WhatsApp message
-		try {
-			String chatUrl = chatServiceUrl + "/api/whatsapp/send";
-			Map<String, Object> payload = Map.of(
-				"to", phone,
-				"message", "Your temporary password is: " + tempPassword + ". Please log in and change your password immediately."
-			);
-			restTemplate.postForEntity(chatUrl, payload, String.class);
-			result.put("status", "OK");
-			result.put("message", "If your account exists, a temporary password has been sent to your registered WhatsApp number.");
-		} catch (Exception e) {
-			result.put("status", "ERROR");
-			result.put("message", "Failed to send WhatsApp message: " + e.getMessage());
-		}
-		return result;
+				// 3. Call chat service to send WhatsApp message
+				try {
+					String chatUrl = chatServiceUrl + "/api/whatsapp/sendmessage";
+					Map<String, Object> payload = Map.of(
+						"number", phone,
+						"message", "Your temporary password is: " + tempPassword + ". Please log in and change your password immediately."
+					);
+					// Generate a short-lived internal JWT for service-to-service call
+					String internalToken = jwtUtil.generateToken(new org.bson.Document("service", "auth-service"));
+					org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+					headers.setBearerAuth(internalToken);
+					org.springframework.http.HttpEntity<Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(payload, headers);
+
+					log.info("[ForgotPassword] Calling chat service at URL: {}", chatUrl);
+					log.info("[ForgotPassword] Payload: {}", payload);
+					log.info("[ForgotPassword] JWT: {}", internalToken);
+
+					// Set timeout for RestTemplate (if not already set)
+					// If you use a shared RestTemplate bean, configure it globally. For this method, create a local one with timeout:
+					org.springframework.web.client.RestTemplate localRestTemplate = restTemplate;
+					try {
+						// If the passed restTemplate is the default, replace with one with timeout for this call
+						if (restTemplate.getRequestFactory().getClass().getSimpleName().equals("SimpleClientHttpRequestFactory")) {
+							org.springframework.http.client.SimpleClientHttpRequestFactory rf = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+							rf.setConnectTimeout(5000); // 5 seconds
+							rf.setReadTimeout(5000);    // 5 seconds
+							localRestTemplate = new org.springframework.web.client.RestTemplate(rf);
+						}
+					} catch (Exception timeoutEx) {
+						log.warn("[ForgotPassword] Could not set timeout on RestTemplate: {}", timeoutEx.getMessage());
+					}
+
+					String response = localRestTemplate.postForObject(chatUrl, entity, String.class);
+					log.info("[ForgotPassword] Chat service response: {}", response);
+					result.put("status", "OK");
+					result.put("message", "If your account exists, a temporary password has been sent to your registered WhatsApp number.");
+				} catch (Exception e) {
+					log.error("[ForgotPassword] Exception calling chat service: ", e);
+					result.put("status", "ERROR");
+					result.put("message", "Failed to send WhatsApp message: " + e.getMessage());
+				}
+				return result;
 	}
 }

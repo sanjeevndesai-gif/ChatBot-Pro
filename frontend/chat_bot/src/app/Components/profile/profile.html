@@ -42,13 +42,26 @@
         </button>
       </div>
 
+
       <!-- QR BOX -->
       <div class="qr-box">
-        <canvas #qrCanvas width="150" height="150"></canvas>
+        <ng-container *ngIf="qrLoading; else qrLoaded">
+          <div class="d-flex flex-column align-items-center justify-content-center" style="height: 150px;">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <small>Loading QR...</small>
+          </div>
+        </ng-container>
+
+        <ng-template #qrLoaded>
+          <div class="d-flex flex-column align-items-center justify-content-center" style="height: 150px;">
+            <img *ngIf="qrImgUrl && !qrError" [src]="qrImgUrl" width="150" height="150" alt="QR Code" style="border:1px solid #ccc;" />
+          </div>
+          <div *ngIf="qrError" class="text-danger small">{{ qrError }}</div>
+        </ng-template>
 
         <small class="qr-text">Scan to view profile</small>
 
-        <button class="btn btn-outline-primary btn-sm mt-2" (click)="downloadQR()">
+        <button class="btn btn-outline-primary btn-sm mt-2" (click)="downloadQR()" [disabled]="qrLoading || qrError">
           Download QR
         </button>
       </div>

@@ -1,7 +1,5 @@
 import {
   Component,
-  ViewChild,
-  ElementRef,
   AfterViewInit,
   OnInit
 } from '@angular/core';
@@ -9,6 +7,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 
 import QRCode from 'qrcode';
+import { QrService } from '../../services/qr.service';
 import { AuthService } from '../../services/auth.service';
 import { downloadQrFromCanvas } from '../../utils/qr-utils';
 import { environment } from '../../../environments/environment';
@@ -27,9 +26,11 @@ import { UserService } from '../../services/user.service';
 })
 export class Profile implements OnInit, AfterViewInit {
 
-  @ViewChild('qrCanvas') qrCanvas!: ElementRef<HTMLCanvasElement>;
 
   user: any;
+  qrLoading = false;
+  qrError = '';
+  qrImgUrl: string | null = null;
   showToast = false;
   toastMessage = '';
   planName = 'Basic';
@@ -45,7 +46,8 @@ export class Profile implements OnInit, AfterViewInit {
     private modalService: NgbModal,
     private router: Router,
     private billingService: BillingService,
-    private userService: UserService
+    private userService: UserService,
+    private qrService: QrService
   ) { }
 
   // ngOnInit() {
@@ -97,31 +99,51 @@ export class Profile implements OnInit, AfterViewInit {
 
 
   ngAfterViewInit(): void {
-    this.generateQR();
+    this.fetchAndRenderQr();
+  }
+
+  fetchAndRenderQr(): void {
+    if (!this.user?.userId) return;
+    this.qrLoading = true;
+    this.qrError = '';
+    this.qrImgUrl = null;
+    this.qrService.generateQr(this.user.userId, 'doctor').subscribe({
+      next: (blob: Blob) => {
+        console.log('QR blob received', blob);
+        const url = URL.createObjectURL(blob);
+        this.qrImgUrl = url;
+        this.qrLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to fetch QR code', err);
+        this.qrError = 'Failed to fetch QR code.';
+        this.qrLoading = false;
+      }
+    });
   }
 
   get profileUrl(): string {
     return `https://myapp.com/profile/${this.user?.userId}`;
   }
 
-  generateQR(): void {
-    if (!this.qrCanvas?.nativeElement || !this.profileUrl) return;
-
-    QRCode.toCanvas(
-      this.qrCanvas.nativeElement,
-      this.profileUrl,
-      { width: 150, margin: 2 },
-      (error) => {
-        if (error) console.error(error);
-      }
-    );
-  }
+  // generateQR(): void {
+  //   if (!this.qrCanvas?.nativeElement || !this.profileUrl) return;
+  //   QRCode.toCanvas(
+  //     this.qrCanvas.nativeElement,
+  //     this.profileUrl,
+  //     { width: 150, margin: 2 },
+  //     (error) => {
+  //       if (error) console.error(error);
+  //     }
+  //   );
+  // }
 
   downloadQR(): void {
-    downloadQrFromCanvas(
-      this.qrCanvas.nativeElement,
-      `profile-${this.user.userId}-qr.png`
-    );
+    if (!this.qrImgUrl) return;
+    const a = document.createElement('a');
+    a.href = this.qrImgUrl;
+    a.download = `profile-${this.user.userId}-qr.png`;
+    a.click();
   }
 
   openAddUser() {
