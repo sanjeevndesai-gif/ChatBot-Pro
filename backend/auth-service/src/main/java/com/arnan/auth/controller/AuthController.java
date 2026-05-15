@@ -17,6 +17,8 @@ import com.arnan.auth.service.BillingService;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.arnan.auth.security.JwtUtil;
+
 @RestController
 public class AuthController {
 
@@ -28,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private BillingService billingService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Value("${chat.service.url:http://localhost:8082}")
     private String chatServiceUrl;
@@ -164,5 +169,18 @@ public class AuthController {
         } else {
             return ResponseEntity.badRequest().body(Map.of("message", result.get("message")));
         }
+    }
+
+    // New endpoint: Get users by admin (createdBy)
+    @GetMapping("/users/by-admin")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Object> getUsersByAdmin(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search) {
+        String token = authHeader.replace("Bearer ", "");
+        String adminUserId = jwtUtil.extractUserId(token);
+        return userManagementService.getUsersByAdminPaginated(adminUserId, page, size, search);
     }
 }

@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
-import { downloadProfileQr } from '../../utils/qr-utils';
 import { AuthService } from '../../services/auth.service';
+import { QrService } from '../../services/qr.service';
 
 interface MenuItem {
   title: string;
@@ -29,12 +29,13 @@ export class Horizontalmenu {
   mobileMenuOpen: boolean = false;
   openMobileSubmenus: Set<string> = new Set();
 
-  constructor(public authService: AuthService) {}
+  constructor(public authService: AuthService, private qrService: QrService) {}
 
-  // ✅ IMPORTANT: Replace this with your real profileUrl logic
-  // Example:
-  // profileUrl = `https://yourdomain.com/profile/${userId}`;
-  profileUrl: string = 'https://example.com/profile/1234';
+
+  // Helper to get userId for QR
+  get userId(): string | null {
+    return this.authService.getCurrentUser()?.userId ?? null;
+  }
 
   get profilePhoto(): string {
     const user = this.authService.getCurrentUser();
@@ -72,14 +73,27 @@ export class Horizontalmenu {
     return this.openMobileSubmenus.has(path);
   }
 
-  // ✅ WORKS FROM ANY PAGE
-  async downloadQr() {
-    try {
-      await downloadProfileQr(this.profileUrl, 220, 'profile-qr.png');
-    } catch (error) {
-      console.error('QR download error:', error);
-      alert('Unable to download QR. Please try again.');
+  // Download backend-generated QR (same as profile page)
+  downloadQr() {
+    const userId = this.userId;
+    if (!userId) {
+      alert('User not found. Please login again.');
+      return;
     }
+    this.qrService.generateQr(userId, 'doctor').subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'profile-qr.png';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('QR download error:', err);
+        alert('Unable to download QR. Please try again.');
+      }
+    });
   }
 
   logout() {

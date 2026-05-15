@@ -45,16 +45,7 @@ export class UserService {
     }
 
     updateUser(user: any): Observable<any> {
-        const payload = {
-            name: user.name,
-            phone: user.phone,
-            specialization: user.specialization,
-            role: user.role,
-            about: user.about,
-            photo: user.photo
-        };
-
-        return this.http.put<any>(`${this.apiUrl}/${user.usersId}`, payload).pipe(
+        return this.http.put<any>(`${this.apiUrl}/${user.usersId}`, user).pipe(
             tap(() => this.toast.success('User updated successfully')),
             catchError(err => {
                 this.toast.error(err.message || 'Failed to update user');
@@ -70,6 +61,20 @@ export class UserService {
                 this.toast.error(err.message || 'Failed to delete user');
                 return this.handleError(err);
             })
+        );
+    }
+
+    /**
+     * Fetch users created by the logged-in admin (using /users/by-admin endpoint)
+     */
+    getUsersByAdmin(page = 0, size = 10, search = ''): Observable<any> {
+        const params = new HttpParams()
+            .set('page', page)
+            .set('size', size)
+            .set('search', search);
+        // The endpoint is /users/by-admin
+        return this.http.get(`${this.apiUrl}/by-admin`, { params }).pipe(
+            catchError(err => this.handleError(err))
         );
     }
 

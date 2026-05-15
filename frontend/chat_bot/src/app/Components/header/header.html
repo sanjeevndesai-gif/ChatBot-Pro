@@ -13,6 +13,19 @@
         <div class="collapse navbar-collapse" [class.show]="!isCollapsed">
             <ul class="navbar-nav ms-auto align-items-lg-center">
 
+                <!-- Actual QR Code in Header -->
+                <li class="nav-item me-2" style="display: flex; align-items: center;">
+                    <ng-container *ngIf="qrImgUrl && !qrLoading && !qrError">
+                        <img [src]="qrImgUrl" width="36" height="36" alt="QR Code" style="border:1px solid #ccc; background: #fff; padding: 2px; cursor: pointer;" title="Scan to view profile" />
+                    </ng-container>
+                    <ng-container *ngIf="qrLoading">
+                        <span class="spinner-border spinner-border-sm text-primary"></span>
+                    </ng-container>
+                    <ng-container *ngIf="qrError">
+                        <i class="bi bi-qr-code" style="font-size: 1.4rem; color: #ccc;" title="QR code unavailable"></i>
+                    </ng-container>
+                </li>
+
                 <li class="nav-item">
                     <a class="nav-link" routerLink="/" fragment="features">Features</a>
                 </li>

@@ -11,7 +11,7 @@ import {
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { UserService } from '../../services/user.service';
 import { Router } from '@angular/router';
-
+import { AuthService } from '../../services/auth.service';
 
 interface UserForm {
   name: FormControl<string>;
@@ -45,7 +45,8 @@ export class AddUser implements OnInit {
     private fb: FormBuilder,
     private userService: UserService,
     private router: Router,
-    public activeModal: NgbActiveModal
+    public activeModal: NgbActiveModal,
+    private authService: AuthService
   ) { }
 
   ngOnInit(): void {
@@ -107,15 +108,15 @@ export class AddUser implements OnInit {
     }
 
     this.isSubmitting = true;
-    const formData: any = { ...this.userForm.getRawValue(), photo: this.photoBase64 };
+    // Use userId for createdBy to match backend filtering
+    const currentUserId = this.authService.getCurrentUser()?.userId;
+    let formData: any = { ...this.userForm.getRawValue(), photo: this.photoBase64 };
+    if (!this.isEditMode && currentUserId) {
+      formData = { ...formData, createdBy: currentUserId };
+    }
 
     if (this.isEditMode) {
-
-      const payload = {
-        ...this.userData,
-        ...formData
-      };
-
+      const payload = { ...this.userData, ...formData };
       this.userService.updateUser(payload).subscribe({
         next: () => {
           this.activeModal.close({
@@ -128,9 +129,7 @@ export class AddUser implements OnInit {
           this.isSubmitting = false;
         }
       });
-
     } else {
-
       this.userService.addUser(formData).subscribe({
         next: () => {
           this.activeModal.close({
@@ -143,7 +142,6 @@ export class AddUser implements OnInit {
           this.isSubmitting = false;
         }
       });
-
     }
   }
 

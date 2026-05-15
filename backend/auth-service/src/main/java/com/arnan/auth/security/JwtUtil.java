@@ -88,6 +88,12 @@ public class JwtUtil {
         return resolver.apply(claims);
     }
 
+    // Extract userId from JWT token
+    public String extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("userId", String.class);
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(signingKey)

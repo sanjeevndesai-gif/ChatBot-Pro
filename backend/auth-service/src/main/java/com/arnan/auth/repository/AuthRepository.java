@@ -183,4 +183,14 @@ public class AuthRepository {
 
         getCollection().updateOne(filter, update);
     }
+
+    // Fetch all users by createdBy (admin userId)
+    public List<Object> getAllByCreatedBy(String createdBy) {
+        List<Object> list = new ArrayList<>();
+        FindIterable<Document> docs = getCollection().find(eq("createdBy", createdBy));
+        for (Document d : docs) {
+            list.add(d);
+        }
+        return list;
+    }
 }

@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Language } from '../../models/language.model';
+import { QrService } from '../../services/qr.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -10,7 +12,7 @@ import { Language } from '../../models/language.model';
   templateUrl: './header.html',
   styleUrls: ['./header.scss']
 })
-export class Header {
+export class Header implements OnInit {
 
   @Input() languages: Language[] = [];
   @Output() languageChange = new EventEmitter<string>();
@@ -20,7 +22,35 @@ export class Header {
   hideHeader = false;
   selectedLang: Language | null = null;
 
-  constructor(private readonly router: Router) { }
+  qrImgUrl: string | null = null;
+  qrDropdownOpen = false;
+  qrLoading = false;
+  qrError = '';
+
+  constructor(
+    private readonly router: Router,
+    private qrService: QrService,
+    private authService: AuthService
+  ) { }
+  ngOnInit(): void {
+    const user = this.authService.getCurrentUser();
+    if (user?.userId) {
+      this.qrLoading = true;
+      this.qrService.generateQr(user.userId, 'doctor').subscribe({
+        next: (blob: Blob) => {
+          this.qrImgUrl = URL.createObjectURL(blob);
+          this.qrLoading = false;
+        },
+        error: (err) => {
+          this.qrError = 'Failed to load QR code';
+          this.qrLoading = false;
+        }
+      });
+    }
+  }
+  toggleQrDropdown(): void {
+    this.qrDropdownOpen = !this.qrDropdownOpen;
+  }
 
   toggleCollapse(): void {
     this.isCollapsed = !this.isCollapsed;

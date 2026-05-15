@@ -110,6 +110,9 @@ public class AuthService {
 			Document finalDoc = new Document();
 			finalDoc.put("userId", userId);
 			finalDoc.putAll(documentInfo);
+			// Set createdDate and updatedDate for admin user
+			finalDoc.put("createdDate", new java.util.Date());
+			finalDoc.put("updatedDate", new java.util.Date());
 
 			authRepository.save(finalDoc);
 
@@ -148,6 +151,8 @@ public class AuthService {
 			if (documentInfo.containsKey("password")) {
 				documentInfo.put("password", passwordEncoder.encode(String.valueOf(documentInfo.get("password"))));
 			}
+			// Always update updatedDate
+			documentInfo.put("updatedDate", new java.util.Date());
 			authRepository.update(new Document(documentInfo), orgId, new ObjectId(id));
 		} catch (Exception e) {
 			log.error("Error updating auth record", e);

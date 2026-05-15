@@ -79,12 +79,10 @@ export class ViewUsers implements OnInit {
     this.loading = true;
     this.errorMessage = '';
 
-    this.userService.getUsers().subscribe({
-
+    // Use getUsersByAdmin to only show users created by the current admin
+    this.userService.getUsersByAdmin().subscribe({
       next: (data: any) => {
-
         const list = data?.content ?? [];
-
         // flatten payload and filter out admin users
         this.users = list
           .map((u: any) => ({
@@ -92,17 +90,13 @@ export class ViewUsers implements OnInit {
             ...u.payload
           }))
           .filter((user: any) => (user.role ?? '').toLowerCase() !== 'admin');
-
         this.applyFilter();
-
         this.loading = false;
       },
-
       error: (err) => {
         this.errorMessage = err.message;
         this.loading = false;
       }
-
     });
   }
 
