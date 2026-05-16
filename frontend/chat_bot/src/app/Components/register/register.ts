@@ -40,7 +40,7 @@ export class Register {
       {
         fullname: ['', Validators.required],
         email: ['', [Validators.required, Validators.email]],
-        country: ['', Validators.required],
+        country: ['India', Validators.required],
         country_code: [''],
         phone_number: ['', Validators.required],
         address: ['', Validators.required],
@@ -73,6 +73,23 @@ export class Register {
 
       phone?.updateValueAndValidity();
     });
+
+    // Manually trigger country logic for default value on load
+    const defaultCountry = this.registerForm.get('country')?.value;
+    const selected = this.countries.find(c => c.name === defaultCountry);
+    const phone = this.registerForm.get('phone_number');
+    const code = this.registerForm.get('country_code');
+    if (selected) {
+      code?.setValue(selected.code);
+      phone?.setValidators([
+        Validators.required,
+        Validators.pattern(selected.pattern)
+      ]);
+    } else {
+      code?.setValue('');
+      phone?.setValidators([Validators.required]);
+    }
+    phone?.updateValueAndValidity();
 
     // Other service validation
     this.registerForm.get('services')?.valueChanges.subscribe(value => {

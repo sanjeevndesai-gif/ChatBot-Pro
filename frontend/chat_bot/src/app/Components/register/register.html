@@ -38,7 +38,7 @@
           <div class="col-md-6">
             <select class="form-select" formControlName="country">
               <option value="">Select Country</option>
-              <option *ngFor="let c of countries" [value]="c.name">{{ c.name }}</option>
+              <option *ngFor="let c of countries" [value]="c.name" [selected]="c.name === 'India'">{{ c.name }}</option>
             </select>
             <small class="text-danger" *ngIf="f['country'].touched && f['country'].invalid">
               Country is required
