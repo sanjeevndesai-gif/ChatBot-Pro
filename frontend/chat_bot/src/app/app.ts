@@ -2,13 +2,15 @@ import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { GlobalLoader } from './shared/global-loader';
 import { GlobalToast } from './shared/global-toast';
+import { Header } from './Components/header/header';
+import { Landing } from './pages/landing/landing';
 // import { I18nService } from './services/i18n.service';
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GlobalLoader, GlobalToast],
+  imports: [RouterOutlet, GlobalLoader, GlobalToast, Header, Landing],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })

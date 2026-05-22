@@ -131,7 +131,8 @@ export class Register {
       address: v.address,
       orgname: v.orgname,
       services: v.services === 'other' ? v.otherServices : v.services,
-      password: v.password
+      password: v.password,
+      createdDate: new Date().toISOString()
     };
 
     this.authService.register(payload).subscribe(() => {
