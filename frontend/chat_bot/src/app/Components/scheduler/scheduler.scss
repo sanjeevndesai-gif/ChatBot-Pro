@@ -636,3 +636,84 @@
   max-height: 200px;
   overflow-y: auto;
 }
+
+
+.bulk-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+::ng-deep .fc-timegrid-event.selected-slot {
+
+  border: 3px solid #ff0000 !important;
+
+  background: rgba(255, 0, 0, 0.18) !important;
+
+  box-shadow:
+    0 0 0 2px rgba(255, 0, 0, 0.45) !important;
+
+  z-index: 999 !important;
+}
+
+::ng-deep .fc-timegrid-event.fc-general.selected-slot {
+
+  border: 3px solid #ff0000 !important;
+
+  background:
+    rgba(255, 0, 0, 0.18) !important;
+}
+
+::ng-deep .fc-timegrid-event.fc-emergency.selected-slot {
+
+  border: 3px solid #ff0000 !important;
+
+  background:
+    rgba(255, 0, 0, 0.18) !important;
+}
+
+.slot-popup-backdrop {
+
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.4);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+.slot-popup {
+
+  background: white;
+
+  padding: 20px;
+
+  border-radius: 10px;
+
+  min-width: 280px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+.slot-popup button {
+
+  padding: 10px;
+}
+
+.slot-popup .danger {
+
+  background: #d9534f;
+
+  color: white;
+}

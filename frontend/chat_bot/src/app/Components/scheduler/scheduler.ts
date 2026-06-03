@@ -15,10 +15,12 @@ import { UserService } from '../../services/user.service';
 
 /* ---------------- TYPES ---------------- */
 interface Slot {
-  id: string;
+  slotId?: string;
   start: string;
   end: string;
-  emergency: boolean;
+  type: string;
+  booked: boolean;
+  maxBookings: number;
 }
 
 interface Category {
@@ -42,50 +44,57 @@ interface MiniDay {
 })
 export class Scheduler implements AfterViewInit, OnInit {
 
-      toggleUserDropdown() {
-        this.userDropdownOpen = !this.userDropdownOpen;
-      }
-    dateError: string = '';
-    onFromDateChange() {
-      this.dateError = '';
-      // Prevent selecting a date less than today
-      if (this.customFromDate && this.customFromDate < this.todayString) {
-        this.dateError = 'From Date cannot be less than today.';
-        this.customFromDate = this.todayString;
-      }
-      // Prevent selecting a to-date less than from-date
-      if (this.customToDate && this.customToDate < this.customFromDate) {
-        this.dateError = 'To Date cannot be less than From Date.';
-        this.customToDate = this.customFromDate;
-      }
-    }
+  toggleResourceFilterDropdown() {
+    this.resourceFilterDropdownOpen =
+      !this.resourceFilterDropdownOpen;
+  }
 
-    // Helper for template: get min date for from date input
-    get minFromDate() {
-      return this.todayString;
-    }
-    onToDateChange() {
-      this.dateError = '';
-      if (this.customFromDate && this.customToDate) {
-        // Calculate minimum allowed ToDate (10 days after FromDate)
-        const fromDate = new Date(this.customFromDate);
-        const minToDate = new Date(fromDate);
-        minToDate.setDate(fromDate.getDate() + 10);
-        const minToDateString = minToDate.toISOString().split('T')[0];
-        if (this.customToDate < minToDateString) {
-          this.dateError = `To Date must be at least 10 days after From Date (${minToDateString} or later).`;
-          this.customToDate = minToDateString;
-        }
-      }
-    }
+  toggleScheduleResourceDropdown() {
+    this.scheduleResourceDropdownOpen =
+      !this.scheduleResourceDropdownOpen;
+  }
 
-    // Helper for template: get min date for to date input
-    get minToDate() {
-      if (!this.customFromDate) return this.todayString;
+  dateError: string = '';
+  onFromDateChange() {
+    this.dateError = '';
+    // Prevent selecting a date less than today
+    if (this.customFromDate && this.customFromDate < this.todayString) {
+      this.dateError = 'From Date cannot be less than today.';
+      this.customFromDate = this.todayString;
+    }
+    // Prevent selecting a to-date less than from-date
+    if (this.customToDate && this.customToDate < this.customFromDate) {
+      this.dateError = 'To Date cannot be less than From Date.';
+      this.customToDate = this.customFromDate;
+    }
+  }
+
+  // Helper for template: get min date for from date input
+  get minFromDate() {
+    return this.todayString;
+  }
+  onToDateChange() {
+    this.dateError = '';
+    if (this.customFromDate && this.customToDate) {
+      // Calculate minimum allowed ToDate (10 days after FromDate)
       const fromDate = new Date(this.customFromDate);
-      fromDate.setDate(fromDate.getDate() + 10);
-      return fromDate.toISOString().split('T')[0];
+      const minToDate = new Date(fromDate);
+      minToDate.setDate(fromDate.getDate() + 10);
+      const minToDateString = minToDate.toISOString().split('T')[0];
+      if (this.customToDate < minToDateString) {
+        this.dateError = `To Date must be at least 10 days after From Date (${minToDateString} or later).`;
+        this.customToDate = minToDateString;
+      }
     }
+  }
+
+  // Helper for template: get min date for to date input
+  get minToDate() {
+    if (!this.customFromDate) return this.todayString;
+    const fromDate = new Date(this.customFromDate);
+    fromDate.setDate(fromDate.getDate() + 10);
+    return fromDate.toISOString().split('T')[0];
+  }
   todayString: string = new Date().toISOString().split('T')[0];
   maxToDateString: string = (() => {
     const d = new Date();
@@ -105,7 +114,8 @@ export class Scheduler implements AfterViewInit, OnInit {
   userId!: string;
   schedulers: any[] = [];
 
-  userDropdownOpen = false;
+  resourceFilterDropdownOpen = false;
+  scheduleResourceDropdownOpen = false;
   userSearchText = '';
 
   // repeatOption: 'none' | 'weekly' = 'none';
@@ -115,21 +125,22 @@ export class Scheduler implements AfterViewInit, OnInit {
 
   users: any[] = [];
 
-  selectedUsers: any[] = [];
+  selectedResources: any[] = [];
 
   repeatWeeks: number = 1;
   customFromDate: string = this.todayString;
   customToDate: string = this.maxToDateString;
 
   // Only show doctors in dropdown
-  getDoctors() {
+  getResources() {
     return this.users.filter(user => user.role === 'doctor');
   }
 
   // Filtered users for search (doctors only)
-  filteredUsers() {
-    return this.getDoctors().filter(user =>
-      user.name.toLowerCase().includes(this.userSearchText.toLowerCase())
+  filteredResources() {
+
+    return this.getResources().filter(
+      user => user.name.toLowerCase().includes(this.userSearchText.toLowerCase())
     );
   }
 
@@ -137,6 +148,10 @@ export class Scheduler implements AfterViewInit, OnInit {
   /* ---------------- BASIC ---------------- */
   title = '';
   description = '';
+  status = 'ACTIVE';
+  timezone = 'Asia/Kolkata';
+  createdBy = '';
+  updatedBy = '';
   selectedDuration = 15;
 
   durationOptions = [
@@ -163,11 +178,14 @@ export class Scheduler implements AfterViewInit, OnInit {
   }[] = [];
 
   editingScheduleIndex: number | null = null;
+  selectedScheduler: any = null;
+  isFullScheduleEdit = false;
   private initialSnapshot: string | null = null;
 
   /* ---------------- DAY SLOTS ---------------- */
   daySlots: {
-    label: string;
+    date: string;
+    displayDay: string;
     unavailable: boolean;
     slots: Slot[];
   }[] = [];
@@ -187,10 +205,10 @@ export class Scheduler implements AfterViewInit, OnInit {
   // };
 
   calendarOptions: CalendarOptions = {
-        validRange: {
-          start: this.todayString,
-          end: this.maxToDateString
-        },
+    validRange: {
+      start: this.todayString,
+      end: this.maxToDateString
+    },
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
     initialView: 'timeGridWeek',
     headerToolbar: false,
@@ -203,8 +221,8 @@ export class Scheduler implements AfterViewInit, OnInit {
     slotLabelInterval: '01:00',
     eventMinHeight: 24,
     expandRows: true,
-    eventOverlap: true,        // ✅ allow overlap
-    slotEventOverlap: true,    // ✅ side-by-side stacking
+    eventOverlap: false,        // ✅ Not allow overlap
+    slotEventOverlap: false,    // ✅ side-by-side stacking
 
     // ✅ IMPORTANT — 24 HOUR FORMAT
     eventTimeFormat: {
@@ -213,17 +231,130 @@ export class Scheduler implements AfterViewInit, OnInit {
       hour12: false
     },
 
+    eventClassNames: (arg: any) => {
+
+      const schedulerId =
+        arg.event.extendedProps['schedulerId'];
+
+      const resourceId =
+        arg.event.extendedProps['resourceId'];
+
+      const slotId =
+        arg.event.extendedProps['originalSlotId'];
+
+      const isSelected =
+
+        this.selectedSlots.some(
+          s =>
+
+            s.schedulerId ===
+            schedulerId
+
+            &&
+
+            s.resourceId ===
+            resourceId
+
+            &&
+
+            s.slotId ===
+            slotId
+        );
+
+      return isSelected
+        ? ['selected-slot']
+        : [];
+    },
+
     // ✅ IMPORTANT — remove default time text
     displayEventTime: false,
 
     events: [],
-    // eventClick: (info: any) => this.openDrawerForEdit(info),
     eventClick: (info: any) => {
 
-      const doctorId = info.event.extendedProps['doctorId'];
+      const resourceId = info.event.extendedProps['resourceId'];
+
+      // const slotId = info.event.extendedProps['slotId'];
+      const slotId = info.event.extendedProps['originalSlotId'];
+
       const schedulerId = info.event.extendedProps['schedulerId'];
 
-      this.openEditByDoctor(doctorId, schedulerId);
+      // MULTI DELETE MODE
+      if (this.multiDeleteMode) {
+
+        const selectedSlot = {
+
+          schedulerId,
+
+          resourceId,
+
+          slotId
+        };
+
+        const alreadySelected =
+
+          this.selectedSlots.some(
+            s =>
+
+              s.schedulerId ===
+              schedulerId
+
+              &&
+
+              s.resourceId ===
+              resourceId
+
+              &&
+
+              s.slotId ===
+              slotId
+          );
+
+        if (alreadySelected) {
+
+          this.selectedSlots =
+
+            this.selectedSlots.filter(
+              s => !(
+
+                s.schedulerId ===
+                schedulerId
+
+                &&
+
+                s.resourceId ===
+                resourceId
+
+                &&
+
+                s.slotId ===
+                slotId
+              )
+            );
+
+          this.syncCalendar();
+
+        } else {
+
+          this.selectedSlots.push(
+            selectedSlot
+          );
+          this.syncCalendar();
+
+        }
+
+        return;
+      }
+
+      this.selectedEventData = {
+        schedulerId,
+        resourceId,
+        slotId,
+        originalSlotId: info.event.extendedProps['originalSlotId'],
+        title: info.event.title,
+        event: info.event
+      };
+      this.slotActionPopup = true;
     },
 
     eventDidMount: (info) => {
@@ -244,7 +375,339 @@ export class Scheduler implements AfterViewInit, OnInit {
     }
   };
 
-  openEditByDoctor(doctorId: string, schedulerId: string) {
+  closeSlotPopup() {
+    this.slotActionPopup = false;
+    this.selectedEventData = null;
+  }
+
+  editResourceSchedule() {
+    const schedulerId = this.selectedEventData.schedulerId;
+    const resourceId = this.selectedEventData.resourceId;
+    const scheduler = this.schedulers.find((s: any) => (s.id || s._id) === schedulerId);
+
+    if (!scheduler) return;
+
+    const resourceSchedule =
+      scheduler.resourceSchedules.find((r: any) => r.resourceId === resourceId);
+
+    if (!resourceSchedule)
+      return;
+
+    this.isNewEvent = false;
+    this.isFullScheduleEdit = false;
+    this.selectedScheduler = scheduler;
+
+    this.selectedResources = this.users.filter(u => u.id === resourceId);
+
+    this.daySlots = resourceSchedule.daySlots.map((d: any) => ({
+      date: d.date,
+      displayDay: new Date(d.date)
+        .toLocaleDateString(
+          'en-US',
+          { weekday: 'long' }
+        ),
+      unavailable:
+        d.unavailable,
+      slots:
+        d.slots.map(
+          (s: any) => ({
+            slotId: s.slotId,
+            start: s.start,
+            end: s.end,
+            type: s.type || 'GENERAL',
+            booked: s.booked || false,
+            maxBookings: s.maxBookings || 1
+          }))
+    })
+    );
+
+    this.title = scheduler.title;
+    this.description = scheduler.description;
+    this.drawerOpen = true;
+    this.closeSlotPopup();
+  }
+
+  editFullSchedule() {
+
+    const schedulerId =
+      this.selectedEventData.schedulerId;
+
+    const scheduler =
+      this.schedulers.find(
+        (s: any) =>
+          (s.id || s._id)
+          === schedulerId
+      );
+
+    if (!scheduler)
+      return;
+
+    this.isNewEvent = false;
+    this.isFullScheduleEdit = true;
+
+    this.selectedScheduler =
+      scheduler;
+
+    // LOAD ALL RESOURCES
+    this.selectedResources =
+
+      scheduler.resourceSchedules
+        .map((r: any) =>
+
+          this.users.find(
+            u =>
+              u.id ===
+              r.resourceId
+          )
+        )
+
+        .filter(Boolean);
+
+    // LOAD FIRST RESOURCE daySlots
+    // because all schedules share same slot structure
+    if (
+      !scheduler.resourceSchedules
+      || scheduler.resourceSchedules.length === 0
+    ) {
+      alert('No resource schedules found');
+      return;
+    }
+
+    const firstResource =
+      scheduler.resourceSchedules[0];
+
+    this.daySlots =
+
+      firstResource.daySlots.map(
+        (d: any) => ({
+
+          date: d.date,
+
+          displayDay:
+            new Date(d.date)
+              .toLocaleDateString(
+                'en-US',
+                {
+                  weekday: 'long'
+                }
+              ),
+
+          unavailable:
+            d.unavailable,
+
+          slots:
+            d.slots.map(
+              (s: any) => ({
+
+                slotId:
+                  s.slotId,
+
+                start:
+                  s.start,
+
+                end:
+                  s.end,
+
+                type:
+                  s.type || 'GENERAL',
+
+                booked:
+                  s.booked || false,
+
+                maxBookings:
+                  s.maxBookings || 1
+              }))
+        })
+      );
+
+    // scheduler fields
+    this.title =
+      scheduler.title || '';
+
+    this.description =
+      scheduler.description || '';
+
+    this.selectedDuration =
+      scheduler.appointmentDuration;
+
+    this.repeatOption =
+
+      scheduler.repeatType === 0
+        ? 'none'
+
+        : scheduler.repeatType === 1
+          ? 'weekly'
+
+          : 'custom';
+
+    this.repeatWeeks =
+      scheduler.repeatWeeks || 1;
+
+    this.customFromDate =
+      scheduler.customFromDate || '';
+
+    this.customToDate =
+      scheduler.customToDate || '';
+
+    this.fullDayStart =
+      scheduler.fullDayStart || '';
+
+    this.fullDayEnd =
+      scheduler.fullDayEnd || '';
+
+    this.maxBookingsPerDay =
+      scheduler.maxBookingsPerDay || 1;
+
+    this.status =
+      scheduler.status || 'ACTIVE';
+
+    this.timezone =
+      scheduler.timezone
+      || 'Asia/Kolkata';
+
+    this.drawerOpen = true;
+
+    this.closeSlotPopup();
+  }
+
+  deleteClickedSlot() {
+    const {
+      schedulerId,
+      resourceId,
+      originalSlotId
+    } = this.selectedEventData;
+
+    this.deleteSingleSlot(
+      schedulerId,
+      resourceId,
+      originalSlotId
+    );
+
+    this.closeSlotPopup();
+  }
+
+  deleteResourceSchedule() {
+
+    const confirmed =
+      confirm(
+        'Delete this resource schedule?'
+      );
+
+    if (!confirmed) return;
+
+    const {
+      schedulerId,
+      resourceId
+    } = this.selectedEventData;
+
+    this.schedulerService
+      .deleteResourceSchedule(
+        schedulerId,
+        resourceId
+      )
+      .subscribe({
+
+        next: () => {
+
+          // remove locally
+          this.schedulers =
+            this.schedulers
+              .map((scheduler: any) => {
+
+                if (
+                  (scheduler.id || scheduler._id)
+                  !== schedulerId
+                ) {
+                  return scheduler;
+                }
+
+                scheduler.resourceSchedules =
+                  scheduler.resourceSchedules.filter(
+                    (r: any) =>
+                      r.resourceId !== resourceId
+                  );
+
+                return scheduler;
+              })
+
+              // remove empty schedulers
+              .filter(
+                (scheduler: any) =>
+                  scheduler.resourceSchedules.length > 0
+              );
+
+          this.syncCalendar();
+
+          this.toast(
+            'Resource schedule deleted'
+          );
+
+        },
+
+        error: (err) => {
+
+          console.error(err);
+
+          alert(
+            'Failed to delete resource schedule'
+          );
+        }
+      });
+
+    this.closeSlotPopup();
+  }
+
+  deleteFullSchedule() {
+
+    const confirmed =
+      confirm(
+        'Delete full schedule?'
+      );
+
+    if (!confirmed) return;
+
+    const schedulerId =
+      this.selectedEventData
+        .schedulerId;
+
+    this.schedulerService
+      .deleteScheduler(
+        schedulerId
+      )
+      .subscribe({
+
+        next: () => {
+
+          // remove locally
+          this.schedulers =
+            this.schedulers.filter(
+              (s: any) =>
+
+                (s.id || s._id)
+                !== schedulerId
+            );
+
+          this.syncCalendar();
+
+          this.toast(
+            'Schedule deleted'
+          );
+
+          this.closeSlotPopup();
+        },
+
+        error: (err) => {
+
+          console.error(err);
+
+          alert(
+            'Failed to delete schedule'
+          );
+        }
+      });
+  }
+
+  openEditByDoctor(resourceId: string, schedulerId: string) {
 
     const scheduler = this.schedulers.find(s => s._id === schedulerId);
 
@@ -253,18 +716,30 @@ export class Scheduler implements AfterViewInit, OnInit {
     // load data into form
     this.title = scheduler.title;
     this.description = scheduler.description;
-    this.selectedUsers = this.users.filter(u =>
-      scheduler.doctorIds.includes(u.id)
+    this.selectedResources = this.users.filter(u =>
+      scheduler.resourceSchedules.some((r: any) => r.resourceId === u.id)
     );
 
     this.daySlots = scheduler.daySlots.map((d: any) => ({
-      label: d.dayName,
+
+      date: d.date,
+
+      displayDay:
+        new Date(d.date)
+          .toLocaleDateString(
+            'en-US',
+            { weekday: 'long' }
+          ),
+
       unavailable: d.unavailable,
+
       slots: d.slots.map((s: any) => ({
-        id: crypto.randomUUID(),
+        slotId: s.slotId || crypto.randomUUID(),
         start: s.start,
         end: s.end,
-        emergency: s.emergency
+        type: s.type || 'GENERAL',
+        booked: s.booked || false,
+        maxBookings: s.maxBookings || 1
       }))
     }));
 
@@ -285,6 +760,16 @@ export class Scheduler implements AfterViewInit, OnInit {
   isNewEvent = true;
   toastMessage = '';
   toastVisible = false;
+  multiDeleteMode = false;
+
+  slotActionPopup = false;
+  selectedEventData: any = null;
+
+  selectedSlots: {
+    schedulerId: string;
+    resourceId: string;
+    slotId: string;
+  }[] = [];
 
   private toastTimer: any;
   private autoGenTimer: any;
@@ -311,10 +796,10 @@ export class Scheduler implements AfterViewInit, OnInit {
           role: (u.payload?.role ?? '').toLowerCase()
         }));
       if (this.users.length === 1) {
-        this.selectedUsers = [...this.users];
+        this.selectedResources = [...this.users];
         this.syncCalendar();
       } else {
-        this.selectedUsers = [...this.users];
+        this.selectedResources = [...this.users];
       }
     });
   }
@@ -357,52 +842,52 @@ export class Scheduler implements AfterViewInit, OnInit {
       });
   }
 
-  mapSchedulersToCalendar() {
+  // mapSchedulersToCalendar() {
 
-    if (!this.schedulers.length) return;
+  //   if (!this.schedulers.length) return;
 
-    this.initDaySlots();
+  //   this.initDaySlots();
 
-    this.schedulers.forEach((scheduler: any) => {
+  //   this.schedulers.forEach((scheduler: any) => {
 
-      if (!scheduler.daySlots) return;
+  //     if (!scheduler.daySlots) return;
 
-      scheduler.daySlots.forEach((day: any) => {
+  //     scheduler.daySlots.forEach((day: any) => {
 
-        const index = this.getDayIndex(day.dayName);
+  //       const index = this.getDayIndex(day.dayName);
 
-        if (index === -1) return;
+  //       if (index === -1) return;
 
-        // merge unavailable
-        if (day.unavailable) {
-          this.daySlots[index].unavailable = true;
-        }
+  //       // merge unavailable
+  //       if (day.unavailable) {
+  //         this.daySlots[index].unavailable = true;
+  //       }
 
-        day.slots.forEach((s: any) => {
+  //       day.slots.forEach((s: any) => {
 
-          const exists = this.daySlots[index].slots.find(
-            slot => slot.start === s.start && slot.end === s.end
-          );
+  //         const exists = this.daySlots[index].slots.find(
+  //           slot => slot.start === s.start && slot.end === s.end
+  //         );
 
-          // ✅ avoid duplicates
-          if (!exists) {
-            this.daySlots[index].slots.push({
-              id: crypto.randomUUID(),
-              start: s.start,
-              end: s.end,
-              emergency: s.emergency
-            });
-          }
+  //         // ✅ avoid duplicates
+  //         if (!exists) {
+  //           this.daySlots[index].slots.push({
+  //             slotId: crypto.randomUUID(),
+  //             start: s.start,
+  //             end: s.end,
+  //             emergency: s.emergency
+  //           });
+  //         }
 
-        });
+  //       });
 
-      });
+  //     });
 
-    });
+  //   });
 
-    this.syncCalendar();
+  //   this.syncCalendar();
 
-  }
+  // }
 
   getDayIndex(dayName: string): number {
 
@@ -420,13 +905,52 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   /* ---------------- INIT ---------------- */
+  // initDaySlots() {
+  //   const labels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  //   this.daySlots = labels.map(l => ({
+  //     label: l,
+  //     unavailable: false,
+  //     slots: []
+  //   }));
+  // }
+
   initDaySlots() {
-    const labels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    this.daySlots = labels.map(l => ({
-      label: l,
-      unavailable: false,
-      slots: []
-    }));
+
+    const currentViewDate =
+      this.calendar?.getApi()?.getDate?.() || new Date();
+
+    const weekStart = new Date(currentViewDate);
+
+    weekStart.setDate(
+      currentViewDate.getDate() -
+      currentViewDate.getDay()
+    );
+
+    this.daySlots = [];
+
+    for (let i = 0; i < 7; i++) {
+
+      const current = new Date(weekStart);
+
+      current.setDate(
+        weekStart.getDate() + i
+      );
+
+      const date =
+        current.toISOString().split('T')[0];
+
+      const displayDay =
+        current.toLocaleDateString('en-US', {
+          weekday: 'long'
+        });
+
+      this.daySlots.push({
+        date,
+        displayDay,
+        unavailable: false,
+        slots: []
+      });
+    }
   }
 
   /* ---------------- UTIL ---------------- */
@@ -442,7 +966,7 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   private makeSlot(s: string, e: string): Slot {
-    return { id: crypto.randomUUID(), start: s, end: e, emergency: false };
+    return { slotId: crypto.randomUUID(), start: s, end: e, type: 'GENERAL', booked: false, maxBookings: 1 };
   }
 
   private resolveEnd(): number {
@@ -488,13 +1012,13 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   /* ---------------- SLOT HELPERS ---------------- */
-  getCombinedSlots(d: any): Slot[] {
-    return d.slots;
+  getCombinedSlots(day: any): Slot[] {
+    return day.slots || [];
   }
 
-  isEmergency(_: any, s: Slot): boolean {
-    return s.emergency;
-  }
+  // isEmergency(_: any, s: Slot): boolean {
+  //   return s.emergency;
+  // }
 
   onSlotChange(_di?: number, _slot?: Slot) {
     this.syncCalendar();
@@ -515,7 +1039,7 @@ export class Scheduler implements AfterViewInit, OnInit {
   deleteSlot(di: number, s: Slot) {
 
     this.daySlots[di].slots =
-      this.daySlots[di].slots.filter(x => x.id !== s.id);
+      this.daySlots[di].slots.filter(x => x.slotId !== s.slotId);
 
     // ✅ FORCE CLEAN STATE
     this.daySlots[di].slots = [...this.daySlots[di].slots];
@@ -523,11 +1047,163 @@ export class Scheduler implements AfterViewInit, OnInit {
     this.syncCalendar();
   }
 
+  deleteSingleSlot(
+    schedulerId: string,
+    resourceId: string,
+    slotId: string
+  ) {
+
+    this.schedulerService
+      .deleteSlot(
+        schedulerId,
+        resourceId,
+        slotId
+      )
+      .subscribe({
+
+        next: () => {
+
+          this.schedulers.forEach(
+            (scheduler: any) => {
+
+              if (
+                scheduler._id !== schedulerId
+              ) return;
+
+              scheduler.daySlots.forEach(
+                (d: any) => {
+
+                  d.slots =
+                    d.slots.filter(
+                      (s: any) =>
+                        s.slotId !== slotId
+                    );
+
+                });
+
+            });
+
+          this.syncCalendar();
+
+          this.toast('Slot deleted');
+        },
+
+        error: (err) => {
+          console.error(err);
+
+          alert(
+            'Failed to delete slot'
+          );
+        }
+      });
+  }
+
+  deleteSelectedSlots() {
+
+    if (
+      this.selectedSlots.length === 0
+    ) {
+      return;
+    }
+
+    const confirmed = confirm(
+
+      `Delete ${this.selectedSlots.length} selected slots?`
+    );
+
+    if (!confirmed) return;
+
+    this.schedulerService
+      .deleteMultipleSlots(
+        this.selectedSlots
+      )
+      .subscribe({
+
+        next: () => {
+
+          // LOCAL REMOVE
+          this.selectedSlots.forEach(
+            selected => {
+
+              this.schedulers.forEach(
+                (scheduler: any) => {
+
+                  if (
+                    (scheduler.id || scheduler._id)
+                    !== selected.schedulerId
+                  ) {
+                    return;
+                  }
+
+                  scheduler.resourceSchedules
+                    ?.forEach((resource: any) => {
+
+                      if (
+                        resource.resourceId
+                        !== selected.resourceId
+                      ) {
+                        return;
+                      }
+
+                      resource.daySlots
+                        ?.forEach((day: any) => {
+
+                          day.slots =
+                            day.slots.filter(
+                              (slot: any) =>
+
+                                slot.slotId
+                                !== selected.slotId
+                            );
+                        });
+                    });
+                });
+            });
+
+          this.selectedSlots = [];
+
+          this.multiDeleteMode = false;
+
+          this.syncCalendar();
+
+          this.toast(
+            'Selected slots deleted'
+          );
+        },
+
+        error: (err) => {
+
+          console.error(err);
+
+          alert(
+            'Failed to delete selected slots'
+          );
+        }
+      });
+  }
+
+  toggleMultiDeleteMode() {
+
+    this.multiDeleteMode =
+      !this.multiDeleteMode;
+
+    // reset selection
+    if (!this.multiDeleteMode) {
+
+      this.selectedSlots = [];
+
+      this.syncCalendar();
+    }
+  }
+
   copySlotsToAllDays(srcIndex: number) {
     const src = this.daySlots[srcIndex];
     this.daySlots.forEach((d, i) => {
       if (i !== srcIndex && !d.unavailable) {
-        d.slots = src.slots.map(s => ({ ...s, id: crypto.randomUUID() }));
+        d.slots = src.slots.map(s => ({
+          ...s,
+          slotId: crypto.randomUUID()
+        }));
       }
     });
     this.toast('Slots copied to all days');
@@ -562,59 +1238,59 @@ export class Scheduler implements AfterViewInit, OnInit {
     this.saveSchedulerToBackend();
   }
 
-  isDuplicateSchedule(newPayload: any): boolean {
+  // isDuplicateSchedule(newPayload: any): boolean {
 
-    for (let existing of this.schedulers) {
+  //   for (let existing of this.schedulers) {
 
-      // ✅ IGNORE SAME SCHEDULER (IMPORTANT FIX)
-      if (this.editingScheduleIndex !== null &&
-        existing._id === this.schedulers[this.editingScheduleIndex]?._id) {
-        continue;
-      }
+  //     // ✅ IGNORE SAME SCHEDULER (IMPORTANT FIX)
+  //     if (this.editingScheduleIndex !== null &&
+  //       existing._id === this.schedulers[this.editingScheduleIndex]?._id) {
+  //       continue;
+  //     }
 
-      const sameDoctor = existing.doctorIds.some((d: string) =>
-        newPayload.doctorIds.includes(d)
-      );
+  //     const sameDoctor = existing.resourceSchedules.some((d: any) =>
+  //       newPayload.resourceSchedules.includes(d.resourceId)
+  //     );
 
-      if (!sameDoctor) continue;
+  //     if (!sameDoctor) continue;
 
-      for (let newDay of newPayload.daySlots) {
+  //     for (let newDay of newPayload.daySlots) {
 
-        const existingDay = existing.daySlots.find(
-          (d: any) => d.date === newDay.date
-        );
+  //       const existingDay = existing.daySlots.find(
+  //         (d: any) => d.date === newDay.date
+  //       );
 
-        if (!existingDay) continue;
+  //       if (!existingDay) continue;
 
-        for (let newSlot of newDay.slots) {
+  //       for (let newSlot of newDay.slots) {
 
-          for (let oldSlot of existingDay.slots) {
+  //         for (let oldSlot of existingDay.slots) {
 
-            if (this.isOverlap(newSlot, oldSlot)) {
+  //           if (this.isOverlap(newSlot, oldSlot)) {
 
-              const message =
-                `❌ Overlapping slot detected\n\n` +
-                `📅 Date: ${newDay.date}\n` +
-                `⏰ Existing: ${oldSlot.start} - ${oldSlot.end}\n` +
-                `⏰ New: ${newSlot.start} - ${newSlot.end}`;
+  //             const message =
+  //               `❌ Overlapping slot detected\n\n` +
+  //               `📅 Date: ${newDay.date}\n` +
+  //               `⏰ Existing: ${oldSlot.start} - ${oldSlot.end}\n` +
+  //               `⏰ New: ${newSlot.start} - ${newSlot.end}`;
 
-              console.warn(message);
+  //             console.warn(message);
 
-              alert(message);   // ✅ reliable fallback
+  //             alert(message);   // ✅ reliable fallback
 
-              return true;
-            }
+  //             return true;
+  //           }
 
-          }
+  //         }
 
-        }
+  //       }
 
-      }
+  //     }
 
-    }
+  //   }
 
-    return false;
-  }
+  //   return false;
+  // }
 
   isOverlap(s1: any, s2: any): boolean {
 
@@ -636,87 +1312,301 @@ export class Scheduler implements AfterViewInit, OnInit {
       return;
     }
 
-    if (this.selectedUsers.length === 0) {
+    if (this.selectedResources.length === 0) {
       alert("Please select at least one user");
       return;
     }
 
-    const daySlotsPayload = this.daySlots.map((d, index) => {
+    let finalResourceSchedules: any[] = [];
 
-      const today = this.calendar.getApi().getDate();
+    // =========================
+    // UPDATE FLOW
+    // =========================
+    if (!this.isNewEvent) {
 
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() + (index - today.getDay()));
+      // FULL SCHEDULE UPDATE
+      if (this.isFullScheduleEdit) {
 
-      return {
-        dayName: d.label,
-        date: targetDate.toISOString().split('T')[0],
-        unavailable: d.unavailable,
-        slots: d.slots.map(s => ({
-          start: s.start,
-          end: s.end,
-          emergency: s.emergency
-        }))
-      };
+        finalResourceSchedules =
+          this.selectedResources.map(resource => ({
 
-    });
+            resourceId: resource.id,
 
-    const payload = {
-      title: this.title,
-      doctorIds: this.selectedUsers.map(u => u.id),
-      appointmentDuration: this.selectedDuration,
+            resourceType: 'DOCTOR',
 
-      repeatType:
-        this.repeatOption === 'none' ? 0 :
-          this.repeatOption === 'weekly' ? 1 : 2,
+            daySlots:
 
-      repeatWeeks: this.repeatWeeks || null,
-      customFromDate: this.customFromDate || null,
-      customToDate: this.customToDate || null,
+              this.daySlots.map(day => ({
 
-      fullDayStart: this.fullDayStart,
-      fullDayEnd: this.fullDayEnd,
-      maxBookingsPerDay: this.maxBookingsPerDay,
+                date: day.date,
 
-      daySlots: daySlotsPayload,
-      description: this.description
-    };
+                unavailable: day.unavailable,
 
+                slots:
 
+                  day.unavailable
+                    ? []
 
-    // ✅ FIX: delay ONLY validation, not API
-    Promise.resolve().then(() => {
+                    : day.slots.map(slot => ({
 
-      if (this.isDuplicateSchedule(payload)) {
-        return;
+                      slotId:
+                        slot.slotId ||
+                        crypto.randomUUID(),
+
+                      start: slot.start,
+
+                      end: slot.end,
+
+                      type: slot.type,
+
+                      booked:
+                        slot.booked || false,
+
+                      maxBookings:
+                        slot.maxBookings || 1
+                    }))
+              }))
+          }));
+
       }
 
-      this.schedulerService.saveScheduler(payload)
-        .subscribe({
-          next: (res: any) => {
+      // RESOURCE UPDATE FLOW
+      else {
 
-            this.toast('Schedule saved successfully');
-            this.drawerOpen = false;
+        const existingResourceSchedules =
+          this.selectedScheduler
+            ?.resourceSchedules || [];
 
-            this.mergeScheduler(res);
-            this.syncCalendar();
-            this.loadFromBackend();
+        const updatedResourceIds =
+          this.selectedResources.map(
+            r => r.id
+          );
 
-            this.resetForm();
-          },
-          error: (err) => {
-            console.error(err);
-            alert("Failed to save schedule");
-          }
-        });
+        const untouchedResourceSchedules =
+          existingResourceSchedules.filter(
+            (r: any) =>
+              !updatedResourceIds.includes(
+                r.resourceId
+              )
+          );
+
+        const updatedResourceSchedules =
+          this.selectedResources.map(
+            resource => ({
+
+              resourceId: resource.id,
+
+              resourceType: 'DOCTOR',
+
+              daySlots:
+
+                this.daySlots.map(day => ({
+
+                  date: day.date,
+
+                  unavailable:
+                    day.unavailable,
+
+                  slots:
+
+                    day.unavailable
+                      ? []
+
+                      : day.slots.map(slot => ({
+
+                        slotId:
+                          slot.slotId ||
+                          crypto.randomUUID(),
+
+                        start:
+                          slot.start,
+
+                        end:
+                          slot.end,
+
+                        type:
+                          slot.type,
+
+                        booked:
+                          slot.booked || false,
+
+                        maxBookings:
+                          slot.maxBookings || 1
+                      }))
+                }))
+            }));
+
+        finalResourceSchedules = [
+          ...untouchedResourceSchedules,
+          ...updatedResourceSchedules
+        ];
+      }
+
+    }
+
+    // =========================
+    // CREATE FLOW
+    // =========================
+    else {
+
+      finalResourceSchedules =
+        this.selectedResources.map(
+          resource => ({
+
+            resourceId: resource.id,
+
+            resourceType: 'DOCTOR',
+
+            daySlots:
+
+              this.daySlots.map(day => ({
+
+                date: day.date,
+
+                unavailable:
+                  day.unavailable,
+
+                slots:
+
+                  day.unavailable
+                    ? []
+
+                    : day.slots.map(slot => ({
+
+                      slotId:
+                        crypto.randomUUID(),
+
+                      start:
+                        slot.start,
+
+                      end:
+                        slot.end,
+
+                      type:
+                        slot.type,
+
+                      booked: false,
+
+                      maxBookings:
+                        slot.maxBookings || 1
+                    }))
+              }))
+          }));
+    }
+
+    // =========================
+    // PAYLOAD
+    // =========================
+    const payload = {
+
+      title: this.title,
+
+      appointmentDuration:
+        this.selectedDuration,
+
+      repeatType:
+        this.repeatOption === 'none'
+          ? 0
+          : this.repeatOption === 'weekly'
+            ? 1
+            : 2,
+
+      repeatWeeks:
+        this.repeatWeeks || null,
+
+      customFromDate:
+        this.customFromDate || null,
+
+      customToDate:
+        this.customToDate || null,
+
+      fullDayStart:
+        this.fullDayStart,
+
+      fullDayEnd:
+        this.fullDayEnd,
+
+      maxBookingsPerDay:
+        this.maxBookingsPerDay,
+
+      resourceSchedules:
+        finalResourceSchedules,
+
+      description:
+        this.description,
+
+      status:
+        this.status,
+
+      timezone:
+        this.timezone,
+
+      createdBy:
+        this.userId || '',
+
+      updatedBy:
+        this.userId || ''
+    };
+
+    // =========================
+    // API CALL
+    // =========================
+    Promise.resolve().then(() => {
+
+      const request =
+        this.isNewEvent
+
+          ? this.schedulerService
+            .saveScheduler(payload)
+
+          : this.schedulerService
+            .updateScheduler(
+              this.selectedScheduler.id
+              || this.selectedScheduler._id,
+              payload
+            );
+
+      request.subscribe({
+
+        next: (res: any) => {
+
+          this.toast(
+            this.isNewEvent
+              ? 'Schedule saved successfully'
+              : 'Schedule updated successfully'
+          );
+
+          this.drawerOpen = false;
+
+          this.mergeScheduler(res);
+
+          this.syncCalendar();
+
+          this.loadFromBackend();
+
+          this.resetForm();
+        },
+
+        error: (err) => {
+
+          console.error(err);
+
+          alert(
+            this.isNewEvent
+              ? 'Failed to save schedule'
+              : 'Failed to update schedule'
+          );
+        }
+      });
 
     });
   }
 
   resetForm() {
+    this.isFullScheduleEdit = false;
     this.title = '';
     this.description = '';
-    this.selectedUsers = [];
+    this.selectedResources = [];
     this.fullDayStart = '';
     this.fullDayEnd = '';
     this.daySlots = [];
@@ -737,7 +1627,7 @@ export class Scheduler implements AfterViewInit, OnInit {
         const nextStart = sorted[i + 1].start;
 
         if (currentEnd > nextStart) {
-          alert(`Overlapping slot in ${d.label}`);
+          alert(`Overlapping slot in ${d.displayDay}`);
           return false;
         }
       }
@@ -769,86 +1659,175 @@ export class Scheduler implements AfterViewInit, OnInit {
     if (!this.calendar) return;
 
     const api = this.calendar.getApi();
+
     api.removeAllEvents();
 
     this.calendarEvents = [];
 
-    const selectedIds = this.selectedUsers.map(u => u.id);
+    const selectedIds =
+      this.selectedResources.map(
+        u => u.id
+      );
 
-    this.schedulers.forEach((scheduler: any) => {
+    this.schedulers.forEach(
+      (scheduler: any) => {
 
-      // ✅ doctor filter
-      if (selectedIds.length > 0) {
-        const match = scheduler.doctorIds?.some((d: string) =>
-          selectedIds.includes(d)
-        );
-        if (!match) return;
-      }
+        // scheduler must have resourceSchedules
+        if (!scheduler.resourceSchedules)
+          return;
 
-      if (!scheduler.daySlots) return;
+        // resource filter
+        if (selectedIds.length > 0) {
 
-      scheduler.daySlots.forEach((day: any) => {
+          const match =
+            scheduler.resourceSchedules.some(
+              (r: any) =>
+                selectedIds.includes(
+                  r.resourceId
+                )
+            );
 
-        if (day.unavailable) return;
+          if (!match) return;
+        }
 
-        const date = new Date(day.date + 'T00:00:00');
+        // loop resource schedules
+        scheduler.resourceSchedules.forEach(
+          (resourceSchedule: any) => {
 
-        day.slots.forEach((slot: any) => {
+            const resourceId =
+              resourceSchedule.resourceId;
 
-          const [sh, sm] = slot.start.split(':').map(Number);
-          const [eh, em] = slot.end.split(':').map(Number);
+            // selected resource filter
+            if (
+              this.selectedResources.length > 0
+            ) {
 
-          const startTime = new Date(date);
-          startTime.setHours(sh, sm, 0, 0);
+              const selectedIds =
+                this.selectedResources.map(
+                  u => u.id
+                );
 
-          const endTime = new Date(date);
-          endTime.setHours(eh, em, 0, 0);
-
-          // ✅ LOOP EACH DOCTOR
-          scheduler.doctorIds.forEach((docId: string) => {
-
-            // filter check
-            if (this.selectedUsers.length > 0) {
-              const selectedIds = this.selectedUsers.map(u => u.id);
-              if (!selectedIds.includes(docId)) return;
+              if (
+                !selectedIds.includes(resourceId)
+              ) return;
             }
 
-            this.calendarEvents.push({
-              id: crypto.randomUUID(),
+            // loop day slots
+            resourceSchedule.daySlots.forEach(
+              (day: any) => {
 
-              title: `${this.getDoctorName(docId)} (${slot.start}-${slot.end})`,
+                if (day.unavailable)
+                  return;
 
-              start: startTime,
-              end: endTime,
+                const date =
+                  new Date(
+                    day.date + 'T00:00:00'
+                  );
 
-              backgroundColor: this.getDoctorColor(docId),
-              borderColor: this.getDoctorColor(docId),
+                // loop slots
+                day.slots.forEach(
+                  (slot: any) => {
 
-              extendedProps: {
-                doctorId: docId,
-                schedulerId: scheduler._id,
-                slot: slot
-              },
+                    const [sh, sm] =
+                      slot.start
+                        .split(':')
+                        .map(Number);
 
-              className: slot.emergency ? 'fc-emergency' : 'fc-general'
-            });
+                    const [eh, em] =
+                      slot.end
+                        .split(':')
+                        .map(Number);
+
+                    const startTime =
+                      new Date(date);
+
+                    startTime.setHours(
+                      sh,
+                      sm,
+                      0,
+                      0
+                    );
+
+                    const endTime =
+                      new Date(date);
+
+                    endTime.setHours(
+                      eh,
+                      em,
+                      0,
+                      0
+                    );
+
+                    // IMPORTANT
+                    // unique event id per resource
+                    const uniqueSlotId =
+                      `${resourceId}_${slot.slotId}`;
+
+                    this.calendarEvents.push({
+
+                      id: uniqueSlotId,
+
+                      title:
+                        `${this.getResourceName(resourceId)}
+                      (${slot.start}-${slot.end})`,
+
+                      start: startTime,
+
+                      end: endTime,
+
+                      backgroundColor:
+                        this.getResourceColor(
+                          resourceId
+                        ),
+
+                      borderColor:
+                        this.getResourceColor(
+                          resourceId
+                        ),
+
+                      extendedProps: {
+
+                        resourceId,
+
+                        schedulerId:
+                          scheduler.id ||
+                          scheduler._id,
+
+                        slotId:
+                          uniqueSlotId,
+
+                        originalSlotId:
+                          slot.slotId,
+
+                        slot,
+
+                        date: day.date
+                      },
+
+                      className:
+                        slot.type === 'EMERGENCY'
+                          ? 'fc-emergency'
+                          : 'fc-general'
+                    });
+
+                  });
+
+              });
 
           });
 
-        });
-
       });
 
-    });
-
-    api.addEventSource(this.calendarEvents);
+    api.addEventSource(
+      this.calendarEvents
+    );
   }
 
-  getDoctorName(id: string) {
+  getResourceName(id: string) {
     return this.users.find(u => u.id === id)?.name || id;
   }
 
-  getDoctorColor(id: string) {
+  getResourceColor(id: string) {
     const palette = ['#3E7BFA', '#28a745', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
     const idx = this.users.findIndex(u => u.id === id);
     return palette[idx >= 0 ? idx % palette.length : 0];
@@ -924,10 +1903,10 @@ export class Scheduler implements AfterViewInit, OnInit {
 
   // onUserSelectionChange(event: any, user: any) {
   //   if (event.target.checked) {
-  //     this.selectedUsers.push(user);
+  //     this.selectedResources.push(user);
   //   } else {
-  //     this.selectedUsers =
-  //       this.selectedUsers.filter(u => u.id !== user.id);
+  //     this.selectedResources =
+  //       this.selectedResources.filter(u => u.id !== user.id);
   //   }
   // }
 
@@ -1028,21 +2007,21 @@ export class Scheduler implements AfterViewInit, OnInit {
       this.dateError = 'To Date cannot be more than 10 days from today.';
       this.customToDate = this.maxToDateString;
     }
-    this.userDropdownOpen = !this.userDropdownOpen;
+    // this.userDropdownOpen = !this.userDropdownOpen;
   }
 
   // ...existing code...
 
   isUserSelected(user: any): boolean {
-    return this.selectedUsers.some(u => u.id === user.id);
+    return this.selectedResources.some(u => u.id === user.id);
   }
 
   onUserCheckboxChange(event: any, user: any) {
     if (event.target.checked) {
-      this.selectedUsers.push(user);
+      this.selectedResources.push(user);
     } else {
-      this.selectedUsers =
-        this.selectedUsers.filter(u => u.id !== user.id);
+      this.selectedResources =
+        this.selectedResources.filter(u => u.id !== user.id);
     }
 
     // ✅ IMPORTANT
@@ -1050,27 +2029,27 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   isAllSelected(): boolean {
-    const filtered = this.filteredUsers();
+    const filtered = this.filteredResources();
 
     if (filtered.length === 0) return false;
 
     return filtered.every(user =>
-      this.selectedUsers.some(u => u.id === user.id)
+      this.selectedResources.some(u => u.id === user.id)
     );
   }
 
   toggleSelectAll(event: any) {
 
-    const filtered = this.filteredUsers();
+    const filtered = this.filteredResources();
 
     if (event.target.checked) {
       filtered.forEach(user => {
         if (!this.isUserSelected(user)) {
-          this.selectedUsers.push(user);
+          this.selectedResources.push(user);
         }
       });
     } else {
-      this.selectedUsers = this.selectedUsers.filter(
+      this.selectedResources = this.selectedResources.filter(
         u => !filtered.some(f => f.id === u.id)
       );
     }

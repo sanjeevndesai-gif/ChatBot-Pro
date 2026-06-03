@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Slot {
 
+	private String slotId;
     private String start;
     private String end;
 
@@ -20,7 +21,13 @@ public class Slot {
     public Slot() {
     }
 
-    public Slot(String start, String end, Integer emergencyType) {
+    public Slot(
+            String slotId,
+            String start,
+            String end,
+            Integer emergencyType) {
+
+        this.slotId = slotId;
         this.start = start;
         this.end = end;
         this.emergencyType = emergencyType;
@@ -78,4 +85,12 @@ public class Slot {
                 ", emergencyType=" + emergencyType +
                 '}';
     }
+
+	public String getSlotId() {
+		return slotId;
+	}
+
+	public void setSlotId(String slotId) {
+		this.slotId = slotId;
+	}
 }
