@@ -9,8 +9,6 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DaySlot {
 
-    private String dayName;          // Sunday, Monday, etc.
-
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate date;          // 🔥 NEW FIELD
 
@@ -22,22 +20,13 @@ public class DaySlot {
     public DaySlot() {
     }
 
-    public DaySlot(String dayName, LocalDate date, Boolean unavailable, List<Slot> slots) {
-        this.dayName = dayName;
+    public DaySlot(LocalDate date, Boolean unavailable, List<Slot> slots) {
         this.date = date;
         this.unavailable = unavailable;
         this.slots = slots;
     }
 
     // ================= GETTERS & SETTERS =================
-
-    public String getDayName() {
-        return dayName;
-    }
-
-    public void setDayName(String dayName) {
-        this.dayName = dayName;
-    }
 
     public LocalDate getDate() {     // 🔥 NEW
         return date;
@@ -66,7 +55,6 @@ public class DaySlot {
     @Override
     public String toString() {
         return "DaySlot{" +
-                "dayName='" + dayName + '\'' +
                 ", date=" + date +
                 ", unavailable=" + unavailable +
                 ", slots=" + slots +

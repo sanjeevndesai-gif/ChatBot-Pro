@@ -46,9 +46,10 @@ public class SchedulerRepository {
         getCollection().find().forEach(list::add);
         return list;
     }
-
+  
     public void update(Document doc, ObjectId id) {
-        getCollection().replaceOne(eq("_id", id), doc);
+        doc.put("_id", id);
+        getCollection().replaceOne(eq("_id", id), doc );
     }
 
     public void delete(ObjectId id) {

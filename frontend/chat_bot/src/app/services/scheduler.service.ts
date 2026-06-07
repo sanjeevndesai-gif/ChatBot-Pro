@@ -23,6 +23,12 @@ export class SchedulerService {
         );
     }
 
+    updateScheduler(id: string, data: any): Observable<any> {
+        return this.http.put(`${this.apiUrl}/${id}`, data).pipe(
+            catchError(err => this.handleError(err))
+        );
+    }
+
     getSchedulers(): Observable<any[]> {
         return this.http.get<any[]>(this.apiUrl).pipe(
             catchError(err => this.handleError(err))
@@ -32,6 +38,57 @@ export class SchedulerService {
     deleteScheduler(id: string): Observable<any> {
         return this.http.delete(`${this.apiUrl}/${id}`).pipe(
             catchError(err => this.handleError(err))
+        );
+    }
+
+    deleteSlot(
+        schedulerId: string,
+        resourceId: string,
+        slotId: string
+    ): Observable<any> {
+
+        return this.http.delete(
+            `${this.apiUrl}/${schedulerId}/resource/${resourceId}/slot/${slotId}`
+        ).pipe(
+            catchError(err => this.handleError(err))
+        );
+    }
+
+    deleteResourceSchedule(
+        schedulerId: string,
+        resourceId: string
+    ): Observable<any> {
+        return this.http.delete(
+            `${this.apiUrl}/${schedulerId}/resource/${resourceId}`
+        ).pipe(catchError(err => this.handleError(err))
+        );
+    }
+
+    deleteMultipleSlots(
+
+        slots: {
+
+            schedulerId: string;
+
+            resourceId: string;
+
+            slotId: string;
+
+        }[]
+
+    ): Observable<any> {
+
+        return this.http.post(
+
+            `${this.apiUrl}/delete-multiple-slots`,
+
+            { slots }
+
+        ).pipe(
+
+            catchError(err =>
+                this.handleError(err)
+            )
         );
     }
 }

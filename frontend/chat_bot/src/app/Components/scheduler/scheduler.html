@@ -9,30 +9,31 @@
       <span>Add Schedule</span>
     </button>
 
-    <!-- Doctor selection -->
+    <!-- Resource selection -->
     <div class="doctor-filter">
 
-      <div class="filter-header" (click)="toggleUserDropdown()">
-        <b>Filter Doctors</b>
-        <span>{{ selectedUsers.length }} selected</span>
+      <div class="filter-header" (click)="toggleResourceFilterDropdown()">
+        <b>Filter Resources</b>
+        <span>{{ selectedResources.length }} selected</span>
       </div>
 
-      <div *ngIf="userDropdownOpen" class="filter-dropdown">
+      <div *ngIf="resourceFilterDropdownOpen" class="filter-dropdown">
 
 
         <!-- Search (only if more than one user) -->
-        <input type="text" [(ngModel)]="userSearchText" placeholder="Search doctor..." class="form-control mb-2" *ngIf="filteredUsers().length > 1" />
+        <input type="text" [(ngModel)]="userSearchText" placeholder="Search resource..." class="form-control mb-2"
+          *ngIf="filteredResources().length > 1" />
 
         <!-- Select All (only if more than one doctor) -->
-        <label *ngIf="filteredUsers().length > 1">
+        <label *ngIf="filteredResources().length > 1">
           <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
           Select All
         </label>
 
-        <hr *ngIf="filteredUsers().length > 1" />
+        <hr *ngIf="filteredResources().length > 1" />
 
         <!-- Doctor List -->
-        <div *ngFor="let user of filteredUsers()">
+        <div *ngFor="let user of filteredResources()">
 
           <label>
             <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
@@ -44,7 +45,7 @@
       </div>
 
     </div>
-    <!-- Doctor selection End -->
+    <!-- Resource selection End -->
 
     <div class="mini-calendar">
       <div class="mini-header">
@@ -91,6 +92,25 @@
         <button class="nav-btn" (click)="next()">&gt;</button>
       </div>
 
+      <div class="bulk-actions">
+
+        <button class="btn btn-danger" (click)="toggleMultiDeleteMode()">
+
+          {{
+          multiDeleteMode
+          ? 'Cancel Multi Delete'
+          : 'Delete Multiple Slots'
+          }}
+
+        </button>
+
+        <button *ngIf="multiDeleteMode" class="btn btn-danger" (click)="deleteSelectedSlots()">
+
+          Delete Selected Slots
+
+        </button>
+
+      </div>
       <div class="views">
         <button [class.active]="currentView==='dayGridMonth'" (click)="changeView('dayGridMonth')">Month</button>
         <button [class.active]="currentView==='timeGridWeek'" (click)="changeView('timeGridWeek')">Week</button>
@@ -127,30 +147,31 @@
     <!-- USERS DROPDOWN -->
     <div class="custom-dropdown">
 
-      <div class="dropdown-header" (click)="toggleUserDropdown()">
-        <span *ngIf="selectedUsers.length === 0">Select users</span>
-        <span *ngIf="selectedUsers.length > 0">
-          {{ selectedUsers.length }} user(s) selected
+      <div class="dropdown-header" (click)="toggleScheduleResourceDropdown()">
+        <span *ngIf="selectedResources.length === 0">Select resources for this schedule</span>
+        <span *ngIf="selectedResources.length > 0">
+          {{ selectedResources.length }} resource(s) selected
         </span>
         <i class="bi bi-chevron-down"></i>
       </div>
 
-      <div class="dropdown-body" *ngIf="userDropdownOpen">
+      <div class="dropdown-body" *ngIf="scheduleResourceDropdownOpen">
 
-  <!-- Search (only if more than one user) -->
-  <input *ngIf="filteredUsers().length > 1" type="text" placeholder="Search user..." [(ngModel)]="userSearchText" class="search-input" />
+        <!-- Search (only if more than one user) -->
+        <input *ngIf="filteredResources().length > 1" type="text" placeholder="Search user..."
+          [(ngModel)]="userSearchText" class="search-input" />
 
         <!-- User List -->
         <div class="dropdown-list">
 
           <!-- ✅ Select All (only if more than one user) -->
-          <label class="dropdown-item select-all" *ngIf="filteredUsers().length > 1">
+          <label class="dropdown-item select-all" *ngIf="filteredResources().length > 1">
             <input type="checkbox" [checked]="isAllSelected()" (change)="toggleSelectAll($event)" />
             <span>Select All</span>
           </label>
 
-          <hr *ngIf="filteredUsers().length > 1" />
-          <label class="dropdown-item" *ngFor="let user of filteredUsers()">
+          <hr *ngIf="filteredResources().length > 1" />
+          <label class="dropdown-item" *ngFor="let user of filteredResources()">
 
             <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
 
@@ -201,7 +222,8 @@
     <div *ngIf="repeatOption === 'custom'" class="section">
 
       <label class="label">From Date</label>
-      <input type="date" [(ngModel)]="customFromDate" class="max-input" [min]="todayString" (change)="onFromDateChange()" />
+      <input type="date" [(ngModel)]="customFromDate" class="max-input" [min]="todayString"
+        (change)="onFromDateChange()" />
 
       <label class="label">To Date</label>
       <input type="date" [(ngModel)]="customToDate" class="max-input" [min]="minToDate" (change)="onToDateChange()" />
@@ -260,7 +282,7 @@
 
           <div class="day-header">
             <div class="day-left">
-              <strong>{{ d.label }}</strong>
+              <strong>{{ d.displayDay }}({{ d.date }})</strong>
 
               <div class="mini-note" *ngIf="d.unavailable">
                 Unavailable
@@ -286,7 +308,8 @@
                 </button>
               </div>
 
-              <div class="slot-row" *ngFor="let s of getCombinedSlots(d)" [class.emergency-border]="isEmergency(d, s)">
+              <div class="slot-row" *ngFor="let s of getCombinedSlots(d)"
+                [class.emergency-border]="s.type === 'EMERGENCY'">
 
                 <input type="time" [(ngModel)]="s.start" (change)="onSlotChange(di, s)" />
 
@@ -294,10 +317,14 @@
 
                 <input type="time" [(ngModel)]="s.end" (change)="onSlotChange(di, s)" />
 
-                <label class="em-label">
+                <!-- <label class="em-label">
                   <input type="checkbox" [(ngModel)]="s.emergency" (change)="onSlotChange()" />
                   Emergency
-                </label>
+                </label> -->
+                <select [(ngModel)]="s.type" (change)="onSlotChange(di, s)" class="slot-type-select">
+                  <option value="GENERAL">General</option>
+                  <option value="EMERGENCY">Emergency</option>
+                </select>
 
                 <button class="icon" (click)="deleteSlot(di, s)">
                   <i class="bi bi-trash"></i>
@@ -352,4 +379,50 @@
 <!-- Toast -->
 <div class="toast" [class.show]="toastVisible">
   {{ toastMessage }}
+</div>
+
+<div class="slot-popup-backdrop" *ngIf="slotActionPopup">
+
+  <div class="slot-popup">
+
+    <h3>
+      Slot Actions
+    </h3>
+
+    <p>
+      {{ selectedEventData?.title }}
+    </p>
+
+    <button (click)="editResourceSchedule()">
+
+      Edit Resource Schedule
+    </button>
+
+    <button (click)="editFullSchedule()">
+
+      Edit Full Schedule
+    </button>
+
+    <button class="danger" (click)="deleteClickedSlot()">
+
+      Delete This Slot
+    </button>
+
+    <button class="danger" (click)="deleteResourceSchedule()">
+
+      Delete Resource Schedule
+    </button>
+
+    <button class="danger" (click)="deleteFullSchedule()">
+
+      Delete Full Schedule
+    </button>
+
+    <button (click)="closeSlotPopup()">
+
+      Cancel
+    </button>
+
+  </div>
+
 </div>
