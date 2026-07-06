@@ -169,6 +169,7 @@ export class Scheduler implements AfterViewInit, OnInit {
     date: string;
     displayDay: string;
     unavailable: boolean;
+    expanded?: boolean;
     slots: Slot[];
   }[] = [];
 
