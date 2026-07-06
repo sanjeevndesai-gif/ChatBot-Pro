@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "description": "Block edits to gateway/application.yml that introduce duplicate root-level YAML keys (causes DuplicateKeyException startup crash).",
+        "matcher": {
+          "toolName": "replace_string_in_file|str_replace_editor|create_file|write_file",
+          "filePath": "**/gateway/**application.yml"
+        },
+        "type": "command",
+        "windows": "powershell -NoProfile -Command \"$input = $null; $lines = @(); while (($line = [Console]::In.ReadLine()) -ne $null) { $lines += $line }; $payload = $lines -join \\\"`n\\\"; $obj = $payload | ConvertFrom-Json; $file = $obj.tool_input.path ?? $obj.tool_input.filePath ?? $obj.tool_input.file_path; if (-not $file) { exit 0 }; if (-not (Test-Path $file)) { exit 0 }; $content = Get-Content $file -Raw; $rootKeys = @(); foreach ($line in ($content -split \\\"`n\\\")) { if ($line -match '^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:') { $rootKeys += $Matches[1] } }; $dupes = $rootKeys | Group-Object | Where-Object { $_.Count -gt 1 } | Select-Object -ExpandProperty Name; if ($dupes.Count -gt 0) { $msg = @{ hookSpecificOutput = @{ hookEventName = 'PreToolUse'; permissionDecision = 'ask'; permissionDecisionReason = (\\\"gateway/application.yml has duplicate root key(s): \\\" + ($dupes -join ', ') + \\\". This causes DuplicateKeyException at startup. Fix before proceeding.\\\") } } | ConvertTo-Json -Compress; Write-Output $msg; exit 0 } else { exit 0 }\"",
+        "linux": "python3 -c \"\nimport sys, json\npayload = json.load(sys.stdin)\nfile = (payload.get('tool_input') or {}).get('path') or (payload.get('tool_input') or {}).get('filePath') or (payload.get('tool_input') or {}).get('file_path')\nif not file:\n    sys.exit(0)\ntry:\n    lines = open(file).readlines()\nexcept FileNotFoundError:\n    sys.exit(0)\nimport re\nroot_keys = [re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:', l).group(1) for l in lines if re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:', l)]\ndupes = [k for k in set(root_keys) if root_keys.count(k) > 1]\nif dupes:\n    out = {'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask', 'permissionDecisionReason': 'gateway/application.yml has duplicate root key(s): ' + ', '.join(dupes) + '. This causes DuplicateKeyException at startup. Fix before proceeding.'}}\n    print(json.dumps(out))\nsys.exit(0)\n\"",
+        "timeout": 10
+      }
+    ],
+    "PostToolUse": [
+      {
+        "description": "After any write to gateway/application.yml, verify no duplicate root-level YAML keys were introduced.",
+        "matcher": {
+          "toolName": "replace_string_in_file|str_replace_editor|create_file|write_file",
+          "filePath": "**/gateway/**application.yml"
+        },
+        "type": "command",
+        "windows": "powershell -NoProfile -Command \"$file = 'backend/gateway/src/main/resources/application.yml'; if (-not (Test-Path $file)) { exit 0 }; $rootKeys = @(); foreach ($line in (Get-Content $file)) { if ($line -match '^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:') { $rootKeys += $Matches[1] } }; $dupes = $rootKeys | Group-Object | Where-Object { $_.Count -gt 1 } | Select-Object -ExpandProperty Name; if ($dupes.Count -gt 0) { $msg = @{ decision = 'block'; reason = (\\\"BLOCKED: gateway/application.yml now has duplicate root key(s): \\\" + ($dupes -join ', ') + \\\". Revert or merge the duplicate blocks before deploying.\\\") } | ConvertTo-Json -Compress; Write-Output $msg; exit 2 }; Write-Host '[validate-gateway-yaml] OK — no duplicate root keys'; exit 0\"",
+        "linux": "python3 -c \"\nimport sys, json\nfile = 'backend/gateway/src/main/resources/application.yml'\ntry:\n    lines = open(file).readlines()\nexcept FileNotFoundError:\n    sys.exit(0)\nimport re\nroot_keys = [re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:', l).group(1) for l in lines if re.match(r'^([a-zA-Z][a-zA-Z0-9_-]*)\\s*:', l)]\ndupes = [k for k in set(root_keys) if root_keys.count(k) > 1]\nif dupes:\n    print(json.dumps({'decision': 'block', 'reason': 'BLOCKED: gateway/application.yml now has duplicate root key(s): ' + ', '.join(dupes) + '. Revert or merge the duplicate blocks before deploying.'}))\n    sys.exit(2)\nprint('[validate-gateway-yaml] OK - no duplicate root keys')\nsys.exit(0)\n\"",
+        "timeout": 10
+      }
+    ]
+  }
+}

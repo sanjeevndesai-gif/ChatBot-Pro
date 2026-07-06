@@ -57,12 +57,25 @@ public class UserManagementService {
                     if (!match) continue;
                 }
 
+                // Build a generic payload by copying all non-sensitive fields from the document.
                 Map<String, Object> payload = new HashMap<>();
-                payload.put("name", name);
-                payload.put("phone", phone);
-                payload.put("role", role);
-                payload.put("specialization", specialization);
-                payload.put("email", email);
+                for (String key : doc.keySet()) {
+                    // skip internal id and sensitive fields
+                    if ("_id".equals(key) || "password".equalsIgnoreCase(key)) continue;
+                    Object val = doc.get(key);
+                    // convert BSON Document nested objects to plain Map when needed
+                    if (val instanceof Document) {
+                        payload.put(key, ((Document) val));
+                    } else {
+                        payload.put(key, val);
+                    }
+                }
+                // Ensure the normalized name/phone/role keys exist for clients that expect them
+                payload.putIfAbsent("name", name);
+                payload.putIfAbsent("phone", phone);
+                payload.putIfAbsent("role", role);
+                payload.putIfAbsent("specialization", specialization);
+                payload.putIfAbsent("email", email);
 
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", id);
@@ -120,12 +133,22 @@ public class UserManagementService {
                     if (!match) continue;
                 }
 
+                // Build a generic payload by copying all non-sensitive fields from the document.
                 Map<String, Object> payload = new HashMap<>();
-                payload.put("name", name);
-                payload.put("phone", phone);
-                payload.put("role", role);
-                payload.put("specialization", specialization);
-                payload.put("email", email);
+                for (String key : doc.keySet()) {
+                    if ("_id".equals(key) || "password".equalsIgnoreCase(key)) continue;
+                    Object val = doc.get(key);
+                    if (val instanceof Document) {
+                        payload.put(key, ((Document) val));
+                    } else {
+                        payload.put(key, val);
+                    }
+                }
+                payload.putIfAbsent("name", name);
+                payload.putIfAbsent("phone", phone);
+                payload.putIfAbsent("role", role);
+                payload.putIfAbsent("specialization", specialization);
+                payload.putIfAbsent("email", email);
 
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", id);

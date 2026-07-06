@@ -66,11 +66,16 @@ export class AuthService {
           this.storage.setString(this.refreshTokenKey, refreshToken);
         }
         if ((res as any)?.user) {
-          const userData = {
-            ...(res as any).user,
-            mongoId: (res as any).userId
+          const rawUser = (res as any).user;
+          // Normalize id fields so other code can rely on `userId`
+          const resolvedUserId = rawUser.userId || rawUser.mongoId || rawUser.id || rawUser._id || (res as any).userId || '';
+          const normalized = {
+            ...rawUser,
+            userId: resolvedUserId,
+            mongoId: rawUser.mongoId || rawUser.userId || rawUser.id || rawUser._id || undefined
           };
-          this.storage.setItem(this.storageKey, userData);
+          console.debug('AuthService.login: storing normalized user', normalized);
+          this.storage.setItem(this.storageKey, normalized);
         }
       }),
       catchError(err => this.handleError(err))

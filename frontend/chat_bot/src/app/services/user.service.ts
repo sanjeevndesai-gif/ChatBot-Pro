@@ -3,13 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable, catchError, tap, throwError } from 'rxjs';
 import { ToastService } from './toast.service';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
 
     private readonly apiUrl = environment.user_apiBaseUrl;
 
-    constructor(private http: HttpClient, private toast: ToastService) { }
+    constructor(private http: HttpClient, private toast: ToastService, private auth: AuthService) { }
 
     private handleError(error: any) {
         console.error('UserService ERROR:', error);
@@ -73,7 +74,14 @@ export class UserService {
             .set('size', size)
             .set('search', search);
         // The endpoint is /users/by-admin
-        return this.http.get(`${this.apiUrl}/by-admin`, { params }).pipe(
+        // Attach Authorization header if token is available (backend expects JWT)
+        const token = this.auth.getToken();
+        const options: any = { params };
+        if (token) {
+            options.headers = { Authorization: `Bearer ${token}` };
+        }
+
+        return this.http.get(`${this.apiUrl}/by-admin`, options).pipe(
             catchError(err => this.handleError(err))
         );
     }

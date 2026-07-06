@@ -108,45 +108,27 @@ export class Scheduler implements AfterViewInit, OnInit {
   private readonly authService = inject(AuthService);
   private readonly userService = inject(UserService);
 
-  constructor() { }
-
-  /* ---------------- BACKEND STATE ---------------- */
-  userId!: string;
-  schedulers: any[] = [];
-
+  // UI state
   resourceFilterDropdownOpen = false;
   scheduleResourceDropdownOpen = false;
-  userSearchText = '';
 
-  // repeatOption: 'none' | 'weekly' = 'none';
-  repeatOption: 'none' | 'weekly' | 'custom' = 'none';
-
-  /* ---------------- MULTI USER + CUSTOM REPEAT ---------------- */
-
+  // Scheduler state
   users: any[] = [];
-
+  // stored fallback (all doctors) — only shown if user explicitly requests
+  fallbackUsers: any[] = [];
+  schedulers: any[] = [];
   selectedResources: any[] = [];
-
-  repeatWeeks: number = 1;
-  customFromDate: string = this.todayString;
-  customToDate: string = this.maxToDateString;
-
-  // Only show doctors in dropdown
-  getResources() {
-    return this.users.filter(user => user.role === 'doctor');
-  }
-
-  // Filtered users for search (doctors only)
-  filteredResources() {
-
-    return this.getResources().filter(
-      user => user.name.toLowerCase().includes(this.userSearchText.toLowerCase())
-    );
-  }
-
-
-  /* ---------------- BASIC ---------------- */
+  showAllDoctorsFallback = false;
   title = '';
+  userSearchText = '';
+  repeatOption: 'none' | 'weekly' | 'custom' = 'none';
+  repeatWeeks = 1;
+  customFromDate = '';
+  customToDate = '';
+  userId = '';
+  // timers
+  
+
   description = '';
   status = 'ACTIVE';
   timezone = 'Asia/Kolkata';
@@ -205,16 +187,19 @@ export class Scheduler implements AfterViewInit, OnInit {
   // };
 
   calendarOptions: CalendarOptions = {
+    // allow views to navigate forward — only prevent past dates
     validRange: {
-      start: this.todayString,
-      end: this.maxToDateString
+      start: this.todayString
     },
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
-    initialView: 'timeGridWeek',
+    initialView: 'customWeek',
     headerToolbar: false,
     allDaySlot: false,
-    slotMinTime: '00:00:00',
-    slotMaxTime: '24:00:00',
+    // Show business hours from 08:00 to 22:00
+    slotMinTime: '08:00:00',
+    slotMaxTime: '22:00:00',
+    // Start scroll position at morning 08:00
+    scrollTime: '08:00:00',
     nowIndicator: true, //Current Time mark on calender
 
     slotDuration: '00:15:00',
@@ -229,6 +214,25 @@ export class Scheduler implements AfterViewInit, OnInit {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
+    },
+
+    // Use FullCalendar's standard week/month views (will show the week/month containing today)
+    views: {
+      // custom week that always starts at today and shows 7 days
+      customWeek: {
+        type: 'timeGrid',
+        duration: { days: 7 },
+        buttonText: 'Week',
+        visibleRange: (currentDate) => {
+          const start = new Date();
+          start.setHours(0,0,0,0);
+          const end = new Date(start);
+          end.setDate(start.getDate() + 7);
+          return { start, end };
+        }
+      },
+      timeGridWeek: {},
+      dayGridMonth: { dayMaxEventRows: 3 }
     },
 
     eventClassNames: (arg: any) => {
@@ -346,19 +350,29 @@ export class Scheduler implements AfterViewInit, OnInit {
         return;
       }
 
+      const slotProp = info.event.extendedProps && info.event.extendedProps['slot'];
+      const titleWithTime = `${info.event.title}${slotProp?.start && slotProp?.end ? ' (' + slotProp.start + '-' + slotProp.end + ')' : ''}`;
+
       this.selectedEventData = {
         schedulerId,
         resourceId,
         slotId,
         originalSlotId: info.event.extendedProps['originalSlotId'],
-        title: info.event.title,
+        title: titleWithTime,
         event: info.event
       };
       this.slotActionPopup = true;
     },
-
     eventDidMount: (info) => {
-      info.el.title = info.event.title;
+      // set tooltip (include time) and compact font sizing
+      try {
+        const slotProp = info.event.extendedProps && info.event.extendedProps['slot'];
+        const startText = slotProp?.start || '';
+        const endText = slotProp?.end || '';
+        info.el.title = `${info.event.title}${startText && endText ? ' (' + startText + '-' + endText + ')' : ''}`;
+      } catch (e) {
+        info.el.title = info.event.title;
+      }
       const start = new Date(info.event.start!);
       const end = new Date(info.event.end!);
       const duration = (end.getTime() - start.getTime()) / 60000;
@@ -366,11 +380,61 @@ export class Scheduler implements AfterViewInit, OnInit {
       const el = info.el as HTMLElement;
 
       if (duration <= 15) {
-        el.style.fontSize = '10px';
-      } else if (duration <= 30) {
         el.style.fontSize = '11px';
-      } else {
+      } else if (duration <= 30) {
         el.style.fontSize = '12px';
+      } else {
+        el.style.fontSize = '13px';
+      }
+
+      // apply color classes for nicer cards (if not already present)
+      const type = info.event.extendedProps['type'] || info.event.extendedProps['category'] || 'GENERAL';
+      if (type === 'EMERGENCY') {
+        el.classList.add('fc-event-emergency');
+      } else {
+        el.classList.add('fc-event-general');
+      }
+
+      // Add a small avatar (image or initials) to week (timeGrid) event cards when possible
+      try {
+        const resourceId = info.event.extendedProps['resourceId'];
+        const user = this.users ? this.users.find((u: any) => u.id === resourceId) : null;
+
+        let avatarEl: HTMLElement | null = null;
+
+        if (user) {
+          avatarEl = document.createElement('span');
+          avatarEl.className = 'event-avatar';
+
+          // prefer explicit photo field, then avatarUrl for backward compat
+          const src = user.photo || user.avatarUrl || null;
+          if (src) {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = user.name || '';
+            avatarEl.appendChild(img);
+          } else {
+            const initials = (user.name || '')
+              .split(' ')
+              .map((s: string) => s[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase();
+
+            avatarEl.textContent = initials;
+          }
+
+          // prepend avatar only for timeGrid (week/day) events
+          if (el.classList.contains('fc-timegrid-event')) {
+            el.prepend(avatarEl);
+          } else {
+            // for dayGrid events, try to insert into inner main element
+            const main = el.querySelector('.fc-event-main') as HTMLElement | null;
+            if (main) main.prepend(avatarEl);
+          }
+        }
+      } catch (e) {
+        // ignore avatar errors — do not break rendering
       }
     }
   };
@@ -778,30 +842,196 @@ export class Scheduler implements AfterViewInit, OnInit {
   ngOnInit() {
     const authUser = this.authService.getCurrentUser();
     if (authUser) {
-      this.userId = authUser.userId;
+      // Accept several possible id fields the auth user may contain
+      this.userId = authUser.userId || authUser.mongoId || (authUser as any)._id || (authUser as any).id || '';
+      console.debug('Scheduler.ngOnInit: authUser=', authUser, 'resolved userId=', this.userId);
     }
     this.loadDoctors();
     this.loadFromCache();
     this.loadFromBackend();
   }
 
+  // Normalize photo strings: accept either full data URLs or raw base64 payloads
+  private normalizePhoto(photo: string | null | undefined): string | null {
+    if (!photo) return null;
+    const trimmed = photo.trim();
+    if (trimmed.startsWith('data:')) return trimmed;
+    // If it looks like JSON object accidentally stringified, try to parse
+    try {
+      if ((trimmed.startsWith('{') || trimmed.startsWith('['))) {
+        const parsed = JSON.parse(trimmed);
+        if (typeof parsed === 'string') return this.normalizePhoto(parsed);
+      }
+    } catch (e) {
+      // ignore
+    }
+    // Default: assume raw base64 image (png)
+    return 'data:image/png;base64,' + trimmed;
+  }
+
+  // Extract possible id strings from a createdBy value that may be string, object, or nested
+  private extractIdsFromCreatedBy(createdByRaw: any): string[] {
+    if (createdByRaw == null) return [];
+    // Handle arrays
+    if (Array.isArray(createdByRaw)) {
+      return createdByRaw.flatMap(item => this.extractIdsFromCreatedBy(item));
+    }
+    // Strings — maybe JSON-stringified or plain id
+    if (typeof createdByRaw === 'string') {
+      const s = createdByRaw.trim();
+      if (!s) return [];
+      // If it looks like JSON, try parse
+      if ((s.startsWith('{') || s.startsWith('['))) {
+        try {
+          const parsed = JSON.parse(s);
+          return this.extractIdsFromCreatedBy(parsed);
+        } catch (e) {
+          // fall through
+        }
+      }
+      return [s];
+    }
+    // Objects — inspect common id fields and recurse
+    if (typeof createdByRaw === 'object') {
+      const ids: string[] = [];
+      const candidates = ['id', '_id', 'userId', 'mongoId', 'uid', 'name', 'username'];
+      for (const k of candidates) {
+        const v = (createdByRaw as any)[k];
+        if (v != null) ids.push(String(v));
+      }
+      // Also inspect all string-valued properties and nested objects
+      for (const v of Object.values(createdByRaw)) {
+        if (typeof v === 'string' && v.trim()) ids.push(v.trim());
+        if (typeof v === 'object' && v != null) ids.push(...this.extractIdsFromCreatedBy(v));
+      }
+      // Deduplicate and return
+      return Array.from(new Set(ids)).filter(Boolean);
+    }
+    // Fallback: convert to string
+    try {
+      return [String(createdByRaw)];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Resolve createdBy candidate ids from a full user object by inspecting many possible fields
+  private resolveCreatedByCandidates(u: any): string[] {
+    if (!u) return [];
+    const candidates: string[] = [];
+
+    // 1) direct createdBy fields
+    candidates.push(...this.extractIdsFromCreatedBy(u.payload?.createdBy ?? u.createdBy ?? u.createdById ?? u.created_by ?? u._createdBy));
+
+    // 2) common clinic/owner/tenant fields that may represent the clinic id
+    candidates.push(...this.extractIdsFromCreatedBy(u.payload?.clinicId ?? u.clinicId ?? u.ownerId ?? u.organizationId ?? u.tenantId ?? u.orgId));
+
+    // 3) nested user objects that may carry id fields
+    candidates.push(...this.extractIdsFromCreatedBy(u.createdByUser ?? u.createdByObj ?? u.owner ?? u.meta ?? u.metadata ?? u.payload?.meta));
+
+    // 4) sometimes the creator is stored in a nested payload as an object or stringified JSON
+    if (u.payload && typeof u.payload === 'object') {
+      for (const v of Object.values(u.payload)) {
+        if (v == null) continue;
+        if (typeof v === 'string' && v.trim()) candidates.push(v.trim());
+        if (typeof v === 'object') candidates.push(...this.extractIdsFromCreatedBy(v));
+      }
+    }
+
+    // 5) include any top-level id-like fields to help matching (some backends store clinic id in weird fields)
+    candidates.push(String(u.id || u._id || u.userId || u.mongoId || u.uid || ''));
+
+    // normalize, dedupe and remove empties
+    return Array.from(new Set(candidates.map(s => (s || '').toString().trim()).filter(Boolean)));
+  }
+
   loadDoctors() {
-    this.userService.getUsers(0, 100, '').subscribe((res: any) => {
+    // Use the admin-scoped endpoint to get users created by the logged-in admin
+    this.userService.getUsersByAdmin(0, 100, '').subscribe((res: any) => {
       const allUsers: any[] = res?.content ?? [];
-      this.users = allUsers
-        .filter(u => (u.payload?.role ?? '').toLowerCase() === 'doctor')
+
+      // current user id (set in ngOnInit)
+      const currentUserId = this.userId;
+
+      // Debug: inspect a sample of returned users to understand createdBy values
+      try {
+        console.debug('loadDoctors: sample allUsers:', allUsers.slice(0, 10).map(u => ({
+          id: u.id || u._id || null,
+          name: u.payload?.name || u.payload?.fullname || u.name || null,
+          createdBy: u.payload?.createdBy ?? u.createdBy ?? null
+        })));
+
+        // Also log the raw first user and payload keys to verify presence of `photo`
+        if (allUsers.length > 0) {
+          try { console.debug('loadDoctors: raw first user:', JSON.parse(JSON.stringify(allUsers[0]))); } catch (e) { console.debug('loadDoctors: raw first user (non-serializable)', allUsers[0]); }
+          try { console.debug('loadDoctors: payload keys for all users:', allUsers.map(u => Object.keys(u.payload || {}))); } catch (e) { }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // The backend `/users/by-admin` endpoint already scopes users to the logged-in admin.
+      // Treat returned users as clinic-specific — just pick Doctor role entries.
+      const clinicDoctors = allUsers
+        .filter(u => ((u.payload?.role ?? u.role ?? '').toString().toLowerCase() === 'doctor'))
         .map(u => ({
-          id: u.id,
-          name: u.payload?.name || u.payload?.fullname || 'Unknown',
-          role: (u.payload?.role ?? '').toLowerCase()
+          id: u.id || u._id || '',
+          name: u.payload?.name || u.payload?.fullname || u.name || 'Unknown',
+          role: (u.payload?.role ?? u.role ?? '').toString(),
+          photo: this.normalizePhoto(u.payload?.photo || u.photo || null),
+          avatarUrl: this.normalizePhoto(u.payload?.photo || u.photo || null),
+          raw: u
         }));
+
+      // Debug: show mapped photo/avatarUrl for clinic doctors
+      try {
+        console.debug('loadDoctors: mapped clinicDoctors sample:', clinicDoctors.slice(0, 10).map(c => ({ id: c.id, name: c.name, photo: c.photo, avatarUrl: c.avatarUrl })));
+      } catch (e) { }
+
+      // If no clinic-specific doctors found, prepare fallback list of any Doctor records
+      const fallbackDoctors = allUsers
+        .filter(u => ((u.payload?.role ?? u.role ?? '').toString().toLowerCase() === 'doctor'))
+        .map(u => ({
+          id: u.id || u._id || '',
+          name: u.payload?.name || u.payload?.fullname || u.name || 'Unknown',
+          role: (u.payload?.role ?? u.role ?? '').toString(),
+          photo: this.normalizePhoto(u.payload?.photo || u.photo || null),
+          avatarUrl: this.normalizePhoto(u.payload?.photo || u.photo || null),
+          raw: u
+        }));
+      try {
+        console.debug('loadDoctors: mapped fallbackDoctors sample:', fallbackDoctors.slice(0, 10).map(c => ({ id: c.id, name: c.name, photo: c.photo, avatarUrl: c.avatarUrl })));
+      } catch (e) { }
+      // Diagnostics: log why fallback was used
+      console.debug('loadDoctors: currentUserId=', currentUserId, 'clinicDoctors=', clinicDoctors.length, 'fallbackDoctors=', fallbackDoctors.length);
+
+      // store fallback for explicit user action
+      this.fallbackUsers = fallbackDoctors;
+
+      // By default only show clinic-specific doctors. Do NOT silently show all doctors.
+      this.users = clinicDoctors;
+
+      // If exactly one clinic doctor, pre-select and sync; otherwise clear selection
       if (this.users.length === 1) {
         this.selectedResources = [...this.users];
         this.syncCalendar();
       } else {
-        this.selectedResources = [...this.users];
+        this.selectedResources = [];
       }
     });
+  }
+
+  // Allow showing the global fallback list explicitly
+  showFallbackDoctors() {
+    this.users = this.fallbackUsers || [];
+    this.showAllDoctorsFallback = true;
+    this.selectedResources = [];
+    this.syncCalendar();
+  }
+
+  hideFallbackDoctors() {
+    this.showAllDoctorsFallback = false;
+    this.loadDoctors();
   }
 
   // ngAfterViewInit() {
@@ -1767,9 +1997,8 @@ export class Scheduler implements AfterViewInit, OnInit {
 
                       id: uniqueSlotId,
 
-                      title:
-                        `${this.getResourceName(resourceId)}
-                      (${slot.start}-${slot.end})`,
+                      // Visible title: only resource name (time shown in tooltip)
+                      title: this.getResourceName(resourceId),
 
                       start: startTime,
 
@@ -1818,9 +2047,33 @@ export class Scheduler implements AfterViewInit, OnInit {
 
       });
 
-    api.addEventSource(
-      this.calendarEvents
-    );
+    // Add a single event source (avoid adding twice which causes duplicates)
+    try {
+      api.addEventSource(this.calendarEvents);
+      api.render();
+    } catch (e) {
+      // graceful fallback: try adding events individually if addEventSource fails
+      try {
+        api.removeAllEvents();
+        this.calendarEvents.forEach(ev => api.addEvent(ev as any));
+        api.render();
+      } catch (err) {
+        console.error('[Scheduler] failed to add events', err);
+      }
+    }
+
+    // debug: log event counts and earliest event for troubleshooting
+    try {
+      console.debug('[Scheduler] syncCalendar events:', this.calendarEvents.length,
+        'earliest:', this.calendarEvents.length ? this.calendarEvents[0].start : null);
+    } catch (e) { }
+
+    // Auto-scroll disabled — keep calendar static as configured
+  }
+
+  // Auto-scroll removed: keep function as a no-op so calls are safe if left elsewhere.
+  private ensureScrollToFirstEventIfNeeded() {
+    return;
   }
 
   getResourceName(id: string) {
@@ -1842,9 +2095,8 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   onAddButtonClicked() {
-    this.calendar.getApi().changeView('timeGridWeek');
-    this.currentView = 'timeGridWeek';
-    this.updateTitles();
+    // ensure calendar opens focused on today in week view
+    this.changeView('timeGridWeek');
     this.openDrawerForAdd();
   }
 
@@ -1876,7 +2128,23 @@ export class Scheduler implements AfterViewInit, OnInit {
   /* ---------------- HEADER ---------------- */
   changeView(v: string) {
     this.currentView = v;
-    this.calendar.getApi().changeView(v);
+    const api = this.calendar.getApi();
+    const today = new Date();
+
+    // Map default buttons to custom views that start at today
+    if (v === 'timeGridWeek') {
+      api.changeView('customWeek');
+      api.gotoDate(today);
+    } else if (v === 'dayGridMonth') {
+      // use standard month grid but focus on today
+      api.changeView('dayGridMonth');
+      api.gotoDate(today);
+    } else {
+      // other views (day, list) - navigate to today to keep focus
+      api.changeView(v);
+      api.gotoDate(today);
+    }
+
     this.updateTitles();
   }
 
@@ -2028,13 +2296,19 @@ export class Scheduler implements AfterViewInit, OnInit {
     this.syncCalendar();
   }
 
+  filteredResources(): any[] {
+    const q = (this.userSearchText || '').trim().toLowerCase();
+    if (!q) return this.users;
+    return this.users.filter(u => (u.name || '').toLowerCase().includes(q));
+  }
+
   isAllSelected(): boolean {
     const filtered = this.filteredResources();
 
     if (filtered.length === 0) return false;
 
-    return filtered.every(user =>
-      this.selectedResources.some(u => u.id === user.id)
+    return filtered.every((user: any) =>
+      this.selectedResources.some((u: any) => u.id === user.id)
     );
   }
 
@@ -2043,14 +2317,14 @@ export class Scheduler implements AfterViewInit, OnInit {
     const filtered = this.filteredResources();
 
     if (event.target.checked) {
-      filtered.forEach(user => {
+      filtered.forEach((user: any) => {
         if (!this.isUserSelected(user)) {
           this.selectedResources.push(user);
         }
       });
     } else {
       this.selectedResources = this.selectedResources.filter(
-        u => !filtered.some(f => f.id === u.id)
+        u => !filtered.some((f: any) => f.id === u.id)
       );
     }
 

@@ -35,9 +35,10 @@
         <!-- Doctor List -->
         <div *ngFor="let user of filteredResources()">
 
-          <label>
+          <label class="user-item">
             <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
-            {{ user.name }}
+            <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" class="user-avatar" alt="" />
+            <span class="user-name">{{ user.name }}</span>
           </label>
 
         </div>
@@ -174,8 +175,8 @@
           <label class="dropdown-item" *ngFor="let user of filteredResources()">
 
             <input type="checkbox" [checked]="isUserSelected(user)" (change)="onUserCheckboxChange($event, user)" />
-
-            {{ user.name }}
+            <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" class="user-avatar" alt="" />
+            <span class="user-name">{{ user.name }}</span>
           </label>
         </div>
 

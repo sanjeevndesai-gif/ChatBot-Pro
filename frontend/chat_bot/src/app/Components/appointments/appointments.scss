@@ -204,13 +204,27 @@
 .fc-general {
   background: #3E7BFA !important;
   border: none !important;
-  color: white !important;
+  /* do not force white text here to allow better contrast control */
+  color: inherit !important;
 }
 
 .fc-emergency {
   background: rgb(182, 107, 0) !important;
   border: none !important;
-  color: white !important;
+  color: inherit !important;
+}
+
+/* Ensure event title text is readable (black) inside colored event cards */
+.fc-general .fc-event-title,
+.fc-emergency .fc-event-title,
+.fc-general .fc-event-main,
+.fc-emergency .fc-event-main {
+  color: #000 !important;
+  /* allow wrapping and left-align so full resource names appear */
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: initial !important;
+  text-align: left !important;
 }
 
 

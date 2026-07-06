@@ -146,11 +146,12 @@
 }
 
 .nav-btn {
-  background: #f1efff;
-  border: none;
+  background: #eef6f0;
+  border: 1px solid rgba(30,107,74,0.08);
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
+  color: #14532d;
 }
 
 .header-title {
@@ -160,17 +161,24 @@
 }
 
 .views button {
-  background: #f1efff;
-  border: none;
+  background: #f6f5ff;
+  border: 1px solid rgba(115,103,240,0.12);
   padding: 8px 12px;
   border-radius: 8px;
   margin-left: 6px;
   cursor: pointer;
+  color: #2b2b2b;
+  font-weight: 600;
+}
+
+.views button:hover {
+  background: rgba(115,103,240,0.06);
 }
 
 .views .active {
   background: #7367f0;
   color: #fff;
+  border-color: #5a4bd6;
 }
 
 /* calendar area */
@@ -522,8 +530,9 @@
 
 /* remove default inner padding */
 ::ng-deep .fc-timegrid-event .fc-event-main {
-  padding: 0 !important;
-  overflow: hidden !important;
+  /* provide small padding so title has breathing room */
+  padding: 4px 8px !important;
+  overflow: visible !important;
   width: 100%;
   color: #000;
 }
@@ -531,25 +540,115 @@
 /* title text */
 ::ng-deep .fc-timegrid-event .fc-event-title {
   font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: left;
+  white-space: normal; /* allow wrapping so long names show */
+  overflow: visible;
+  text-overflow: initial;
   color: #000;
+  line-height: 1.1;
+}
+
+/* Professional card styling for week (timeGrid) events */
+::ng-deep .fc-event-general, ::ng-deep .fc-event-emergency {
+  border-radius: 10px !important;
+  /* do not force white text here — keep title color controllable */
+  color: inherit !important;
+  padding: 6px 8px !important;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+::ng-deep .fc-event-general {
+  background: linear-gradient(180deg, #4f7bff 0%, #3E7BFA 100%) !important;
+  border: none !important;
+}
+
+::ng-deep .fc-event-emergency {
+  background: linear-gradient(180deg, #ff8a65 0%, #f44336 100%) !important;
+  border: none !important;
+}
+
+/* Avatar (small circle) and title layout inside event */
+::ng-deep .fc-event-general .fc-event-title, ::ng-deep .fc-event-emergency .fc-event-title {
+  /* Ensure resource/title text is black for readability */
+  color: #000 !important;
+  font-weight: 600;
+}
+
+/* dayGrid (month) event styling: compact colored badges */
+::ng-deep .fc-daygrid-event {
+  background: transparent !important;
+  border: none !important;
+}
+
+::ng-deep .fc-daygrid-event .fc-event-main {
+  background: rgba(115,103,240,0.06);
+  color: #2b2b2b;
+  border-radius: 6px;
+  padding: 4px 6px;
+  box-shadow: none;
+}
+
+::ng-deep .fc-daygrid-event.fc-general .fc-event-main {
+  background: rgba(62,123,250,0.12) !important;
+  color: #0747a6 !important;
+}
+
+::ng-deep .fc-daygrid-event.fc-emergency .fc-event-main {
+  background: rgba(244,67,54,0.12) !important;
+  color: #7a1916 !important;
+}
+
+/* Avatar inside event cards */
+::ng-deep .event-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0,0,0,0.12);
+  margin-right: 8px;
+  overflow: hidden;
+}
+
+::ng-deep .event-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Highlight today's column in timeGrid (week/day) */
+::ng-deep .fc-timegrid-col.fc-day-today {
+  background: rgba(115,103,240,0.04);
+}
+
+::ng-deep .fc-col-header-cell.fc-day-today {
+  background: rgba(115,103,240,0.06);
+  border-bottom: 2px solid rgba(115,103,240,0.12);
+  border-radius: 6px;
 }
 
 /* GENERAL */
 ::ng-deep .fc-timegrid-event.fc-general {
   border: 2px solid #2563eb !important;
   background: rgba(37, 99, 235, 0.06) !important;
-  color: #2563eb !important;
+  /* keep the border/accents colored but force inner text to black for contrast */
+  color: inherit !important;
 }
 
 /* EMERGENCY */
 ::ng-deep .fc-timegrid-event.fc-emergency {
   border: 2px solid #dc2626 !important;
   background: rgba(220, 38, 38, 0.06) !important;
-  color: #dc2626 !important;
+  color: inherit !important;
 }
 
 /* remove hover fill */
@@ -599,6 +698,18 @@
   gap: 8px;
   padding: 6px 4px;
   cursor: pointer;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
+
+.user-item .user-name {
+  vertical-align: middle;
 }
 
 .dropdown-item:hover {
@@ -716,4 +827,36 @@
   background: #d9534f;
 
   color: white;
+}
+
+/* Compact dayGrid (month) styling */
+::ng-deep .fc-daygrid-day {
+  min-height: 90px;
+}
+
+::ng-deep .fc-daygrid-day-frame {
+  padding: 6px;
+}
+
+::ng-deep .fc-daygrid-day-top {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+::ng-deep .fc-daygrid-event {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+/* Highlight today in month grid */
+::ng-deep .fc-daygrid-day.fc-day-today {
+  background: rgba(115,103,240,0.06);
+  border-radius: 8px;
+}
+
+/* Slightly dim non-current month days (not used here but safe) */
+::ng-deep .fc-daygrid-day.fc-day-other {
+  opacity: 0.6;
 }
