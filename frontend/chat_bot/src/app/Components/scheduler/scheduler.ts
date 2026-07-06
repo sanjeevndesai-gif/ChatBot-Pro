@@ -173,6 +173,13 @@ export class Scheduler implements AfterViewInit, OnInit {
     slots: Slot[];
   }[] = [];
 
+  // Section-level expand/collapse for Day-wise Slots
+  daywiseExpanded = true;
+
+  toggleDaywiseExpand() {
+    this.daywiseExpanded = !this.daywiseExpanded;
+  }
+
   /* ---------------- CALENDAR ---------------- */
   @ViewChild('calendarRef') calendar!: FullCalendarComponent;
 

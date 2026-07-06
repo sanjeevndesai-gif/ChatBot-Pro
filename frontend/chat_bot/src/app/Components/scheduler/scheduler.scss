@@ -308,6 +308,17 @@
   color: #6b7280;
 }
 
+.section-heading .link.small {
+  margin-left: 12px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #111827;
+  border: none;
+  cursor: pointer;
+}
+
 .control-row {
   display: flex;
   align-items: center;

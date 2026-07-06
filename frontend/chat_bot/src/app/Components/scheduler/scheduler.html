@@ -274,11 +274,16 @@
       <div class="section-heading">
         <div>
           <span class="sec-title">Day-wise availability & slots</span>
-          <div class="sec-sub">Mark available days and configure slots.</div>
+          <div class="sec-sub">
+            Mark available days and configure slots.
+            <button class="link small" (click)="toggleDaywiseExpand()">
+              {{ daywiseExpanded ? 'Collapse' : 'Expand' }}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="availability-list">
+      <div class="availability-list" *ngIf="daywiseExpanded">
         <div class="day-row" *ngFor="let d of daySlots; let di = index">
 
           <div class="day-header">
@@ -295,17 +300,13 @@
             </div>
 
             <div class="day-actions">
-              <button class="link" (click)="toggleDayExpand(di)">
-                {{ d.expanded ? 'Collapse' : 'Expand' }}
-              </button>
-
               <button class="link" (click)="toggleDayAvailability(di)">
                 {{ d.unavailable ? 'Make available' : 'Unavailable' }}
               </button>
             </div>
           </div>
 
-          <ng-container *ngIf="!d.unavailable && d.expanded">
+          <ng-container *ngIf="!d.unavailable">
             <div class="day-group">
 
               <div class="sub-label">
