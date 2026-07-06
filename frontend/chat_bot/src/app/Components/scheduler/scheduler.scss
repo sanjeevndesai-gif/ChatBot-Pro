@@ -489,6 +489,15 @@
   text-decoration: underline;
 }
 
+/* expanded/collapsed day visuals */
+.day-header .day-actions .link {
+  margin-left: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #111827;
+}
+
 /* Toast */
 .toast {
   position: fixed;

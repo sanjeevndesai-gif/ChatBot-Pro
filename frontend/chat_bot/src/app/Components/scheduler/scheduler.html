@@ -294,12 +294,18 @@
               </div>
             </div>
 
-            <button class="link" (click)="toggleDayAvailability(di)">
-              {{ d.unavailable ? 'Make available' : 'Unavailable' }}
-            </button>
+            <div class="day-actions">
+              <button class="link" (click)="toggleDayExpand(di)">
+                {{ d.expanded ? 'Collapse' : 'Expand' }}
+              </button>
+
+              <button class="link" (click)="toggleDayAvailability(di)">
+                {{ d.unavailable ? 'Make available' : 'Unavailable' }}
+              </button>
+            </div>
           </div>
 
-          <ng-container *ngIf="!d.unavailable">
+          <ng-container *ngIf="!d.unavailable && d.expanded">
             <div class="day-group">
 
               <div class="sub-label">

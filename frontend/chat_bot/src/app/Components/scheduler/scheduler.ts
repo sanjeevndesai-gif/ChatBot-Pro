@@ -1175,13 +1175,19 @@ export class Scheduler implements AfterViewInit, OnInit {
         });
 
       this.daySlots.push({
-        date,
-        displayDay,
-        unavailable: false,
-        slots: []
+          date,
+          displayDay,
+          unavailable: false,
+          slots: [],
+          expanded: true
       });
     }
   }
+
+    toggleDayExpand(i: number) {
+      if (!this.daySlots[i]) return;
+      this.daySlots[i].expanded = !this.daySlots[i].expanded;
+    }
 
   /* ---------------- UTIL ---------------- */
   private parse(t: string) {
