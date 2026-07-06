@@ -174,7 +174,7 @@ export class Scheduler implements AfterViewInit, OnInit {
   }[] = [];
 
   // Section-level expand/collapse for Day-wise Slots
-  daywiseExpanded = true;
+  daywiseExpanded = false;
 
   toggleDaywiseExpand() {
     this.daywiseExpanded = !this.daywiseExpanded;
@@ -1562,7 +1562,34 @@ export class Scheduler implements AfterViewInit, OnInit {
     }
 
     let finalResourceSchedules: any[] = [];
-
+    
+    // helper: expand daySlots for weekly repeats
+    const buildDaySlotsForPayload = (baseDaySlots: any[], repeatWeeksCount: number, preserveOriginalIds: boolean) => {
+      const out: any[] = [];
+      for (let w = 0; w < Math.max(1, repeatWeeksCount); w++) {
+        const dayOffset = w * 7;
+        for (const d of baseDaySlots) {
+          const dateObj = new Date(d.date);
+          dateObj.setDate(dateObj.getDate() + dayOffset);
+          const date = dateObj.toISOString().split('T')[0];
+          out.push({
+            date,
+            unavailable: d.unavailable,
+            slots: d.unavailable
+              ? []
+              : (d.slots || []).map((s: any) => ({
+                slotId: (preserveOriginalIds && w === 0 && s.slotId) ? s.slotId : crypto.randomUUID(),
+                start: s.start,
+                end: s.end,
+                type: s.type || 'GENERAL',
+                booked: s.booked || false,
+                maxBookings: s.maxBookings || 1
+              }))
+          });
+        }
+      }
+      return out;
+    };
     // =========================
     // UPDATE FLOW
     // =========================
@@ -1571,46 +1598,13 @@ export class Scheduler implements AfterViewInit, OnInit {
       // FULL SCHEDULE UPDATE
       if (this.isFullScheduleEdit) {
 
-        finalResourceSchedules =
-          this.selectedResources.map(resource => ({
+        const repeatWeeksCount = this.repeatOption === 'weekly' ? (this.repeatWeeks || 1) : 1;
 
-            resourceId: resource.id,
-
-            resourceType: 'DOCTOR',
-
-            daySlots:
-
-              this.daySlots.map(day => ({
-
-                date: day.date,
-
-                unavailable: day.unavailable,
-
-                slots:
-
-                  day.unavailable
-                    ? []
-
-                    : day.slots.map(slot => ({
-
-                      slotId:
-                        slot.slotId ||
-                        crypto.randomUUID(),
-
-                      start: slot.start,
-
-                      end: slot.end,
-
-                      type: slot.type,
-
-                      booked:
-                        slot.booked || false,
-
-                      maxBookings:
-                        slot.maxBookings || 1
-                    }))
-              }))
-          }));
+        finalResourceSchedules = this.selectedResources.map(resource => ({
+          resourceId: resource.id,
+          resourceType: 'DOCTOR',
+          daySlots: buildDaySlotsForPayload(this.daySlots, repeatWeeksCount, true)
+        }));
 
       }
 
@@ -1634,51 +1628,13 @@ export class Scheduler implements AfterViewInit, OnInit {
               )
           );
 
-        const updatedResourceSchedules =
-          this.selectedResources.map(
-            resource => ({
+        const repeatWeeksCount = this.repeatOption === 'weekly' ? (this.repeatWeeks || 1) : 1;
 
-              resourceId: resource.id,
-
-              resourceType: 'DOCTOR',
-
-              daySlots:
-
-                this.daySlots.map(day => ({
-
-                  date: day.date,
-
-                  unavailable:
-                    day.unavailable,
-
-                  slots:
-
-                    day.unavailable
-                      ? []
-
-                      : day.slots.map(slot => ({
-
-                        slotId:
-                          slot.slotId ||
-                          crypto.randomUUID(),
-
-                        start:
-                          slot.start,
-
-                        end:
-                          slot.end,
-
-                        type:
-                          slot.type,
-
-                        booked:
-                          slot.booked || false,
-
-                        maxBookings:
-                          slot.maxBookings || 1
-                      }))
-                }))
-            }));
+        const updatedResourceSchedules = this.selectedResources.map(resource => ({
+          resourceId: resource.id,
+          resourceType: 'DOCTOR',
+          daySlots: buildDaySlotsForPayload(this.daySlots, repeatWeeksCount, true)
+        }));
 
         finalResourceSchedules = [
           ...untouchedResourceSchedules,
@@ -1693,49 +1649,13 @@ export class Scheduler implements AfterViewInit, OnInit {
     // =========================
     else {
 
-      finalResourceSchedules =
-        this.selectedResources.map(
-          resource => ({
+      const repeatWeeksCount = this.repeatOption === 'weekly' ? (this.repeatWeeks || 1) : 1;
 
-            resourceId: resource.id,
-
-            resourceType: 'DOCTOR',
-
-            daySlots:
-
-              this.daySlots.map(day => ({
-
-                date: day.date,
-
-                unavailable:
-                  day.unavailable,
-
-                slots:
-
-                  day.unavailable
-                    ? []
-
-                    : day.slots.map(slot => ({
-
-                      slotId:
-                        crypto.randomUUID(),
-
-                      start:
-                        slot.start,
-
-                      end:
-                        slot.end,
-
-                      type:
-                        slot.type,
-
-                      booked: false,
-
-                      maxBookings:
-                        slot.maxBookings || 1
-                    }))
-              }))
-          }));
+      finalResourceSchedules = this.selectedResources.map(resource => ({
+        resourceId: resource.id,
+        resourceType: 'DOCTOR',
+        daySlots: buildDaySlotsForPayload(this.daySlots, repeatWeeksCount, false)
+      }));
     }
 
     // =========================
