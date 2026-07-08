@@ -362,6 +362,121 @@
   cursor: pointer;
 }
 
+/* ==========================
+   Slot Action Popup (modern)
+   ========================== */
+.slot-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,6,23,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.slot-popup-card {
+  width: 320px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(2,6,23,0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.slot-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: linear-gradient(90deg, rgba(30,107,74,0.06), rgba(115,103,240,0.03));
+}
+
+.slot-popup-title {
+  color: #0f5132; /* dark green */
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #374151;
+}
+
+.slot-popup-body {
+  padding: 14px 18px 8px;
+}
+
+.slot-popup-subtitle {
+  color: #374151;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.slot-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Button system for popup */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn--primary {
+  background: #0f766e; /* teal/green */
+  color: #fff;
+}
+
+.btn--secondary {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.btn--ghost {
+  background: transparent;
+  color: #0f766e;
+  border: 1px solid rgba(15,118,110,0.12);
+}
+
+.btn--danger {
+  background: #dc2626; /* red-600 */
+  color: #fff;
+}
+
+.btn--danger-outline {
+  background: #fff;
+  color: #b91c1c;
+  border: 1px solid rgba(185,28,28,0.12);
+}
+
+.slot-popup-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #eef2f7;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: #fbfdfb;
+}
+
+/* small responsive tweak */
+@media (max-width: 420px) {
+  .slot-popup-card { width: 92%; }
+}
+
 /* Day / Availability */
 .availability-list {
   display: flex;

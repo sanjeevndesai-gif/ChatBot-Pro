@@ -390,47 +390,28 @@
 </div>
 
 <div class="slot-popup-backdrop" *ngIf="slotActionPopup">
+  <div class="slot-popup-card" role="dialog" aria-modal="true" aria-label="Slot actions">
+    <header class="slot-popup-header">
+      <div class="slot-popup-title">Slot Actions</div>
+      <button class="icon-btn" (click)="closeSlotPopup()" aria-label="Close popup">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
 
-  <div class="slot-popup">
+    <div class="slot-popup-body">
+      <div class="slot-popup-subtitle">{{ selectedEventData?.title }}</div>
 
-    <h3>
-      Slot Actions
-    </h3>
+      <div class="slot-action-list">
+        <button class="btn btn--primary" (click)="editResourceSchedule()">Edit Resource Schedule</button>
+        <button class="btn btn--ghost" (click)="editFullSchedule()">Edit Full Schedule</button>
+        <button class="btn btn--danger" (click)="deleteClickedSlot()">Delete This Slot</button>
+        <button class="btn btn--danger-outline" (click)="deleteResourceSchedule()">Delete Resource Schedule</button>
+        <button class="btn btn--danger-outline" (click)="deleteFullSchedule()">Delete Full Schedule</button>
+      </div>
+    </div>
 
-    <p>
-      {{ selectedEventData?.title }}
-    </p>
-
-    <button (click)="editResourceSchedule()">
-
-      Edit Resource Schedule
-    </button>
-
-    <button (click)="editFullSchedule()">
-
-      Edit Full Schedule
-    </button>
-
-    <button class="danger" (click)="deleteClickedSlot()">
-
-      Delete This Slot
-    </button>
-
-    <button class="danger" (click)="deleteResourceSchedule()">
-
-      Delete Resource Schedule
-    </button>
-
-    <button class="danger" (click)="deleteFullSchedule()">
-
-      Delete Full Schedule
-    </button>
-
-    <button (click)="closeSlotPopup()">
-
-      Cancel
-    </button>
-
+    <footer class="slot-popup-footer">
+      <button class="btn btn--secondary" (click)="closeSlotPopup()">Cancel</button>
+    </footer>
   </div>
-
 </div>
