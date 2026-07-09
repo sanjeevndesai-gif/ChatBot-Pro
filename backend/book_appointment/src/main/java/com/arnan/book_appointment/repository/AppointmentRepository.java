@@ -34,14 +34,30 @@ public class AppointmentRepository {
 
             String mongodbUri = appConfig.getMongodbUri();
 
-            if (mongodbUri != null && mongodbUri.startsWith("mongodb://")) {
-                mongoClient = MongoClients.create(mongodbUri);
-            } else {
-                String host = mongodbUri;
-                int port = appConfig.getMongodbPort();
+            // Prefer full URI when provided
+            if (mongodbUri != null && !mongodbUri.isBlank()) {
+                if (mongodbUri.startsWith("mongodb://") || mongodbUri.startsWith("mongodb+srv://")) {
+                    mongoClient = MongoClients.create(mongodbUri);
+                } else {
+                    int port = appConfig.getMongodbPort() != null ? appConfig.getMongodbPort() : 27017;
+                    String finalUri = "mongodb://" + mongodbUri + ":" + port;
+                    mongoClient = MongoClients.create(finalUri);
+                }
+
+            } else if (appConfig.getHosts() != null && !appConfig.getHosts().isEmpty()) {
+                // fall back to first configured host
+                String host = appConfig.getHosts().get(0);
+                int port = appConfig.getMongodbPort() != null ? appConfig.getMongodbPort() : 27017;
                 String finalUri = "mongodb://" + host + ":" + port;
                 mongoClient = MongoClients.create(finalUri);
+
+            } else {
+                // last-resort fallback to localhost
+                int port = appConfig.getMongodbPort() != null ? appConfig.getMongodbPort() : 27017;
+                String finalUri = "mongodb://localhost:" + port;
+                mongoClient = MongoClients.create(finalUri);
             }
+
         }
 
         return mongoClient;

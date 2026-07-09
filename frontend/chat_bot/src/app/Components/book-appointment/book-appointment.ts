@@ -104,17 +104,24 @@ export class BookAppointment implements OnInit {
     this.appointmentService.getAppointments()
       .subscribe((appointments: any[]) => {
 
+        console.log('loadBookedAppointments -> doctorId:', doctorId);
+        console.log('loadBookedAppointments -> appointments:', appointments);
+
         const items = Array.isArray(appointments) ? appointments : [];
 
-        // If a doctorId is provided, try to filter appointments to that doctor
-        const filtered = doctorId
-          ? items.filter(a => {
-            if (!a) return false;
-            if (a.doctorId && a.doctorId === doctorId) return true;
-            if (a.doctor && (a.doctor === doctorId || a.doctor.id === doctorId)) return true;
-            return false;
-          })
-          : items;
+        const matchesDoctor = (a: any, id?: string) => {
+          if (!id) return true; // no filter
+          if (!a) return false;
+          if (a.resourceId && a.resourceId === id) return true;
+          if (a.doctorId && a.doctorId === id) return true;
+          if (a.doctor && (a.doctor === id || a.doctor.id === id)) return true;
+          if (a.resource && (a.resource === id || a.resource.id === id)) return true;
+          return false;
+        };
+
+        const filtered = items.filter(a => matchesDoctor(a, doctorId));
+
+        console.log('loadBookedAppointments -> filtered count:', filtered.length);
 
         filtered.forEach(a => {
 
@@ -125,6 +132,7 @@ export class BookAppointment implements OnInit {
 
           if (slot) {
 
+            console.log('marking slot booked:', { date, time: a.timeSlot, appointment: a });
             slot.status = 'booked';
 
             slot.bookingInfo = {
@@ -132,6 +140,8 @@ export class BookAppointment implements OnInit {
               phone: a.phone
             };
 
+          } else {
+            console.log('booked appointment has no matching slot in scheduledSlots:', { date, time: a.timeSlot, appointment: a });
           }
 
         });
@@ -154,18 +164,40 @@ export class BookAppointment implements OnInit {
 
     this.schedulerService.getSchedulers()
       .subscribe((schedulers: any[]) => {
+        console.log('loadSlotsForDoctor -> doctorId:', doctorId);
+        console.log('loadSlotsForDoctor -> schedulers response:', schedulers);
 
         this.scheduledSlots = {};
 
         schedulers.forEach(scheduler => {
 
-          if (!scheduler.doctorIds?.includes(doctorId)) return;
+          // scheduler can reference doctors in different shapes:
+          // - scheduler.doctorIds: array of doctor ids
+          // - scheduler.resourceId: single resource id (resourceType === 'DOCTOR')
+          // daySlots may be at scheduler.daySlots or nested under scheduler.resourceSchedules[].daySlots
 
-          scheduler.daySlots.forEach((day: any) => {
+          const resourceId = scheduler.resourceId ?? scheduler.resourceSchedules?.[0]?.resourceId;
+          const daySlotsList: any[] = scheduler.daySlots ?? (Array.isArray(scheduler.resourceSchedules)
+            ? scheduler.resourceSchedules.flatMap((rs: any) => rs.daySlots || [])
+            : []);
+
+          const matchesDoctor = (Array.isArray(scheduler.doctorIds) && scheduler.doctorIds.includes(doctorId))
+            || (resourceId === doctorId);
+
+          if (!matchesDoctor) {
+            console.log('skipping scheduler (no match): doctorIds=', scheduler.doctorIds, 'resourceId=', resourceId);
+            return;
+          }
+
+          console.log('using scheduler (matched):', scheduler.id ?? resourceId ?? scheduler);
+
+          daySlotsList.forEach((day: any) => {
 
             // Normalize date key: scheduler may provide date as string or Date
             const rawDate = day.date;
             const key = typeof rawDate === 'string' ? rawDate : this.formatDate(new Date(rawDate));
+
+            console.log('processing day:', { rawDate, key, slotsCount: (day.slots || []).length });
 
             if (!this.scheduledSlots[key]) {
               this.scheduledSlots[key] = [];
@@ -175,6 +207,7 @@ export class BookAppointment implements OnInit {
 
               const time = this.formatTime(slot.start) + " - " + this.formatTime(slot.end);
 
+              console.log('adding slot for', key, time);
               this.scheduledSlots[key].push({
                 time,
                 status: 'open'
@@ -185,6 +218,8 @@ export class BookAppointment implements OnInit {
           });
 
         });
+
+        console.log('scheduledSlots built:', this.scheduledSlots);
 
         // mark any already-booked slots for this doctor and refresh week view
         this.loadBookedAppointments(doctorId);
