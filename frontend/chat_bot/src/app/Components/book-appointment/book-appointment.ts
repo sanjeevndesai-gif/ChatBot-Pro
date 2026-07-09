@@ -98,12 +98,25 @@ export class BookAppointment implements OnInit {
   }
 
   /** LOAD BOOKED APPOINTMENTS */
-  loadBookedAppointments() {
+  /** LOAD BOOKED APPOINTMENTS */
+  loadBookedAppointments(doctorId?: string) {
 
     this.appointmentService.getAppointments()
       .subscribe((appointments: any[]) => {
 
-        appointments.forEach(a => {
+        const items = Array.isArray(appointments) ? appointments : [];
+
+        // If a doctorId is provided, try to filter appointments to that doctor
+        const filtered = doctorId
+          ? items.filter(a => {
+            if (!a) return false;
+            if (a.doctorId && a.doctorId === doctorId) return true;
+            if (a.doctor && (a.doctor === doctorId || a.doctor.id === doctorId)) return true;
+            return false;
+          })
+          : items;
+
+        filtered.forEach(a => {
 
           const date = a.appointmentDate;
 
@@ -150,17 +163,19 @@ export class BookAppointment implements OnInit {
 
           scheduler.daySlots.forEach((day: any) => {
 
-            const date = day.date;
+            // Normalize date key: scheduler may provide date as string or Date
+            const rawDate = day.date;
+            const key = typeof rawDate === 'string' ? rawDate : this.formatDate(new Date(rawDate));
 
-            if (!this.scheduledSlots[date]) {
-              this.scheduledSlots[date] = [];
+            if (!this.scheduledSlots[key]) {
+              this.scheduledSlots[key] = [];
             }
 
             day.slots.forEach((slot: any) => {
 
               const time = this.formatTime(slot.start) + " - " + this.formatTime(slot.end);
 
-              this.scheduledSlots[date].push({
+              this.scheduledSlots[key].push({
                 time,
                 status: 'open'
               });
@@ -171,7 +186,8 @@ export class BookAppointment implements OnInit {
 
         });
 
-        this.loadBookedAppointments();
+        // mark any already-booked slots for this doctor and refresh week view
+        this.loadBookedAppointments(doctorId);
 
       });
 
