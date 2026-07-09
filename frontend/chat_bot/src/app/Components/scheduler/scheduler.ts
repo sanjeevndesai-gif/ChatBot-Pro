@@ -659,11 +659,82 @@ export class Scheduler implements AfterViewInit, OnInit {
       originalSlotId
     } = this.selectedEventData;
 
-    this.deleteSingleSlot(
-      schedulerId,
-      resourceId,
-      originalSlotId
-    );
+    // Extract event date (if present) so we can delete only the specific
+    // instance of a repeated slot rather than all occurrences sharing the
+    // same prototype `slotId`.
+    const ev = this.selectedEventData?.event;
+    const evDate = ev?.extendedProps?.date;
+
+    // If we have a direct canonical slot id (`originalSlotId`) use the simple
+    // delete API and include the date to restrict deletion to that day.
+    if (originalSlotId) {
+      this.deleteSingleSlot(
+        schedulerId,
+        resourceId,
+        originalSlotId,
+        evDate
+      );
+      this.closeSlotPopup();
+      return;
+    }
+
+    // Fallback: attempt to find the matching slot in the loaded schedulers by
+    // comparing date + start + end from the selected event.
+    const slotProp = ev?.extendedProps?.slot;
+
+    if (!ev || !slotProp || !evDate) {
+      alert('Unable to determine slot to delete');
+      this.closeSlotPopup();
+      return;
+    }
+
+    if (!confirm('Delete this slot?')) {
+      this.closeSlotPopup();
+      return;
+    }
+
+    // Find scheduler and remove matching slot by start/end/date for the resource
+    const schedIndex = this.schedulers.findIndex((s: any) => (s.id || s._id) === schedulerId);
+    if (schedIndex === -1) {
+      alert('Scheduler not found locally');
+      this.closeSlotPopup();
+      return;
+    }
+
+    // Deep clone the scheduler object to avoid mutating UI state before server
+    const schedulerClone = JSON.parse(JSON.stringify(this.schedulers[schedIndex]));
+
+    let removed = false;
+    const rs = schedulerClone.resourceSchedules || [];
+    for (const resource of rs) {
+      if (resource.resourceId !== resourceId) continue;
+      const daySlots = resource.daySlots || [];
+      for (const day of daySlots) {
+        if (day.date !== evDate) continue;
+        const before = (day.slots || []).length;
+        day.slots = (day.slots || []).filter((s: any) => !(s.start === slotProp.start && s.end === slotProp.end));
+        if (day.slots.length !== before) removed = true;
+      }
+    }
+
+    if (!removed) {
+      alert('No matching slot found to delete');
+      this.closeSlotPopup();
+      return;
+    }
+
+    // Send full scheduler update to persist the removal
+    this.schedulerService.updateScheduler(schedulerId, schedulerClone).subscribe({
+      next: () => {
+        // Refresh canonical data from backend
+        this.loadFromBackend();
+        this.toast('Slot deleted');
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Failed to delete slot');
+      }
+    });
 
     this.closeSlotPopup();
   }
@@ -1292,6 +1363,8 @@ export class Scheduler implements AfterViewInit, OnInit {
       let cursor = startM;
 
       while (cursor + this.selectedDuration <= endM) {
+        // Respect `maxBookingsPerDay` if provided: stop when we've reached count
+        if (this.maxBookingsPerDay && slots.length >= this.maxBookingsPerDay) break;
         slots.push(this.makeSlot(
           this.fmt(cursor),
           this.fmt(cursor + this.selectedDuration)
@@ -1344,38 +1417,45 @@ export class Scheduler implements AfterViewInit, OnInit {
   deleteSingleSlot(
     schedulerId: string,
     resourceId: string,
-    slotId: string
+    slotId: string,
+    date?: string
   ) {
 
     this.schedulerService
       .deleteSlot(
         schedulerId,
         resourceId,
-        slotId
+        slotId,
+        date
       )
       .subscribe({
 
         next: () => {
 
-          this.schedulers.forEach(
-            (scheduler: any) => {
+          this.schedulers.forEach((scheduler: any) => {
+            const sid = scheduler.id || scheduler._id;
+            if (sid !== schedulerId) return;
 
-              if (
-                scheduler._id !== schedulerId
-              ) return;
-
-              scheduler.daySlots.forEach(
-                (d: any) => {
-
-                  d.slots =
-                    d.slots.filter(
-                      (s: any) =>
-                        s.slotId !== slotId
-                    );
-
+            // Remove from resource-specific daySlots if present
+            if (Array.isArray(scheduler.resourceSchedules)) {
+              scheduler.resourceSchedules.forEach((rs: any) => {
+                if (!rs || rs.resourceId !== resourceId) return;
+                if (!Array.isArray(rs.daySlots)) return;
+                rs.daySlots.forEach((d: any) => {
+                  if (!d) return;
+                  d.slots = (d.slots || []).filter((s: any) => s.slotId !== slotId);
                 });
+              });
+            }
 
-            });
+            // Also remove from scheduler-level daySlots (legacy shape)
+            if (Array.isArray(scheduler.daySlots)) {
+              scheduler.daySlots.forEach((d: any) => {
+                if (!d) return;
+                d.slots = (d.slots || []).filter((s: any) => s.slotId !== slotId);
+              });
+            }
+          });
 
           this.syncCalendar();
 
@@ -1516,7 +1596,11 @@ export class Scheduler implements AfterViewInit, OnInit {
     this.scheduleAutoGenerate();
   }
 
-  onMaxBookingsChange(_: number) { }
+  onMaxBookingsChange(_: number) {
+    // When max bookings per day changes in the editor, regenerate slots
+    // to reflect the new cap so updates include the desired slot count.
+    this.scheduleAutoGenerate();
+  }
 
   toggleDayAvailability(i: number) {
     this.daySlots[i].unavailable = !this.daySlots[i].unavailable;
@@ -1621,6 +1705,8 @@ export class Scheduler implements AfterViewInit, OnInit {
 
       // Anchor for resolving weekday-only templates: prefer the earliest explicit date
       // present in baseDaySlots so weekly expansion starts from the original week.
+      // HOWEVER: avoid anchoring to a past date — ensure anchor is today or later
+      // so we do not create daySlots in the past when expanding templates.
       let anchorDateForWeekday: Date | null = null;
       for (const d of baseDaySlots || []) {
         if (d && d.date) {
@@ -1630,7 +1716,8 @@ export class Scheduler implements AfterViewInit, OnInit {
           }
         }
       }
-      const defaultAnchor = anchorDateForWeekday || (() => { const t = new Date(); t.setHours(0,0,0,0); return t; })();
+      const todayAnchor = (() => { const t = new Date(); t.setHours(0,0,0,0); return t; })();
+      const defaultAnchor = (anchorDateForWeekday && anchorDateForWeekday.getTime() >= todayAnchor.getTime()) ? anchorDateForWeekday : todayAnchor;
 
       const resolveBaseDate = (d: any) => {
         // Prefer explicit date if present (parse as local midnight)
@@ -1655,26 +1742,49 @@ export class Scheduler implements AfterViewInit, OnInit {
         return new Date(defaultAnchor);
       };
 
+      // When expanding for a single week, limit produced dates to the remainder
+      // of the current week (from the resolved anchor/today) so we don't create
+      // slots in past or in future weeks unintentionally.
+      const weekEnd = (() => {
+        const w = new Date(defaultAnchor);
+        const endOffset = 6 - w.getDay();
+        w.setDate(w.getDate() + endOffset);
+        w.setHours(23,59,59,999);
+        return w;
+      })();
+
       for (let w = 0; w < Math.max(1, repeatWeeksCount); w++) {
         const dayOffset = w * 7;
         for (const d of baseDaySlots) {
           const base = resolveBaseDate(d);
           const dateObj = new Date(base);
           dateObj.setDate(dateObj.getDate() + dayOffset);
+
+          // Skip dates before todayAnchor (avoid past days)
+          if (dateObj.getTime() < todayAnchor.getTime()) continue;
+
+          // If only a single week is requested, skip dates beyond the end of
+          // the current week so expansion produces only the remaining days.
+          if (Math.max(1, repeatWeeksCount) === 1 && dateObj.getTime() > weekEnd.getTime()) continue;
+
           const date = this.formatYMD(dateObj);
           out.push({
             date,
             unavailable: d.unavailable,
             slots: d.unavailable
-              ? []
-              : (d.slots || []).map((s: any) => ({
-                slotId: (preserveOriginalIds && w === 0 && s.slotId) ? s.slotId : crypto.randomUUID(),
-                start: s.start,
-                end: s.end,
-                type: s.type || 'GENERAL',
-                booked: s.booked || false,
-                maxBookings: s.maxBookings || 1
-              }))
+                ? []
+                : (() => {
+                  let mapped = (d.slots || []).map((s: any) => ({
+                    slotId: (preserveOriginalIds && w === 0 && s.slotId) ? s.slotId : crypto.randomUUID(),
+                    start: s.start,
+                    end: s.end,
+                    type: s.type || 'GENERAL',
+                    booked: s.booked || false,
+                    maxBookings: s.maxBookings || 1
+                  }));
+                  if (this.maxBookingsPerDay && mapped.length > this.maxBookingsPerDay) mapped = mapped.slice(0, this.maxBookingsPerDay);
+                  return mapped;
+                })()
           });
         }
       }
@@ -1687,6 +1797,9 @@ export class Scheduler implements AfterViewInit, OnInit {
     // missing weekdays in the first week so weekly expansion produces full weeks.
     const ensureWeekdayTemplates = (baseDaySlots: any[]) => {
       if (!Array.isArray(baseDaySlots) || baseDaySlots.length === 0) return baseDaySlots;
+      // If caller already supplied multiple day templates, respect them as-is
+      if (baseDaySlots.length > 1) return baseDaySlots;
+
       const weekdayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
       // build map from weekday -> slot if present
@@ -1697,12 +1810,16 @@ export class Scheduler implements AfterViewInit, OnInit {
         if (wd && !byWeekday.has(wd)) byWeekday.set(wd, d);
       }
 
-      // if we already have entries for multiple weekdays, return original
+      // If we already have entries for multiple weekdays, return original
       if (byWeekday.size >= 2) return baseDaySlots;
 
-      // otherwise clone the first provided prototype across all weekdays
-      const proto = baseDaySlots.find(d => d) || baseDaySlots[0];
+      // Only expand when we have exactly one prototype template (no explicit dates)
+      const proto = baseDaySlots[0];
       if (!proto) return baseDaySlots;
+
+      // If the single provided template has an explicit date, keep it — caller
+      // likely intended a single-day template rather than a weekly prototype.
+      if (proto.date) return baseDaySlots;
 
       const expanded: any[] = [];
       for (const wd of weekdayNames) {
@@ -1789,17 +1906,18 @@ export class Scheduler implements AfterViewInit, OnInit {
         const proto = (baseDaySlots || [])[0];
         for (let cur = new Date(from); cur.getTime() <= to.getTime(); cur.setDate(cur.getDate() + 1)) {
           const dateStr = this.formatYMD(cur);
+          const mapped = proto.unavailable ? [] : (proto.slots || []).map((s: any) => ({
+            slotId: preserveOriginalIds && proto.date === dateStr && s.slotId ? s.slotId : crypto.randomUUID(),
+            start: s.start,
+            end: s.end,
+            type: s.type || 'GENERAL',
+            booked: s.booked || false,
+            maxBookings: s.maxBookings || 1
+          }));
           out.push({
             date: dateStr,
             unavailable: !!proto.unavailable,
-            slots: proto.unavailable ? [] : (proto.slots || []).map((s: any) => ({
-              slotId: preserveOriginalIds && proto.date === dateStr && s.slotId ? s.slotId : crypto.randomUUID(),
-              start: s.start,
-              end: s.end,
-              type: s.type || 'GENERAL',
-              booked: s.booked || false,
-              maxBookings: s.maxBookings || 1
-            }))
+            slots: (this.maxBookingsPerDay && mapped.length > this.maxBookingsPerDay) ? mapped.slice(0, this.maxBookingsPerDay) : mapped
           });
         }
         return out;
@@ -1812,7 +1930,7 @@ export class Scheduler implements AfterViewInit, OnInit {
         if (dayName) byWeekday.set(dayName, d);
       }
 
-      for (let cur = new Date(from); cur.getTime() <= to.getTime(); cur.setDate(cur.getDate() + 1)) {
+        for (let cur = new Date(from); cur.getTime() <= to.getTime(); cur.setDate(cur.getDate() + 1)) {
         const dateStr = this.formatYMD(cur);
         const weekday = cur.toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -1825,14 +1943,18 @@ export class Scheduler implements AfterViewInit, OnInit {
         out.push({
           date: dateStr,
           unavailable: !!src.unavailable,
-          slots: src.unavailable ? [] : (src.slots || []).map((s: any) => ({
-            slotId: preserveOriginalIds && src.date === dateStr && s.slotId ? s.slotId : crypto.randomUUID(),
-            start: s.start,
-            end: s.end,
-            type: s.type || 'GENERAL',
-            booked: s.booked || false,
-            maxBookings: s.maxBookings || 1
-          }))
+          slots: (() => {
+            let mapped = src.unavailable ? [] : (src.slots || []).map((s: any) => ({
+              slotId: preserveOriginalIds && src.date === dateStr && s.slotId ? s.slotId : crypto.randomUUID(),
+              start: s.start,
+              end: s.end,
+              type: s.type || 'GENERAL',
+              booked: s.booked || false,
+              maxBookings: s.maxBookings || 1
+            }));
+            if (this.maxBookingsPerDay && mapped.length > this.maxBookingsPerDay) mapped = mapped.slice(0, this.maxBookingsPerDay);
+            return mapped;
+          })()
         });
       }
 
@@ -1863,11 +1985,12 @@ export class Scheduler implements AfterViewInit, OnInit {
           const todayStr = this.formatYMD(new Date());
           if (this.daySlots && this.daySlots.length > 0) {
             const first = this.daySlots[0];
+            const mappedSlots = (first.slots || []).map((s: any) => ({ ...s }));
             const clone = {
               date: todayStr,
               displayDay: new Date(todayStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
               unavailable: first.unavailable,
-              slots: (first.slots || []).map((s: any) => ({ ...s }))
+              slots: (this.maxBookingsPerDay && mappedSlots.length > this.maxBookingsPerDay) ? mappedSlots.slice(0, this.maxBookingsPerDay) : mappedSlots
             };
             baseDaySlotsToUse = [clone];
           } else {
@@ -1884,7 +2007,7 @@ export class Scheduler implements AfterViewInit, OnInit {
           // expanded explicit dates.
           daySlots: (this.repeatOption === 'custom')
             ? buildDaySlotsForCustomRange(baseDaySlotsToUse, this.customFromDate || null, this.customToDate || null, true)
-            : (this.repeatOption === 'weekly' ? makePrototypeTemplates(baseDaySlotsToUse) : buildDaySlotsForPayload(baseDaySlotsToUse, repeatWeeksCount, true))
+            : buildDaySlotsForPayload(baseDaySlotsToUse, repeatWeeksCount, true)
         }));
 
       }
@@ -1925,11 +2048,12 @@ export class Scheduler implements AfterViewInit, OnInit {
           const todayStr = this.formatYMD(new Date());
           if (this.daySlots && this.daySlots.length > 0) {
             const first = this.daySlots[0];
+            const mappedSlots = (first.slots || []).map((s: any) => ({ ...s }));
             const clone = {
               date: todayStr,
               displayDay: new Date(todayStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
               unavailable: first.unavailable,
-              slots: (first.slots || []).map((s: any) => ({ ...s }))
+              slots: (this.maxBookingsPerDay && mappedSlots.length > this.maxBookingsPerDay) ? mappedSlots.slice(0, this.maxBookingsPerDay) : mappedSlots
             };
             baseDaySlotsToUse = [clone];
           } else {
@@ -1942,7 +2066,7 @@ export class Scheduler implements AfterViewInit, OnInit {
           resourceType: 'DOCTOR',
           daySlots: this.repeatOption === 'custom'
             ? buildDaySlotsForCustomRange(baseDaySlotsToUse, this.customFromDate || null, this.customToDate || null, true)
-            : (this.repeatOption === 'weekly' ? makePrototypeTemplates(baseDaySlotsToUse) : buildDaySlotsForPayload(baseDaySlotsToUse, repeatWeeksCount, true))
+            : buildDaySlotsForPayload(baseDaySlotsToUse, repeatWeeksCount, true)
         }));
 
         finalResourceSchedules = [
@@ -1974,11 +2098,12 @@ export class Scheduler implements AfterViewInit, OnInit {
         const todayStr = this.formatYMD(new Date());
         if (this.daySlots && this.daySlots.length > 0) {
           const first = this.daySlots[0];
+          const mappedSlots = (first.slots || []).map((s: any) => ({ ...s }));
           const clone = {
             date: todayStr,
             displayDay: new Date(todayStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }),
             unavailable: first.unavailable,
-            slots: (first.slots || []).map((s: any) => ({ ...s }))
+            slots: (this.maxBookingsPerDay && mappedSlots.length > this.maxBookingsPerDay) ? mappedSlots.slice(0, this.maxBookingsPerDay) : mappedSlots
           };
           baseDaySlotsToUse = [clone];
         } else {

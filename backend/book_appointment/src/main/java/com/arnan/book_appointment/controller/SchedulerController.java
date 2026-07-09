@@ -51,9 +51,12 @@ public class SchedulerController {
 
 			@PathVariable String resourceId,
 
-			@PathVariable String slotId) {
+			@PathVariable String slotId,
 
-		schedulerService.deleteSlot(schedulerId, resourceId, slotId);
+			@RequestParam(required = false) String date) {
+
+		// If a date is provided, delete only the slot instance for that date.
+		schedulerService.deleteSlot(schedulerId, resourceId, slotId, date);
 
 		return ResponseEntity.ok().build();
 	}

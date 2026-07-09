@@ -44,12 +44,16 @@ export class SchedulerService {
     deleteSlot(
         schedulerId: string,
         resourceId: string,
-        slotId: string
+        slotId: string,
+        date?: string
     ): Observable<any> {
 
-        return this.http.delete(
-            `${this.apiUrl}/${schedulerId}/resource/${resourceId}/slot/${slotId}`
-        ).pipe(
+        let url = `${this.apiUrl}/${schedulerId}/resource/${resourceId}/slot/${slotId}`;
+        if (date) {
+            url += `?date=${encodeURIComponent(date)}`;
+        }
+
+        return this.http.delete(url).pipe(
             catchError(err => this.handleError(err))
         );
     }
