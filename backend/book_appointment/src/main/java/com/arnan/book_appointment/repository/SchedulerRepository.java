@@ -22,19 +22,8 @@ public class SchedulerRepository {
 
     private MongoClient getClient() {
         if (mongoClient == null) {
-
-            String mongodbUri = appConfig.getMongodbUri();
-
-            if (mongodbUri != null && mongodbUri.startsWith("mongodb://")) {
-                mongoClient = MongoClients.create(mongodbUri);
-            } else {
-                String host = mongodbUri;
-                int port = appConfig.getMongodbPort();
-                String finalUri = "mongodb://" + host + ":" + port;
-                mongoClient = MongoClients.create(finalUri);
-            }
+            mongoClient = MongoClients.create(appConfig.getMongodbUri());
         }
-
         return mongoClient;
     }
 
