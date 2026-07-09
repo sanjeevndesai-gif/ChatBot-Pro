@@ -73,13 +73,7 @@
       </div>
     </div>
 
-    <div class="filters">
-      <h5>Schedule Filters</h5>
-      <div class="filter-item" *ngFor="let c of categories" (click)="toggleCategory(c)">
-        <span class="dot" [style.background]="c.color"></span>
-        <span [class.inactive]="!c.active">{{ c.name }}</span>
-      </div>
-    </div>
+    <!-- Schedule Filters removed per request -->
   </div>
 
   <!-- MAIN RIGHT CALENDAR -->
@@ -269,7 +263,86 @@
         class="max-input" />
     </div>
 
-    <!-- Daywise Slots removed as per UI cleanup request -->
+    <!-- Daywise Slots -->
+    <div class="section">
+      <div class="section-heading">
+        <div>
+          <span class="sec-title">Day-wise availability & slots</span>
+          <div class="sec-sub">
+            Mark available days and configure slots.
+            <button class="link small" (click)="toggleDaywiseExpand()">
+              {{ daywiseExpanded ? 'Collapse' : 'Expand' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="availability-list" *ngIf="daywiseExpanded">
+        <div class="day-row" *ngFor="let d of daySlots; let di = index">
+
+          <div class="day-header">
+            <div class="day-left">
+              <strong>{{ d.displayDay }}({{ d.date }})</strong>
+
+              <div class="mini-note" *ngIf="d.unavailable">
+                Unavailable
+              </div>
+
+              <div class="mini-note" *ngIf="!d.unavailable">
+                Total: {{ getCombinedSlots(d).length }}/{{ maxBookingsPerDay }}
+              </div>
+            </div>
+
+            <div class="day-actions">
+              <button class="link" (click)="toggleDayAvailability(di)">
+                {{ d.unavailable ? 'Make available' : 'Unavailable' }}
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!d.unavailable">
+            <div class="day-group">
+
+              <div class="sub-label">
+                Slots (General + Emergency)
+                <button class="icon" (click)="copySlotsToAllDays(di)">
+                  <i class="bi bi-copy"></i>
+                </button>
+              </div>
+
+              <div class="slot-row" *ngFor="let s of getCombinedSlots(d)"
+                [class.emergency-border]="s.type === 'EMERGENCY'">
+
+                <input type="time" [(ngModel)]="s.start" (change)="onSlotChange(di, s)" />
+
+                <span class="dash">–</span>
+
+                <input type="time" [(ngModel)]="s.end" (change)="onSlotChange(di, s)" />
+
+                <!-- <label class="em-label">
+                  <input type="checkbox" [(ngModel)]="s.emergency" (change)="onSlotChange()" />
+                  Emergency
+                </label> -->
+                <select [(ngModel)]="s.type" (change)="onSlotChange(di, s)" class="slot-type-select">
+                  <option value="GENERAL">General</option>
+                  <option value="EMERGENCY">Emergency</option>
+                </select>
+
+                <button class="icon" (click)="deleteSlot(di, s)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+
+              <button class="btn add" (click)="addSlot(di)">
+                <i class="bi bi-plus-circle"></i> Add Slot
+              </button>
+
+            </div>
+          </ng-container>
+
+        </div>
+      </div>
+    </div>
 
     <!-- Description -->
     <div class="section">
