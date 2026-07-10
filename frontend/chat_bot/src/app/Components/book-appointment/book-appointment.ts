@@ -123,7 +123,16 @@ export class BookAppointment implements OnInit {
 
         console.log('loadBookedAppointments -> filtered count:', filtered.length);
 
-        filtered.forEach(a => {
+        // If appointments don't contain doctor/resource identifiers, fall back
+        // to matching by date+timeSlot when viewing a single doctor's calendar.
+        let toMark = filtered;
+        if (doctorId && toMark.length === 0) {
+          const fallback = items.filter(a => a && a.appointmentDate && a.timeSlot && a.status === 'BOOKED');
+          console.log('loadBookedAppointments -> fallback by date/time count:', fallback.length);
+          toMark = fallback;
+        }
+
+        toMark.forEach(a => {
 
           const date = a.appointmentDate;
 
