@@ -8,6 +8,7 @@ import { UserService } from '../../services/user.service';
 interface BookingInfo {
   fullName: string;
   phone: string;
+  purpose?: string;
 }
 
 interface Slot {
@@ -62,8 +63,7 @@ export class BookAppointment implements OnInit {
     fullName: '',
     countryCode: '+91',
     phone: '',
-    email: '',
-    message: ''
+    purpose: ''
   };
 
   /** backend slots storage */
@@ -144,10 +144,11 @@ export class BookAppointment implements OnInit {
             console.log('marking slot booked:', { date, time: a.timeSlot, appointment: a });
             slot.status = 'booked';
 
-            slot.bookingInfo = {
-              fullName: a.fullName,
-              phone: a.phone
-            };
+              slot.bookingInfo = {
+                fullName: a.fullName,
+                phone: a.phone,
+                purpose: a.purpose || a.message || a.email || ''
+              };
 
           } else {
             console.log('booked appointment has no matching slot in scheduledSlots:', { date, time: a.timeSlot, appointment: a });
@@ -370,8 +371,7 @@ export class BookAppointment implements OnInit {
       timeSlot: this.selectedSlot.time,
       fullName: this.patient.fullName,
       phone: this.patient.countryCode + this.patient.phone,
-      email: this.patient.email,
-      message: this.patient.message
+      purpose: this.patient.purpose
 
     };
 
@@ -382,7 +382,8 @@ export class BookAppointment implements OnInit {
 
         this.selectedSlot.bookingInfo = {
           fullName: this.patient.fullName,
-          phone: payload.phone
+          phone: payload.phone,
+          purpose: this.patient.purpose
         };
 
         this.closeModal();
