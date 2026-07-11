@@ -1,6 +1,6 @@
 package com.arnan.book_appointment.controller;
 
-import com.arnan.book_appointment.service.AppointmentService;
+
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,8 +8,11 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.arnan.book_appointment.service.AppointmentService;
+
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -23,9 +26,24 @@ public class AppointmentController {
         this.service = service;
     }
 
+    private Document toDocument(Object payload) {
+        if (payload == null) return new Document();
+        if (payload instanceof Document) return (Document) payload;
+        if (payload instanceof Map) return new Document((Map) payload);
+        if (payload instanceof String) {
+            try {
+                return Document.parse((String) payload);
+            } catch (Exception e) {
+                return new Document("value", payload);
+            }
+        }
+        return new Document("value", payload.toString());
+    }
+
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<Document> create(@RequestBody Document appointment) {
+    public ResponseEntity<Document> create(@RequestBody Object appointmentPayload) {
+        Document appointment = toDocument(appointmentPayload);
         log.info("POST /api/appointments - create: {}", appointment);
         return ResponseEntity.ok(service.create(appointment));
     }
@@ -34,8 +52,9 @@ public class AppointmentController {
     @PutMapping("/{id}")
     public ResponseEntity<Document> update(
             @PathVariable String id,
-            @RequestBody Document appointment
+            @RequestBody Object appointmentPayload
     ) {
+        Document appointment = toDocument(appointmentPayload);
         log.info("PUT /api/appointments/{} - update: {}", id, appointment);
         return ResponseEntity.ok(service.update(id, appointment));
     }

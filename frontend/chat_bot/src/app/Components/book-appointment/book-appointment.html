@@ -58,10 +58,10 @@
     <div class="calendar-grid-body">
       <div class="day-column" *ngFor="let day of weekDays">
 
-        <ng-container *ngIf="day.slots.length; else empty">
-          <div class="slot-wrapper" *ngFor="let slot of day.slots">
+        <ng-container *ngIf="(scheduledSlots[formatDate(day.date)] || []).length; else empty">
+          <div class="slot-wrapper" *ngFor="let slot of (scheduledSlots[formatDate(day.date)] || [])">
 
-            <button class="slot-btn" [disabled]="slot.status === 'booked'" (click)="openBooking(slot, day.date)">
+            <button class="slot-btn" [ngClass]="{ 'booked': slot.status === 'booked' }" (click)="onSlotClick(slot, day.date)">
               {{ slot.time }}
             </button>
 
@@ -146,6 +146,38 @@
     <div class="modal-footer">
       <button class="btn-cancel" (click)="closeModal()">Cancel</button>
       <button class="btn-confirm" (click)="confirmBooking()">Confirm Booking</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===================== CANCEL CONFIRMATION MODAL ===================== -->
+<div class="modal-backdrop" *ngIf="showCancelModal">
+  <div class="modal-card">
+
+    <div class="modal-header">
+      <h3>Cancel Appointment</h3>
+      <button class="close-btn" (click)="closeCancelDialog()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p *ngIf="cancelTargetDate && cancelTargetSlot" class="modal-slot">
+        <strong>{{ cancelTargetDate | date:'fullDate' }}</strong> • {{ cancelTargetSlot?.time }}
+      </p>
+
+      <p *ngIf="cancelTargetSlot?.bookingInfo">
+        Appointment for <strong>{{ cancelTargetSlot?.bookingInfo?.fullName }}</strong>
+        (<span>{{ cancelTargetSlot?.bookingInfo?.phone }}</span>)
+      </p>
+
+      <p>Are you sure you want to cancel this appointment?</p>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeCancelDialog()">No, keep</button>
+      <button class="btn-confirm" (click)="confirmCancel()">Yes, cancel</button>
     </div>
 
   </div>

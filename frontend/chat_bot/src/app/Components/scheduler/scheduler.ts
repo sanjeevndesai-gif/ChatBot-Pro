@@ -1166,7 +1166,9 @@ export class Scheduler implements AfterViewInit, OnInit {
   }
 
   loadFromBackend() {
-    this.schedulerService.getSchedulers()
+    const schedulers$ = this.userId ? this.schedulerService.getSchedulersByCreator(this.userId) : this.schedulerService.getSchedulers();
+
+    schedulers$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((res: any[]) => {
         // defensive: dedupe schedulers by id in case backend returned duplicates

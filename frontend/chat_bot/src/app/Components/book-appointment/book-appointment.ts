@@ -4,17 +4,22 @@ import { FormsModule } from '@angular/forms';
 import { AppointmentService } from '../../services/appointment.service';
 import { SchedulerService } from '../../services/scheduler.service';
 import { UserService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 
 interface BookingInfo {
   fullName: string;
   phone: string;
   purpose?: string;
+  appointmentId?: string;
 }
 
 interface Slot {
   time: string;
   status: 'open' | 'booked';
   bookingInfo?: BookingInfo;
+  schedulerId?: string;
+  resourceId?: string;
+  slotId?: string;
 }
 
 interface DaySlots {
@@ -41,10 +46,12 @@ export class BookAppointment implements OnInit {
   constructor(
     private appointmentService: AppointmentService,
     private schedulerService: SchedulerService,
-    private userService: UserService
+    private userService: UserService,
+    private authService: AuthService
   ) { }
 
   doctors: { id: string; name: string; specialization: string }[] = [];
+  fallbackDoctors: { id: string; name: string; specialization: string }[] = [];
   selectedDoctor: string = '';
 
   currentWeekStart!: Date;
@@ -56,6 +63,11 @@ export class BookAppointment implements OnInit {
   showModal = false;
   selectedDay!: Date;
   selectedSlot!: Slot;
+
+  // cancel flow state
+  showCancelModal = false;
+  cancelTargetSlot?: Slot;
+  cancelTargetDate?: Date;
 
   submitted = false;
 
@@ -81,15 +93,47 @@ export class BookAppointment implements OnInit {
 
   /** LOAD DOCTORS FROM BACKEND USERS */
   loadDoctors() {
-    this.userService.getUsers(0, 100, '').subscribe((res: any) => {
+    // Use admin-scoped endpoint to get users created by logged-in admin (clinic-specific)
+    this.userService.getUsersByAdmin(0, 100, '').subscribe((res: any) => {
       const allUsers: any[] = res?.content ?? [];
-      this.doctors = allUsers
-        .filter(u => (u.payload?.role ?? '').toLowerCase() === 'doctor')
+
+      const clinicDoctors = allUsers
+        .filter(u => String(u.payload?.role ?? u.role ?? '').toLowerCase() === 'doctor')
         .map(u => ({
-          id: u.id,
-          name: u.payload?.name || u.payload?.fullname || 'Unknown',
-          specialization: u.payload?.specialization || ''
+          id: u.id || u._id || '',
+          name: u.payload?.name || u.payload?.fullname || u.name || 'Unknown',
+          specialization: u.payload?.specialization || u.specialization || ''
         }));
+
+      const fallback = allUsers
+        .filter(u => String(u.payload?.role ?? u.role ?? '').toLowerCase() === 'doctor')
+        .map(u => ({
+          id: u.id || u._id || '',
+          name: u.payload?.name || u.payload?.fullname || u.name || 'Unknown',
+          specialization: u.payload?.specialization || u.specialization || ''
+        }));
+
+      this.fallbackDoctors = fallback;
+
+      // Prefer showing only the logged-in user's doctor entry when available
+      const authUser = this.authService.getCurrentUser();
+      let currentUserId = '';
+      if (authUser) {
+        // Resolve several possible id fields defensively
+        currentUserId = (authUser as any).userId ?? (authUser as any).mongoId ?? (authUser as any).id ?? (authUser as any)._id ?? '';
+        // Ensure it's a string
+        currentUserId = currentUserId ? String(currentUserId) : '';
+      }
+
+      const doctorsForCurrentUser = clinicDoctors.filter(d => d.id === currentUserId);
+
+      if (doctorsForCurrentUser.length > 0) {
+        this.doctors = doctorsForCurrentUser;
+      } else {
+        // Default: show clinic-specific doctors; if none, show fallback
+        this.doctors = clinicDoctors.length > 0 ? clinicDoctors : fallback;
+      }
+
       if (this.doctors.length === 1) {
         this.selectedDoctor = this.doctors[0].id;
         this.loadSlotsForDoctor(this.selectedDoctor);
@@ -145,10 +189,11 @@ export class BookAppointment implements OnInit {
             slot.status = 'booked';
 
               slot.bookingInfo = {
-                fullName: a.fullName,
-                phone: a.phone,
-                purpose: a.purpose || a.message || a.email || ''
-              };
+                  fullName: a.fullName,
+                  phone: a.phone,
+                  purpose: a.purpose || a.message || a.email || '',
+                  appointmentId: a.id || a._id || a.appointmentId || ''
+                };
 
           } else {
             console.log('booked appointment has no matching slot in scheduledSlots:', { date, time: a.timeSlot, appointment: a });
@@ -171,9 +216,17 @@ export class BookAppointment implements OnInit {
   }
 
   loadSlotsForDoctor(doctorId: string) {
+    // Resolve current logged-in user id to filter slots by creator
+    const authUser = this.authService.getCurrentUser();
+    let currentUserId = '';
+    if (authUser) {
+      currentUserId = (authUser as any).userId ?? (authUser as any).mongoId ?? (authUser as any).id ?? (authUser as any)._id ?? '';
+      currentUserId = currentUserId ? String(currentUserId) : '';
+    }
 
-    this.schedulerService.getSchedulers()
-      .subscribe((schedulers: any[]) => {
+    const schedulers$ = currentUserId ? this.schedulerService.getSchedulersByCreator(currentUserId) : this.schedulerService.getSchedulers();
+
+    schedulers$.subscribe((schedulers: any[]) => {
         console.log('loadSlotsForDoctor -> doctorId:', doctorId);
         console.log('loadSlotsForDoctor -> schedulers response:', schedulers);
 
@@ -204,10 +257,33 @@ export class BookAppointment implements OnInit {
           daySlotsList.forEach((day: any) => {
 
             // Normalize date key: scheduler may provide date as string or Date
-            const rawDate = day.date;
-            const key = typeof rawDate === 'string' ? rawDate : this.formatDate(new Date(rawDate));
+              const rawDate = day.date;
 
-            console.log('processing day:', { rawDate, key, slotsCount: (day.slots || []).length });
+              // Normalize incoming date values to a canonical YYYY-MM-DD key.
+              // Handles these shapes: "YYYY-MM-DD", ISO strings, timestamps, Date objects,
+              // and Mongo extended JSON-like objects.
+              let key = '';
+              if (typeof rawDate === 'string') {
+                if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                  // plain date string (treat as local date)
+                  key = rawDate;
+                } else {
+                  // other string forms: parse to Date and format to local date
+                  key = this.formatDate(new Date(rawDate));
+                }
+              } else if (typeof rawDate === 'number') {
+                key = this.formatDate(new Date(rawDate));
+              } else if (rawDate instanceof Date) {
+                key = this.formatDate(rawDate);
+              } else if (rawDate && (rawDate.$date || rawDate.$numberLong)) {
+                // Mongo extended JSON: { $date: { $numberLong: "..." } } or { $date: "..." }
+                const millis = rawDate.$date && rawDate.$date.$numberLong ? Number(rawDate.$date.$numberLong) : (rawDate.$date || rawDate.$numberLong);
+                key = this.formatDate(new Date(millis));
+              } else {
+                key = this.formatDate(new Date(rawDate));
+              }
+
+              console.log('processing day:', { rawDate, key, slotsCount: (day.slots || []).length });
 
             if (!this.scheduledSlots[key]) {
               this.scheduledSlots[key] = [];
@@ -215,12 +291,33 @@ export class BookAppointment implements OnInit {
 
             day.slots.forEach((slot: any) => {
 
+              // Determine the creator/owner of this slot (defensive across shapes)
+              let slotOwner: any = '';
+              if (slot) {
+                if (slot.createdBy && typeof slot.createdBy === 'object') {
+                  slotOwner = slot.createdBy.id ?? slot.createdBy._id ?? slot.createdBy;
+                } else {
+                  slotOwner = slot.createdBy ?? slot.createdById ?? slot.userId ?? slot.creator ?? slot.createdByUserId ?? '';
+                }
+              }
+              slotOwner = slotOwner ? String(slotOwner) : '';
+
+              // If we have a logged-in user id, only include slots created by that user
+              if (currentUserId && slotOwner && slotOwner !== currentUserId) {
+                console.log('skipping slot because creator does not match current user', { slotOwner, currentUserId, slot });
+                return;
+              }
+
               const time = this.formatTime(slot.start) + " - " + this.formatTime(slot.end);
 
               console.log('adding slot for', key, time);
+              const slotId = slot.slotId || slot.id || slot._id || '';
               this.scheduledSlots[key].push({
                 time,
-                status: 'open'
+                status: 'open',
+                schedulerId: scheduler.id || '',
+                resourceId: resourceId || '',
+                slotId
               });
 
             });
@@ -278,6 +375,16 @@ export class BookAppointment implements OnInit {
         slots: this.scheduledSlots[key] || []
       });
 
+    }
+
+    // Debug: show which date keys correspond to the current week and what slots map to them.
+    try {
+      const weekKeys = this.weekDays.map(w => this.formatDate(w.date));
+      console.log('buildWeek -> weekKeys:', weekKeys);
+      console.log('buildWeek -> scheduledSlots keys present:', Object.keys(this.scheduledSlots || {}));
+      this.weekDays.forEach(w => console.log('buildWeek -> day', this.formatDate(w.date), 'slots:', (w.slots || []).length));
+    } catch (e) {
+      // ignore logging errors in production
     }
 
   }
@@ -350,12 +457,79 @@ export class BookAppointment implements OnInit {
 
   openBooking(slot: Slot, day: Date) {
 
-    if (slot.status === 'booked') return;
+    if (slot.status === 'booked') {
+      // open cancel dialog for booked slot
+      this.openCancelDialog(slot, day);
+      return;
+    }
 
     this.selectedSlot = slot;
     this.selectedDay = day;
 
     this.showModal = true;
+  }
+
+  onSlotClick(slot: Slot, day: Date) {
+    // unified handler used from template
+    this.openBooking(slot, day);
+  }
+
+  openCancelDialog(slot: Slot, day: Date) {
+    this.cancelTargetSlot = slot;
+    this.cancelTargetDate = day;
+    this.showCancelModal = true;
+  }
+
+  closeCancelDialog() {
+    this.showCancelModal = false;
+    this.cancelTargetSlot = undefined;
+    this.cancelTargetDate = undefined;
+  }
+
+  confirmCancel() {
+    if (!this.cancelTargetSlot) return;
+    const id = this.cancelTargetSlot.bookingInfo?.appointmentId;
+    if (!id) {
+      // fallback: try to find appointment by date+time via API (not implemented)
+      console.warn('No appointmentId on slot; cannot cancel via API');
+      this.closeCancelDialog();
+      return;
+    }
+
+    this.appointmentService.deleteAppointment(id).subscribe(() => {
+      // After appointment deletion, also remove the concrete slot from the scheduler (date-specific)
+      const slot = this.cancelTargetSlot!;
+      const dateKey = this.cancelTargetDate ? this.formatDate(this.cancelTargetDate) : '';
+
+      if (slot.schedulerId && slot.resourceId && slot.slotId) {
+        this.schedulerService.deleteSlot(slot.schedulerId, slot.resourceId, slot.slotId, dateKey)
+          .subscribe(() => {
+            // remove slot instance from local cache for that date
+            this.scheduledSlots[dateKey] = (this.scheduledSlots[dateKey] || []).filter(s => s.slotId !== slot.slotId || s.time !== slot.time);
+            this.closeCancelDialog();
+            this.buildWeek();
+          }, err => {
+            console.error('Failed to delete slot from scheduler', err);
+            // fallback: mark slot open locally
+            slot.status = 'open';
+            slot.bookingInfo = undefined;
+            this.closeCancelDialog();
+            this.buildWeek();
+          });
+      } else {
+        // If we don't have scheduler metadata, remove by matching time as a best-effort
+        if (dateKey) {
+          this.scheduledSlots[dateKey] = (this.scheduledSlots[dateKey] || []).filter(s => s.time !== slot.time);
+        }
+        slot.status = 'open';
+        slot.bookingInfo = undefined;
+        this.closeCancelDialog();
+        this.buildWeek();
+      }
+    }, err => {
+      console.error('Failed to cancel appointment', err);
+      this.closeCancelDialog();
+    });
   }
 
   confirmBooking() {
@@ -376,14 +550,15 @@ export class BookAppointment implements OnInit {
     };
 
     this.appointmentService.createAppointment(payload)
-      .subscribe(() => {
+      .subscribe((res: any) => {
 
         this.selectedSlot.status = 'booked';
 
         this.selectedSlot.bookingInfo = {
           fullName: this.patient.fullName,
           phone: payload.phone,
-          purpose: this.patient.purpose
+          purpose: this.patient.purpose,
+          appointmentId: res?.id || res?._id || res?.appointmentId || ''
         };
 
         this.closeModal();

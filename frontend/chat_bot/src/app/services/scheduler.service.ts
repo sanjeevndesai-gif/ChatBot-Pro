@@ -35,6 +35,13 @@ export class SchedulerService {
         );
     }
 
+    getSchedulersByCreator(createdBy: string): Observable<any[]> {
+        const url = `${this.apiUrl}/by-creator?createdBy=${encodeURIComponent(createdBy)}`;
+        return this.http.get<any[]>(url).pipe(
+            catchError(err => this.handleError(err))
+        );
+    }
+
     deleteScheduler(id: string): Observable<any> {
         return this.http.delete(`${this.apiUrl}/${id}`).pipe(
             catchError(err => this.handleError(err))
