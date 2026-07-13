@@ -5,6 +5,8 @@ import { AppointmentService } from '../../services/appointment.service';
 import { SchedulerService } from '../../services/scheduler.service';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 interface BookingInfo {
   fullName: string;
@@ -47,7 +49,8 @@ export class BookAppointment implements OnInit {
     private appointmentService: AppointmentService,
     private schedulerService: SchedulerService,
     private userService: UserService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) { }
 
   doctors: { id: string; name: string; specialization: string }[] = [];
@@ -560,6 +563,31 @@ export class BookAppointment implements OnInit {
           purpose: this.patient.purpose,
           appointmentId: res?.id || res?._id || res?.appointmentId || ''
         };
+
+        // Send WhatsApp confirmation message
+        try {
+          const clinicName = 'Clinic Pro';
+          const clinicAddress = '12 Health St, Wellness City, 400001';
+
+          const doctor = (this.doctors || []).find(d => d.id === (this.selectedSlot.resourceId || this.selectedDoctor));
+          const doctorName = doctor ? doctor.name : '';
+
+          const dateStr = this.selectedDay ? this.selectedDay.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : this.formatDate(new Date(this.selectedSlot?.time || ''));
+
+          const message = `Hello ${this.patient.fullName}, your appointment at ${clinicName}${doctorName ? ' with ' + doctorName : ''} is confirmed for ${dateStr} at ${this.selectedSlot.time}. Appointment ID: ${this.selectedSlot.bookingInfo.appointmentId}. Address: ${clinicAddress}.`;
+
+          const sendPayload = { number: payload.phone, message };
+
+          const url = `${environment.apiGatewayUrl}/api/whatsapp/sendmessage`;
+
+          this.http.post(url, sendPayload).subscribe(() => {
+            console.log('WhatsApp confirmation sent to', payload.phone);
+          }, err => {
+            console.warn('Failed to send WhatsApp confirmation', err);
+          });
+        } catch (e) {
+          console.warn('WhatsApp send skipped due to error', e);
+        }
 
         this.closeModal();
 
