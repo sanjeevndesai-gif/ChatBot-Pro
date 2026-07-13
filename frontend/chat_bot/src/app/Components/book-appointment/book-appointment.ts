@@ -5,8 +5,7 @@ import { AppointmentService } from '../../services/appointment.service';
 import { SchedulerService } from '../../services/scheduler.service';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import { WhatsAppService } from '../../services/whatsapp.service';
 
 interface BookingInfo {
   fullName: string;
@@ -50,7 +49,7 @@ export class BookAppointment implements OnInit {
     private schedulerService: SchedulerService,
     private userService: UserService,
     private authService: AuthService,
-    private http: HttpClient
+    private whatsappService: WhatsAppService
   ) { }
 
   doctors: { id: string; name: string; specialization: string }[] = [];
@@ -504,6 +503,24 @@ export class BookAppointment implements OnInit {
       const slot = this.cancelTargetSlot!;
       const dateKey = this.cancelTargetDate ? this.formatDate(this.cancelTargetDate) : '';
 
+      // Send cancellation WhatsApp to patient (use logged-in clinic details)
+      try {
+        const authUser: any = this.authService.getCurrentUser() || {};
+        const clinicName = (authUser.orgname || authUser.organization || authUser.payload?.orgname || authUser.payload?.organization || authUser.payload?.orgName || authUser.name) || 'Clinic';
+        const clinicAddress = (authUser.address || authUser.payload?.address || authUser.payload?.addr || authUser.location) || 'Address not provided';
+        const patientPhone = slot.bookingInfo?.phone || '';
+        const patientName = slot.bookingInfo?.fullName || '';
+        const dateStr = this.cancelTargetDate ? this.cancelTargetDate.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
+        const cancelMessage = `Hello ${patientName || 'Customer'}, your appointment at ${clinicName} on ${dateStr} at ${slot.time} has been cancelled. Address: ${clinicAddress}.`;
+        if (patientPhone) {
+          this.whatsappService.sendMessage(patientPhone, cancelMessage).subscribe(() => {
+            console.log('WhatsApp cancellation sent to', patientPhone);
+          }, err => console.warn('Failed to send WhatsApp cancellation', err));
+        }
+      } catch (e) {
+        console.warn('WhatsApp cancellation skipped', e);
+      }
+
       if (slot.schedulerId && slot.resourceId && slot.slotId) {
         this.schedulerService.deleteSlot(slot.schedulerId, slot.resourceId, slot.slotId, dateKey)
           .subscribe(() => {
@@ -578,11 +595,7 @@ export class BookAppointment implements OnInit {
 
           const message = `Hello ${this.patient.fullName}, your appointment at ${clinicName}${doctorName ? ' with ' + doctorName : ''} is confirmed for ${dateStr} at ${this.selectedSlot.time}. Appointment ID: ${this.selectedSlot.bookingInfo.appointmentId}. Address: ${clinicAddress}.`;
 
-          const sendPayload = { number: payload.phone, message };
-
-          const url = `${environment.apiGatewayUrl}/api/whatsapp/sendmessage`;
-
-          this.http.post(url, sendPayload).subscribe(() => {
+          this.whatsappService.sendMessage(payload.phone, message).subscribe(() => {
             console.log('WhatsApp confirmation sent to', payload.phone);
           }, err => {
             console.warn('Failed to send WhatsApp confirmation', err);
