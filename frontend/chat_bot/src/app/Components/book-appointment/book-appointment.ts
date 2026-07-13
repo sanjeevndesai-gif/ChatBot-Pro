@@ -566,8 +566,10 @@ export class BookAppointment implements OnInit {
 
         // Send WhatsApp confirmation message
         try {
-          const clinicName = 'Clinic Pro';
-          const clinicAddress = '12 Health St, Wellness City, 400001';
+          const authUser: any = this.authService.getCurrentUser() || {};
+
+          const clinicName = (authUser.orgname || authUser.organization || authUser.payload?.orgname || authUser.payload?.organization || authUser.payload?.orgName || authUser.name) || 'Clinic';
+          const clinicAddress = (authUser.address || authUser.payload?.address || authUser.payload?.addr || authUser.location) || 'Address not provided';
 
           const doctor = (this.doctors || []).find(d => d.id === (this.selectedSlot.resourceId || this.selectedDoctor));
           const doctorName = doctor ? doctor.name : '';
