@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.arnan.auth.service.AuthService;
 import com.arnan.auth.service.UserManagementService;
 import com.arnan.auth.service.BillingService;
+import com.arnan.auth.service.PlanService;
 
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private BillingService billingService;
+
+    @Autowired
+    private PlanService planService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -50,6 +54,16 @@ public class AuthController {
     @PutMapping("/billing/{mongoId}/upgrade")
     @ResponseStatus(HttpStatus.OK)
     public void upgradePlan(@PathVariable String mongoId, @RequestBody Map<String, Object> body) {
+        // Prefer new payload: { planCode, billingCycle } optionally with price.
+        if (body.containsKey("planCode") && body.containsKey("billingCycle")) {
+            String planCode = ((String) body.get("planCode")).toUpperCase();
+            String billingCycle = (String) body.get("billingCycle");
+            Integer price = body.containsKey("price") ? ((Number) body.get("price")).intValue() : null;
+            billingService.upgradePlanByCode(mongoId, planCode, billingCycle, price);
+            return;
+        }
+
+        // Fallback to legacy payload for compatibility
         String planName = (String) body.getOrDefault("planName", "Basic");
         int planPrice = body.containsKey("planPrice") ? ((Number) body.get("planPrice")).intValue() : 0;
         billingService.upgradePlan(mongoId, planName, planPrice);
@@ -59,6 +73,39 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public void deactivateUser(@PathVariable String mongoId) {
         billingService.deactivateUser(mongoId);
+    }
+
+    @PutMapping("/billing/backfill")
+    @ResponseStatus(HttpStatus.OK)
+    public Map<String, Object> backfillBilling() {
+        int count = billingService.backfillMissingBilling();
+        return Map.of("backfilled", count);
+    }
+
+    @GetMapping("/plans")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Object> listPlans() {
+        return planService.getAllPlans().stream().map(d -> (Object) d).toList();
+    }
+
+    @PostMapping("/plans")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createPlan(@RequestBody Map<String, Object> body) {
+        Document doc = new Document(body);
+        planService.savePlan(doc);
+    }
+
+    @PutMapping("/plans/{planCode}")
+    @ResponseStatus(HttpStatus.OK)
+    public void updatePlan(@PathVariable String planCode, @RequestBody Map<String, Object> body) {
+        Document doc = new Document(body);
+        planService.updatePlanByCode(planCode, doc);
+    }
+
+    @DeleteMapping("/plans/{planCode}")
+    @ResponseStatus(HttpStatus.OK)
+    public void deletePlan(@PathVariable String planCode) {
+        planService.deletePlanByCode(planCode);
     }
 
     @GetMapping("/users")

@@ -34,4 +34,13 @@ public class PlanService {
     public Document getPlanByPlanCode(String PlanCode) {
         return planRepository.getPlanByPlanCode(PlanCode);
     }
+
+    // --- Convenience wrappers for controller-level operations using planCode ---
+    public void updatePlanByCode(String planCode, Document planDoc) {
+        planRepository.updateByPlanCode(planCode.toUpperCase(), planDoc);
+    }
+
+    public void deletePlanByCode(String planCode) {
+        planRepository.deleteByPlanCode(planCode.toUpperCase());
+    }
 }

@@ -6,6 +6,8 @@ import java.util.Map;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +20,11 @@ import org.springframework.web.client.RestTemplate;
 import com.arnan.auth.exception.DuplicateUserException;
 import com.arnan.auth.exception.NotFoundException;
 import com.arnan.auth.repository.AuthRepository;
+import com.arnan.auth.service.BillingService;
 import com.arnan.auth.security.JwtUtil;
 import com.arnan.auth.util.UserIdGenerator;
 
-import org.bson.Document;
+// org.bson.Document already imported above
 
 import jakarta.annotation.PostConstruct;
 
@@ -32,6 +35,9 @@ public class AuthService {
 
 	@Autowired
 	private AuthRepository authRepository;
+
+	@Autowired
+	private BillingService billingService;
 
 	@Autowired
 	private UserIdGenerator userIdGenerator;
@@ -113,6 +119,10 @@ public class AuthService {
 			// Set createdDate and updatedDate for admin user
 			finalDoc.put("createdDate", new java.util.Date());
 			finalDoc.put("updatedDate", new java.util.Date());
+
+			// Create default billing for new user (embed full plan template)
+			Document billing = billingService.createUserBilling("BASIC");
+			finalDoc.put("billing", billing);
 
 			authRepository.save(finalDoc);
 

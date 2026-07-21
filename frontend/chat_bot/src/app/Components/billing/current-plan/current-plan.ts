@@ -32,6 +32,10 @@ export class CurrentPlan implements OnInit {
   isDeactivated = signal(false);
   nearExpiry = signal(false);
   loading = signal(true);
+  backendDaysRemaining = signal<number | null>(null);
+  backendProgressPercent = signal<number | null>(null);
+  plans = signal<any[]>([]);
+  loadingPlans = signal(false);
 
   private mongoId: string | null = null;
 
@@ -66,6 +70,8 @@ export class CurrentPlan implements OnInit {
     this.daysTotal.set(info.daysTotal);
     this.isDeactivated.set(info.status === 'deactivated');
     this.nearExpiry.set(info.nearExpiry);
+    this.backendDaysRemaining.set(info.daysRemaining ?? null);
+    this.backendProgressPercent.set(info.progressPercent ?? null);
     this.loading.set(false);
 
     // If 100% usage reached, ensure account is deactivated in DB
@@ -76,20 +82,41 @@ export class CurrentPlan implements OnInit {
   }
 
   get progressPercent() {
+    const backend = this.backendProgressPercent();
+    if (backend != null) return Math.min(Math.max(backend, 0), 100);
     const pct = (this.daysUsed() / this.daysTotal()) * 100;
     return Math.min(pct, 100);
   }
 
   get daysRemaining() {
+    const backend = this.backendDaysRemaining();
+    if (backend != null) return Math.max(backend, 0);
     return Math.max(this.daysTotal() - this.daysUsed(), 0);
   }
 
   openPricingModal(content: any) {
     if (this.isDeactivated()) return;
-    this.modalService.open(content, {
-      centered: true,
-      backdrop: 'static',
-      windowClass: 'pricing-modal'
+    // fetch plans from backend before opening
+    this.loadingPlans.set(true);
+    this.billingService.getPlans().subscribe({
+      next: (plans) => {
+        this.plans.set(plans || []);
+        this.loadingPlans.set(false);
+        this.modalService.open(content, {
+          centered: true,
+          backdrop: 'static',
+          windowClass: 'pricing-modal'
+        });
+      },
+      error: () => {
+        // fallback: open modal with static content
+        this.loadingPlans.set(false);
+        this.modalService.open(content, {
+          centered: true,
+          backdrop: 'static',
+          windowClass: 'pricing-modal'
+        });
+      }
     });
   }
 
@@ -109,6 +136,32 @@ export class CurrentPlan implements OnInit {
         this.openSmallModal(successModal);
       }
     });
+  }
+
+  upgradePlanByCode(plan: any, billingCycle: string, successModal: any) {
+    if (!this.mongoId) return;
+    // Resolve price for selected billingCycle if available
+    let price: number | undefined = undefined;
+    try {
+      const pricing = plan.pricing || plan.prices || [];
+      for (const p of pricing) {
+        if (p.billingCycle === billingCycle) { price = p.price; break; }
+      }
+    } catch (e) { /* ignore */ }
+
+    this.billingService.upgradePlanByCode(this.mongoId, plan.planCode || plan.planCode?.toString(), billingCycle, price).subscribe({
+      next: () => {
+        this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+        this.modalService.dismissAll();
+        this.openSmallModal(successModal);
+      }
+    });
+  }
+
+  getMonthlyPrice(plan: any): number {
+    try {
+      return plan.pricing && plan.pricing.length ? plan.pricing[0].price : (plan.planPrice || 0);
+    } catch (e) { return plan.planPrice || 0; }
   }
 
   confirmCancel(cancelledModal: any) {

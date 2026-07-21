@@ -95,54 +95,106 @@
   <div class="modal-body">
     <div class="pricing-grid">
 
-      <!-- LITE -->
-      <div class="pricing-card">
-        <h6 class="plan-title">Lite</h6>
-        <div class="plan-price">$29</div>
-        <div class="plan-period">per month</div>
-        <ul class="plan-features">
-          <li>Unlimited sending</li>
-          <li>Email marketing</li>
-          <li>Up to 5 users</li>
-        </ul>
-        <button class="btn btn-outline-success w-100"
-                (click)="upgradePlan('Lite', 29, upgradeSuccessModal)">
-          Choose Plan
-        </button>
+      <div *ngIf="loadingPlans()" class="w-100 text-center py-4">
+        <div class="spinner-border text-primary"></div>
       </div>
 
-      <!-- PLUS -->
-      <div class="pricing-card popular">
-        <div class="popular-tag">Most Popular</div>
-        <h6 class="plan-title">Plus</h6>
-        <div class="plan-price">$89</div>
-        <div class="plan-period">per month</div>
-        <ul class="plan-features">
-          <li>Unlimited sending</li>
-          <li>Email marketing</li>
-          <li>Up to 25 users</li>
-        </ul>
-        <button class="btn btn-primary w-100"
-                (click)="upgradePlan('Plus', 89, upgradeSuccessModal)">
-          Choose Plan
-        </button>
-      </div>
+      <ng-container *ngIf="!loadingPlans()">
+        <div *ngIf="plans().length > 0" class="pricing-grid">
+          <div class="pricing-card" *ngFor="let p of plans()" [class.popular]="p.popular">
+            <div class="card-head">
+              <div class="badge" *ngIf="p.popular">Most Popular</div>
+              <div class="plan-title">{{ p.name }}</div>
+            </div>
 
-      <!-- ENTERPRISE -->
-      <div class="pricing-card">
-        <h6 class="plan-title">Enterprise</h6>
-        <div class="plan-price">$159</div>
-        <div class="plan-period">per month</div>
-        <ul class="plan-features">
-          <li>Unlimited sending</li>
-          <li>Advanced reports</li>
-          <li>Up to 50 users</li>
-        </ul>
-        <button class="btn btn-outline-success w-100"
-                (click)="upgradePlan('Enterprise', 159, upgradeSuccessModal)">
-          Choose Plan
-        </button>
-      </div>
+            <div class="plan-price-row">
+              <span class="currency">{{ p.currency || 'INR' }}</span>
+              <span class="plan-price-big">{{ getMonthlyPrice(p) }}</span>
+            </div>
+            <div class="plan-period">per month</div>
+
+            <ul class="plan-features">
+              <li *ngIf="p.features?.whatsappReminders">
+                <i class="bi bi-chat-dots-fill feature-icon text-success"></i>
+                WhatsApp reminders
+              </li>
+              <li *ngIf="p.features?.customBranding">
+                <i class="bi bi-palette-fill feature-icon text-primary"></i>
+                Custom branding
+              </li>
+              <li *ngIf="p.features?.analytics">
+                <i class="bi bi-bar-chart-fill feature-icon text-info"></i>
+                Analytics
+              </li>
+              <li *ngIf="p.limits?.maxDoctors !== null">
+                <i class="bi bi-people-fill feature-icon text-muted"></i>
+                Up to {{ p.limits.maxDoctors > 0 ? p.limits.maxDoctors : 'unlimited' }} users
+              </li>
+            </ul>
+
+            <div class="mt-auto">
+              <button class="btn choose-plan"
+                      [class.btn-primary]="p.popular"
+                      [class.btn-outline-primary]="!p.popular"
+                      (click)="upgradePlanByCode(p, 'monthly', upgradeSuccessModal)">
+                Choose Plan
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- fallback to static cards when no plans returned -->
+        <div *ngIf="plans().length === 0" class="pricing-grid">
+          <!-- LITE -->
+          <div class="pricing-card">
+            <h6 class="plan-title">Lite</h6>
+            <div class="plan-price">$29</div>
+            <div class="plan-period">per month</div>
+            <ul class="plan-features">
+              <li>Unlimited sending</li>
+              <li>Email marketing</li>
+              <li>Up to 5 users</li>
+            </ul>
+            <button class="btn btn-outline-success w-100"
+                    (click)="upgradePlan('Lite', 29, upgradeSuccessModal)">
+              Choose Plan
+            </button>
+          </div>
+
+          <!-- PLUS -->
+          <div class="pricing-card popular">
+            <div class="popular-tag">Most Popular</div>
+            <h6 class="plan-title">Plus</h6>
+            <div class="plan-price">$89</div>
+            <div class="plan-period">per month</div>
+            <ul class="plan-features">
+              <li>Unlimited sending</li>
+              <li>Email marketing</li>
+              <li>Up to 25 users</li>
+            </ul>
+            <button class="btn btn-primary w-100"
+                    (click)="upgradePlan('Plus', 89, upgradeSuccessModal)">
+              Choose Plan
+            </button>
+          </div>
+
+          <!-- ENTERPRISE -->
+          <div class="pricing-card">
+            <h6 class="plan-title">Enterprise</h6>
+            <div class="plan-price">$159</div>
+            <div class="plan-period">per month</div>
+            <ul class="plan-features">
+              <li>Unlimited sending</li>
+              <li>Advanced reports</li>
+              <li>Up to 50 users</li>
+            </ul>
+            <button class="btn btn-outline-success w-100"
+                    (click)="upgradePlan('Enterprise', 159, upgradeSuccessModal)">
+              Choose Plan
+            </button>
+          </div>
+        </div>
+      </ng-container>
 
     </div>
   </div>

@@ -14,7 +14,7 @@
 
 /* ================= MODAL WIDTHS ================= */
 ::ng-deep .pricing-modal .modal-dialog {
-  max-width: 920px;
+  max-width: 1500px;
 }
 
 ::ng-deep .small-modal .modal-dialog {
@@ -24,8 +24,14 @@
 /* ================= PRICING GRID ================= */
 .pricing-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* fit as many cards as possible, cards at least 180px */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 24px;
+  justify-items: stretch;
+  align-items: start;
+  width: calc(100% - 56px); /* account for modal-body horizontal padding */
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* CARD */
@@ -39,6 +45,29 @@
   flex-direction: column;
   position: relative;
   transition: 0.25s ease;
+  width: 100%;
+  /* allow cards to expand to fill the grid columns so they distribute evenly */
+  max-width: none;
+}
+
+/* ensure grid uses full modal body width */
+.pricing-grid { width: 100%; }
+
+::ng-deep .pricing-modal .modal-body { padding-left: 28px; padding-right: 28px; display:block; }
+
+::ng-deep .pricing-modal .modal-content { overflow: visible; }
+
+/* Force 4-up layout on large screens */
+@media (min-width: 1200px) {
+  /* switch to flex so cards distribute evenly across the row */
+  .pricing-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+  }
+  .pricing-card { flex: 1 1 0; }
 }
 
 .pricing-card:hover {
@@ -67,7 +96,9 @@
 
 /* TEXT */
 .plan-title { font-weight: 600; }
-.plan-price { font-size: 36px; font-weight: 700; }
+.plan-price { font-size: 20px; font-weight: 600; color: #6b7280; }
+.plan-price-big { font-size: 40px; font-weight: 800; margin-left: 6px; }
+.currency { font-size: 14px; font-weight: 700; color: #10b981; }
 .plan-period { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
 
 /* FEATURES */
@@ -81,6 +112,24 @@
 .plan-features li {
   font-size: 14px;
   margin-bottom: 10px;
+}
+
+.feature-icon { width: 20px; height: 20px; margin-right: 8px; }
+
+.card-head { display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px; margin-bottom:12px; }
+.badge { background:#f97316; color:#fff; padding:4px 10px; border-radius:999px; font-weight:700; font-size:12px; }
+
+.choose-plan { width:100%; padding:10px 12px; border-radius:10px; font-weight:700; }
+.choose-plan.btn-outline-primary { border:2px solid #2563eb; color:#2563eb; background:transparent; }
+.choose-plan.btn-primary { background: linear-gradient(90deg,#2563eb,#7c3aed); border:0; color:#fff; box-shadow:0 8px 20px rgba(37,99,235,0.18); }
+
+/* Responsive: 2 columns on medium, 1 on small */
+@media (max-width: 1100px) {
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .pricing-grid { grid-template-columns: 1fr; }
 }
 
 /* ICONS */

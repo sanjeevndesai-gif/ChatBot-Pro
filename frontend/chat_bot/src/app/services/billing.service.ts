@@ -10,6 +10,8 @@ export interface BillingInfo {
   activeUntil: number;   // epoch ms
   daysUsed: number;
   daysTotal: number;
+  daysRemaining?: number;
+  progressPercent?: number;
   status: 'active' | 'deactivated';
   nearExpiry: boolean;
   maxDoctors: number;    // -1 = unlimited; comes from backend plan definition
@@ -30,7 +32,17 @@ export class BillingService {
     return this.http.put<void>(`${this.base}/billing/${mongoId}/upgrade`, { planName, planPrice });
   }
 
+  upgradePlanByCode(mongoId: string, planCode: string, billingCycle: string, price?: number): Observable<void> {
+    const payload: any = { planCode, billingCycle };
+    if (price != null) payload.price = price;
+    return this.http.put<void>(`${this.base}/billing/${mongoId}/upgrade`, payload);
+  }
+
   deactivateUser(mongoId: string): Observable<void> {
     return this.http.put<void>(`${this.base}/billing/${mongoId}/deactivate`, {});
+  }
+
+  getPlans(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/plans`);
   }
 }

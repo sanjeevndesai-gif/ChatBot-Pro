@@ -93,6 +93,10 @@ public class AuthRepository {
         return getCollection().find(eq("email", email)).first();
     }
 
+    public Document findByUserId(String userId) {
+        return getCollection().find(eq("userId", userId)).first();
+    }
+
     public Document findByPhone(String phone) {
         return getCollection().find(eq("phone", phone)).first();
     }
