@@ -188,6 +188,15 @@ public class AuthRepository {
         getCollection().updateOne(filter, update);
     }
 
+    /**
+     * Append an entry to the user's billingHistory array.
+     */
+    public void pushBillingHistory(ObjectId id, Document historyEntry) {
+        Bson filter = eq("_id", id);
+        BasicDBObject update = new BasicDBObject("$push", new BasicDBObject("billingHistory", historyEntry));
+        getCollection().updateOne(filter, update);
+    }
+
     // Fetch all users by createdBy (admin userId)
     public List<Object> getAllByCreatedBy(String createdBy) {
         List<Object> list = new ArrayList<>();

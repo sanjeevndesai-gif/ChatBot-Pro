@@ -45,4 +45,13 @@ export class BillingService {
   getPlans(): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/plans`);
   }
+
+  recordBillingHistory(mongoId: string, record: any): Observable<void> {
+    // Use invoice endpoint to avoid potential static resource mapping issues on server
+    return this.http.post<void>(`${this.base}/billing/invoice/${mongoId}`, record);
+  }
+
+  getBillingHistory(mongoId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/billing/invoice/${mongoId}`);
+  }
 }

@@ -75,6 +75,25 @@ public class AuthController {
         billingService.deactivateUser(mongoId);
     }
 
+    @PostMapping("/billing/{mongoId}/history")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addBillingHistory(@PathVariable String mongoId, @RequestBody Map<String, Object> body) {
+        billingService.addBillingHistory(mongoId, body);
+    }
+
+    // Alternate invoice endpoint to avoid static resource handler conflicts
+    @PostMapping("/billing/invoice/{mongoId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void addBillingInvoice(@PathVariable String mongoId, @RequestBody Map<String, Object> body) {
+        billingService.addBillingHistory(mongoId, body);
+    }
+
+    @GetMapping("/billing/invoice/{mongoId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Object> getBillingInvoice(@PathVariable String mongoId) {
+        return billingService.getBillingHistory(mongoId).stream().map(m -> (Object) m).toList();
+    }
+
     @PutMapping("/billing/backfill")
     @ResponseStatus(HttpStatus.OK)
     public Map<String, Object> backfillBilling() {

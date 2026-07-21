@@ -275,6 +275,73 @@ public class BillingService {
         }
     }
 
+    /**
+     * Record a billing history entry for the user.
+     * Expects a map with keys like invoiceNumber, status, clientName, total, issuedDate, balance
+     */
+    public void addBillingHistory(String mongoId, Map<String, Object> entry) {
+        try {
+            ObjectId oid = parseObjectId(mongoId);
+            if (oid == null) {
+                Document user = authRepository.findByUserId(mongoId);
+                if (user == null) user = authRepository.findByEmail(mongoId);
+                if (user == null) {
+                    log.warn("Could not find user by id/email '{}', aborting addBillingHistory", mongoId);
+                    return;
+                }
+                oid = user.getObjectId("_id");
+            }
+
+            Document doc = new Document(entry);
+            // ensure issuedDate stored as ISO string if Date provided
+            Object issued = entry.get("issuedDate");
+            if (issued instanceof java.util.Date) {
+                doc.put("issuedDate", ((java.util.Date) issued).toString());
+            }
+
+            authRepository.pushBillingHistory(oid, doc);
+            log.info("Appended billing history for user {}", oid.toHexString());
+        } catch (Exception e) {
+            log.error("Error adding billing history for {}", mongoId, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Return the user's billingHistory as a list of maps.
+     */
+    public List<Map<String, Object>> getBillingHistory(String mongoId) {
+        try {
+            ObjectId oid = parseObjectId(mongoId);
+            Document user = null;
+            if (oid != null) {
+                user = authRepository.findById(oid);
+            } else {
+                user = authRepository.findByUserId(mongoId);
+                if (user == null) user = authRepository.findByEmail(mongoId);
+            }
+
+            if (user == null) return List.of();
+
+            List<Map<String, Object>> out = new java.util.ArrayList<>();
+            Object bh = user.get("billingHistory");
+            if (bh instanceof List) {
+                for (Object o : (List<?>) bh) {
+                    if (o instanceof Document) {
+                        Document d = (Document) o;
+                        Map<String, Object> m = new HashMap<>();
+                        for (String k : d.keySet()) m.put(k, d.get(k));
+                        out.add(m);
+                    }
+                }
+            }
+            return out;
+        } catch (Exception e) {
+            log.error("Error reading billing history for {}", mongoId, e);
+            return List.of();
+        }
+    }
+
     private String mapNameToCode(String planName) {
         if (planName == null) return "BASIC";
         String p = planName.trim().toUpperCase();

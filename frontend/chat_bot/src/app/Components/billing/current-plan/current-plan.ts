@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { BillingService, BillingInfo } from '../../../services/billing.service';
 import { AuthService } from '../../../services/auth.service';
+import { BillingTableService } from '../billing-history/billing-table';
 
 interface Plan {
   name: string;
@@ -36,13 +37,17 @@ export class CurrentPlan implements OnInit {
   backendProgressPercent = signal<number | null>(null);
   plans = signal<any[]>([]);
   loadingPlans = signal(false);
+  // payment modal state
+  selectedPlanForPayment: any = null;
+  selectedCycleForPayment: string | null = null;
 
   private mongoId: string | null = null;
 
   constructor(
     private modalService: NgbModal,
     private billingService: BillingService,
-    private authService: AuthService
+    private authService: AuthService,
+    private billingTable: BillingTableService
   ) {}
 
   ngOnInit() {
@@ -120,6 +125,65 @@ export class CurrentPlan implements OnInit {
     });
   }
 
+  openQRCodeModal(plan: any, cycle: string, qrModal: any) {
+    if (this.isDeactivated()) return;
+    this.selectedPlanForPayment = plan;
+    this.selectedCycleForPayment = cycle;
+    this.modalService.open(qrModal, { centered: true, backdrop: 'static', windowClass: 'qr-modal' });
+  }
+
+  confirmPayment(successModal: any) {
+    if (!this.mongoId || !this.selectedPlanForPayment || !this.selectedCycleForPayment) return;
+
+    // resolve price from plan pricing array
+    let price: number | undefined = undefined;
+    try {
+      const pricing = this.selectedPlanForPayment.pricing || [];
+      for (const p of pricing) {
+        if (p.billingCycle === this.selectedCycleForPayment) { price = p.price; break; }
+      }
+    } catch (e) {}
+
+    // 1) upgrade plan
+    this.billingService.upgradePlanByCode(this.mongoId, this.selectedPlanForPayment.planCode || this.selectedPlanForPayment.planCode?.toString(), this.selectedCycleForPayment, price).subscribe({
+      next: () => {
+        // 2) record billing history entry (demo fields)
+        const invoiceNumber = Math.floor(Date.now() / 1000);
+        const hist = {
+          invoiceNumber: invoiceNumber,
+          status: 'Paid',
+          clientName: this.selectedPlanForPayment.name || this.plan().name,
+          service: this.selectedPlanForPayment.name || this.plan().name,
+          total: price || this.getMonthlyPrice(this.selectedPlanForPayment),
+          issuedDate: new Date().toISOString(),
+          balance: 0
+        };
+        this.billingService.recordBillingHistory(this.mongoId!, hist).subscribe({
+          next: () => {
+            // refresh billing info and show success
+            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+            // reload billing history table
+            try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
+            this.modalService.dismissAll();
+            this.openSmallModal(successModal);
+          },
+          error: () => {
+            // still refresh and close
+            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+            // reload billing history table even on error
+            try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
+            this.modalService.dismissAll();
+            this.openSmallModal(successModal);
+          }
+        });
+      },
+      error: () => {
+        // handle upgrade error (dismiss QR modal)
+        this.modalService.dismissAll();
+      }
+    });
+  }
+
   openSmallModal(content: any) {
     this.modalService.open(content, { centered: true, windowClass: 'small-modal' });
   }
@@ -132,6 +196,7 @@ export class CurrentPlan implements OnInit {
         this.billingService.getBilling(this.mongoId!).subscribe({
           next: (info) => this.applyBillingInfo(info)
         });
+        try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
         this.modalService.dismissAll();
         this.openSmallModal(successModal);
       }
@@ -152,6 +217,7 @@ export class CurrentPlan implements OnInit {
     this.billingService.upgradePlanByCode(this.mongoId, plan.planCode || plan.planCode?.toString(), billingCycle, price).subscribe({
       next: () => {
         this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+        try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
         this.modalService.dismissAll();
         this.openSmallModal(successModal);
       }

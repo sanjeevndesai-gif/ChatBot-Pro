@@ -1,5 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { Invoice } from '../models/invoice.model';
+import { BillingService } from '../../../services/billing.service';
+import { AuthService } from '../../../services/auth.service';
 
 export interface InvoiceQuery {
   search?: string;
@@ -14,7 +16,7 @@ export class BillingTableService {
   invoices = signal<Invoice[]>([]);
   loading = signal(false);
 
-  constructor() {}
+  constructor(private billing: BillingService, private auth: AuthService) {}
 
   loadInvoices(query: InvoiceQuery = {}) {
 
@@ -24,58 +26,49 @@ export class BillingTableService {
     // return this.http.get<Invoice[]>(`/api/invoices`, { params })
     //                .subscribe(res => { ... });
 
-    setTimeout(() => {
-      const mock: Invoice[] = [
-        {
-          id: '1',
-          invoiceNumber: '5041',
-          status: 'Paid',
-          clientName: 'Shamus Tuttle',
-          service: 'Software Development',
-          total: 2230,
-          issuedDate: new Date('2020-11-19'),
-          balance: 0
-        },
-        {
-          id: '2',
-          invoiceNumber: '5027',
-          status: 'Paid',
-          clientName: 'Devonne Wallbridge',
-          service: 'Software Development',
-          total: 2787,
-          issuedDate: new Date('2020-09-25'),
-          balance: 0
-        },
-        {
-          id: '3',
-          invoiceNumber: '5024',
-          status: 'Partial',
-          clientName: 'Ariella Filippyev',
-          service: 'Extended License',
-          total: 5285,
-          issuedDate: new Date('2020-08-02'),
-          balance: -202
-        }
-      ];
-
-      // Filtering logic
-      let result = mock;
-
-      if (query.search) {
-        result = result.filter(inv =>
-          inv.invoiceNumber.includes(query.search!) ||
-          inv.clientName.toLowerCase().includes(query.search!.toLowerCase())
-        );
+    // Load from backend
+    try {
+      const user = this.auth.getCurrentUser();
+      const mongoId = (user as any)?.mongoId || (user as any)?.userId;
+      if (!mongoId) {
+        this.invoices.set([]);
+        this.loading.set(false);
+        return;
       }
 
-      if (query.status) {
-        result = result.filter(inv => inv.status === query.status);
-      }
+        this.billing.getBillingHistory(mongoId).subscribe({
+        next: (list: any[]) => {
+          // map server objects into Invoice models
+          const mapped: Invoice[] = (list || []).map((s: any, idx: number) => ({
+            id: s._id || String(idx+1),
+            invoiceNumber: s.invoiceNumber || s.invoiceNumber || String(idx+1),
+            status: s.status || 'Paid',
+            clientName: s.clientName || s.clientName || '',
+            service: s.service || s.service || '',
+            total: s.total || 0,
+            issuedDate: s.issuedDate ? new Date(s.issuedDate) : new Date(),
+            balance: s.balance || 0
+          }));
 
-      this.invoices.set(result);
+          // apply client-side filtering
+          let result = mapped;
+          if (query.search) {
+            result = result.filter(inv =>
+              (inv.invoiceNumber+'').includes(query.search!) ||
+              inv.clientName.toLowerCase().includes(query.search!.toLowerCase())
+            );
+          }
+          if (query.status) result = result.filter(inv => inv.status === query.status);
+
+          this.invoices.set(result);
+          this.loading.set(false);
+        },
+        error: () => { this.invoices.set([]); this.loading.set(false); }
+      });
+    } catch (e) {
+      this.invoices.set([]);
       this.loading.set(false);
-
-    }, 600);
+    }
   }
 
   deleteInvoice(id: string) {
