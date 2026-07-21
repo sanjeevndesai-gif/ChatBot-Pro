@@ -133,12 +133,28 @@
             </ul>
 
             <div class="mt-auto">
-              <button class="btn choose-plan"
-                      [class.btn-primary]="p.popular"
-                      [class.btn-outline-primary]="!p.popular"
-                      (click)="upgradePlanByCode(p, 'monthly', upgradeSuccessModal)">
-                Choose Plan
-              </button>
+              <!-- Cycle selector: monthly/quarterly/half_yearly/yearly -->
+              <div *ngIf="p.pricing && p.pricing.length" class="d-flex gap-2 align-items-center">
+                <select #cycleSel class="form-select form-select-sm me-2">
+                  <option *ngFor="let opt of p.pricing; let i = index" [value]="opt.billingCycle" [selected]="i===0">
+                    {{ opt.billingCycle | titlecase }} - {{ opt.price }}
+                  </option>
+                </select>
+                <button class="btn choose-plan"
+                        [class.btn-primary]="p.popular"
+                        [class.btn-outline-primary]="!p.popular"
+                        (click)="upgradePlanByCode(p, cycleSel.value, upgradeSuccessModal)">
+                  Choose Plan
+                </button>
+              </div>
+              <div *ngIf="!p.pricing || p.pricing.length===0">
+                <button class="btn choose-plan"
+                        [class.btn-primary]="p.popular"
+                        [class.btn-outline-primary]="!p.popular"
+                        (click)="upgradePlanByCode(p, 'monthly', upgradeSuccessModal)">
+                  Choose Plan
+                </button>
+              </div>
             </div>
           </div>
         </div>
