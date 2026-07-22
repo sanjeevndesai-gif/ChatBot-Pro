@@ -12,7 +12,7 @@
 
 
 
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../Components/header/header'; // adjust path if needed
 import { Herosection } from '../../Components/herosection/herosection';
@@ -29,4 +29,10 @@ import { Footersection } from '../../Components/footersection/footersection';
   templateUrl: './landing.html',
   styleUrls: ['./landing.scss']
 })
-export class Landing { }
+export class Landing implements OnInit {
+  ngOnInit() {
+    // Debug log to confirm Landing is mounted
+    // Remove this after verification
+    console.debug('Landing component loaded');
+  }
+}
