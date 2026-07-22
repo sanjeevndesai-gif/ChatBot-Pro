@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BillingService } from '../../services/billing.service';
-import { catchError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
 @Component({
@@ -46,7 +46,7 @@ export class Pricingsection implements OnInit {
   constructor(private billingService: BillingService) {}
 
   ngOnInit(): void {
-    this.billingService.getPlans()?.pipe(
+    this.billingService.getPlans().pipe(
       catchError((err) => {
         console.warn('Failed to load plans from backend, using fallback', err);
         return of(this.fallback);
