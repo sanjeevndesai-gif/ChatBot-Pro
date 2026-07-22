@@ -21,6 +21,7 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -45,6 +46,11 @@ public class SecurityConfig {
                 .anyExchange().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             .build();
+    }
+
+    @Bean
+    public WebClient authWebClient(@Value("${auth.service.url:http://auth-service:8082}") String baseUrl) {
+        return WebClient.builder().baseUrl(baseUrl).build();
     }
 
     @Bean
