@@ -49,12 +49,12 @@ export class Horizontalmenu {
 
   menu: MenuItem[] = [
     // { title: 'Dashboards', icon: 'bi-house-door', route: '/appointments' },
-    { title: 'Appointments', icon: 'bi-calendar2-week', route: '/book-appointment' },
-    { title: 'Scheduler', icon: 'bi-calendar', route: '/scheduler' },
-    { title: 'Reports', icon: 'bi-file-earmark-bar-graph', route: '/schedulereport' },
-    { title: 'Help', icon: 'bi-info-circle', route: '/help' },
-    { title: 'Settings', icon: 'bi-gear', route: '/settings' },
-    { title: 'Plan & Billing', icon: 'bi-credit-card', route: '/plan-billing' }
+    { title: 'Appointments', icon: 'bi-calendar2-week', route: '/app/book-appointment' },
+    { title: 'Scheduler', icon: 'bi-calendar', route: '/app/scheduler' },
+    { title: 'Reports', icon: 'bi-file-earmark-bar-graph', route: '/app/schedulereport' },
+    { title: 'Help', icon: 'bi-info-circle', route: '/app/help' },
+    { title: 'Settings', icon: 'bi-gear', route: '/app/settings' },
+      { title: 'Plan & Billing', icon: 'bi-credit-card', route: '/app/plan-billing' }
   ];
 
   toggleMobileMenu() {

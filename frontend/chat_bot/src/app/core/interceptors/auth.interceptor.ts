@@ -36,8 +36,8 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
                 if (msg.toLowerCase().includes('inactive') || msg.toLowerCase().includes('renew')) {
                     toast.warning(msg || 'Account inactive - please renew your plan');
                     // navigate to billing page so user can renew
-                    if (router.url !== '/billing') {
-                        router.navigate(['/billing']);
+                    if (router.url !== '/app/plan-billing') {
+                        router.navigate(['/app/plan-billing']);
                     }
                     // Do not logout the user; allow billing endpoints to work.
                     return throwError(() => error);

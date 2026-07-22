@@ -119,7 +119,7 @@ export class EditProfile implements OnInit {
         };
         this.storage.setItem('auth_user', updatedUser);
         this.saveSuccess = 'Profile saved successfully!';
-        setTimeout(() => this.router.navigate(['/profile']), 1000);
+        setTimeout(() => this.router.navigate(['/app/profile']), 1000);
       },
       error: (err) => {
         console.error('Profile update failed', err);
@@ -129,7 +129,7 @@ export class EditProfile implements OnInit {
   }
 
   cancel() {
-    this.router.navigate(['/profile']);
+    this.router.navigate(['/app/profile']);
   }
 
   changePassword() {

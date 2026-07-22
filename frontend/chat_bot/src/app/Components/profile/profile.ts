@@ -165,7 +165,7 @@ export class Profile implements OnInit, AfterViewInit {
         this.doctorCount++; // optimistic update
 
         setTimeout(() => {
-          this.router.navigate(['/view-users']);
+          this.router.navigate(['/app/view-users']);
         }, 1000);
       }
     });
@@ -181,7 +181,7 @@ export class Profile implements OnInit, AfterViewInit {
   // }
 
   openViewUsers() {
-    this.router.navigate(['/view-users']);
+    this.router.navigate(['/app/view-users']);
   }
 
 }

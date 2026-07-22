@@ -26,7 +26,7 @@ export const routes: Routes = [
 
     // 3. Private Area with Layout (requires authentication)
     {
-        path: '',
+        path: 'app',
         component: Layout,
         canActivate: [authGuard],
         children: [

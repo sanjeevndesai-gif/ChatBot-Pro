@@ -114,7 +114,7 @@ export class Login {
         }
 
         // AuthService already stored token + user
-        this.router.navigate(['/profile']);
+        this.router.navigate(['/app/profile']);
       },
       error: (err) => {
         this.isSubmitting = false;
