@@ -4,6 +4,7 @@ import { GlobalLoader } from './shared/global-loader';
 import { GlobalToast } from './shared/global-toast';
 import { Header } from './Components/header/header';
 import { Landing } from './pages/landing/landing';
+import { BillingStatusService } from './services/billing-status.service';
 // import { I18nService } from './services/i18n.service';
 
 
@@ -17,10 +18,19 @@ import { Landing } from './pages/landing/landing';
 export class App implements OnInit {
 
   protected readonly title = signal('chatbot');
+  protected readonly deactivated = signal(false);
+
+  constructor(private readonly billingStatus: BillingStatusService) {}
 
   // constructor(private i18n: I18nService) { }
 
   ngOnInit() {
+    // Start polling billing status and reflect it in the root template
+    this.billingStatus.startPolling();
+    // keep a lightweight signal copy for template binding
+    // poll once to initialize
+    this.billingStatus.refresh().then(() => this.deactivated.set(this.billingStatus.isDeactivated()));
+    setInterval(() => this.deactivated.set(this.billingStatus.isDeactivated()), 1000);
     // const lang = this.i18n.currentLang$.value;
 
     // 1. Load languages list
