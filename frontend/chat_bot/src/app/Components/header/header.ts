@@ -34,7 +34,8 @@ export class Header implements OnInit {
   ) { }
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
-    if (user?.userId) {
+    // Only request backend QR when the user has a valid auth token (prevents unauthenticated 401 calls on public pages)
+    if (user?.userId && this.authService.isLoggedIn()) {
       this.qrLoading = true;
       this.qrService.generateQr(user.userId, 'doctor').subscribe({
         next: (blob: Blob) => {
