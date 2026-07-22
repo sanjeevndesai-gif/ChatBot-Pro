@@ -37,6 +37,12 @@ export class Login {
     });
   }
 
+  goHome(event: Event) {
+    event.preventDefault();
+    // navigate explicitly to landing (root)
+    this.router.navigateByUrl('/');
+  }
+
   get f() {
     return this.loginForm.controls;
   }
