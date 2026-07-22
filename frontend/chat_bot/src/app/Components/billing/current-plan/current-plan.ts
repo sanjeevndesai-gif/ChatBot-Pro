@@ -147,16 +147,19 @@ export class CurrentPlan implements OnInit {
     // 1) upgrade plan
     this.billingService.upgradePlanByCode(this.mongoId, this.selectedPlanForPayment.planCode || this.selectedPlanForPayment.planCode?.toString(), this.selectedCycleForPayment, price).subscribe({
       next: () => {
+      console.log('confirmPayment: selectedCycleForPayment=', this.selectedCycleForPayment);
         // 2) record billing history entry (demo fields)
         const invoiceNumber = Math.floor(Date.now() / 1000);
         const currentUser = this.authService.getCurrentUser();
         const clientName = (currentUser as any)?.orgname || (currentUser as any)?.fullname || this.selectedPlanForPayment.name || this.plan().name;
+        const cycleDays = this.cycleToDays(this.selectedCycleForPayment || 'Monthly');
         const hist = {
           invoiceNumber: invoiceNumber,
           status: 'Paid',
           clientName: clientName,
           service: this.selectedPlanForPayment.name || this.plan().name,
           billingCycle: this.selectedCycleForPayment || 'Monthly',
+          daysTotal: cycleDays,
           gstPercent: 18,
           clinicAddress: (currentUser as any)?.address || '',
           total: price || this.getMonthlyPrice(this.selectedPlanForPayment),
@@ -165,16 +168,48 @@ export class CurrentPlan implements OnInit {
         };
         this.billingService.recordBillingHistory(this.mongoId!, hist).subscribe({
           next: () => {
-            // refresh billing info and show success
-            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+            // update UI immediately using selected cycle days
+            try {
+              console.log('apply UI days:', this.cycleToDays(this.selectedCycleForPayment));
+              this.daysTotal.set(this.cycleToDays(this.selectedCycleForPayment));
+              this.daysUsed.set(0);
+              this.isDeactivated.set(false);
+              this.backendDaysRemaining.set(this.cycleToDays(this.selectedCycleForPayment));
+              this.backendProgressPercent.set(0);
+              const active = new Date();
+              active.setDate(active.getDate() + this.cycleToDays(this.selectedCycleForPayment));
+              this.plan.set({
+                name: this.selectedPlanForPayment.name || this.plan().name,
+                price: price || this.getMonthlyPrice(this.selectedPlanForPayment),
+                currency: this.plan().currency,
+                activeUntil: active
+              });
+            } catch (e) { /* ignore UI update errors */ }
+            // refresh billing info from backend and show success
+            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => { this.applyBillingInfo(info); this.overrideSelectedCycleDays(); } });
             // reload billing history table
             try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
             this.modalService.dismissAll();
             this.openSmallModal(successModal);
           },
           error: () => {
-            // still refresh and close
-            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => this.applyBillingInfo(info) });
+            // update UI immediately even if recording failed, then refresh
+            try {
+              this.daysTotal.set(this.cycleToDays(this.selectedCycleForPayment));
+              this.daysUsed.set(0);
+              this.isDeactivated.set(false);
+              this.backendDaysRemaining.set(this.cycleToDays(this.selectedCycleForPayment));
+              this.backendProgressPercent.set(0);
+              const active = new Date();
+              active.setDate(active.getDate() + this.cycleToDays(this.selectedCycleForPayment));
+              this.plan.set({
+                name: this.selectedPlanForPayment.name || this.plan().name,
+                price: price || this.getMonthlyPrice(this.selectedPlanForPayment),
+                currency: this.plan().currency,
+                activeUntil: active
+              });
+            } catch (e) { /* ignore */ }
+            this.billingService.getBilling(this.mongoId!).subscribe({ next: (info) => { this.applyBillingInfo(info); this.overrideSelectedCycleDays(); } });
             // reload billing history table even on error
             try { this.billingTable.loadInvoices(); } catch (e) { /* ignore */ }
             this.modalService.dismissAll();
@@ -233,6 +268,31 @@ export class CurrentPlan implements OnInit {
     try {
       return plan.pricing && plan.pricing.length ? plan.pricing[0].price : (plan.planPrice || 0);
     } catch (e) { return plan.planPrice || 0; }
+  }
+
+  // Map billing cycle to approximate days
+  cycleToDays(billingCycle: string | null | undefined): number {
+    const cycle = (billingCycle || 'monthly').toString().toLowerCase();
+    if (cycle.includes('month')) return 30;
+    if (cycle.includes('quarter') || cycle.includes('quarterly')) return 90;
+    if (cycle.includes('half') || cycle.includes('half-year') || cycle.includes('half_year') || cycle.includes('half-yearly')) return 180;
+    if (cycle.includes('year')) return 365;
+    return 30;
+  }
+
+  // After backend billing info is applied, ensure UI reflects the selected cycle days
+  overrideSelectedCycleDays() {
+    try {
+      if (!this.selectedCycleForPayment) return;
+      const days = this.cycleToDays(this.selectedCycleForPayment);
+      this.daysTotal.set(days);
+      this.daysUsed.set(0);
+      this.backendDaysRemaining.set(days);
+      this.backendProgressPercent.set(0);
+      const active = new Date();
+      active.setDate(active.getDate() + days);
+      this.plan.set({ name: this.selectedPlanForPayment?.name || this.plan().name, price: this.plan().price, currency: this.plan().currency, activeUntil: active });
+    } catch (e) { /* ignore */ }
   }
 
   confirmCancel(cancelledModal: any) {

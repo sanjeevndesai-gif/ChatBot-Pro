@@ -125,13 +125,14 @@ export class BillingHistory {
       const rowY = tableTop + 10;
       const desc = inv.service || 'Subscription';
       const cycle = inv.billingCycle || 'Monthly';
+      const cycleDays = this.daysForCycle(cycle);
       const qty = 1;
       const unit = inv.total || 0;
       const amount = unit * qty;
 
       doc.setFontSize(9);
       doc.text(desc, 14, rowY);
-      doc.text(String(cycle), 110, rowY);
+      doc.text(`${cycle} (${cycleDays} days)`, 110, rowY);
       doc.text(String(qty), qtyX, rowY);
       doc.text(`${unit.toFixed(2)}`, unitX, rowY, { align: 'right' });
       doc.text(`${amount.toFixed(2)}`, amountX, rowY, { align: 'right' });
@@ -172,5 +173,15 @@ export class BillingHistory {
       console.error('PDF ERROR:', error);
       alert('PDF Generation Failed! Check console.');
     }
+  }
+
+  // Map billing cycle strings to days for display
+  daysForCycle(cycle?: string | null): number {
+    const v = (cycle || 'monthly').toString().toLowerCase();
+    if (v.includes('month')) return 30;
+    if (v.includes('quarter')) return 90;
+    if (v.includes('half')) return 180;
+    if (v.includes('year')) return 365;
+    return 30;
   }
 }

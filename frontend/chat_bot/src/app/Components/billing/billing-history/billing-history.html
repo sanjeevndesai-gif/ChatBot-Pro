@@ -152,7 +152,10 @@
             <tbody>
               <tr>
                 <td>{{ selectedInvoice()?.service || 'Subscription' }}</td>
-                <td>{{ selectedInvoice()?.billingCycle || 'Monthly' }}</td>
+                <td>
+                  {{ selectedInvoice()?.billingCycle || 'Monthly' }}
+                  <small class="text-muted">({{ daysForCycle(selectedInvoice()?.billingCycle) }} days)</small>
+                </td>
                 <td class="text-center">1</td>
                 <td class="text-end">{{ selectedInvoice()?.total | number:'1.2-2' }}</td>
                 <td class="text-end">{{ selectedInvoice()?.total | number:'1.2-2' }}</td>
