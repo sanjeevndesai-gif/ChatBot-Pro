@@ -39,8 +39,8 @@ export class Login {
 
   goHome(event: Event) {
     event.preventDefault();
-    // navigate explicitly to landing (root)
-    this.router.navigateByUrl('/');
+    // Force full page navigation to root to avoid route-guard ambiguity
+    window.location.href = '/';
   }
 
   get f() {
