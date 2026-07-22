@@ -7,4 +7,7 @@ export interface Invoice {
   total: number;
   issuedDate: Date;
   balance: number;
+  billingCycle?: 'Monthly' | 'Quarterly' | 'Half-Yearly' | 'Yearly' | string;
+  gstPercent?: number;
+  clinicAddress?: string;
 }

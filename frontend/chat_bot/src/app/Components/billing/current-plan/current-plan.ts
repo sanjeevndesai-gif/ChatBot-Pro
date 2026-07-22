@@ -149,11 +149,16 @@ export class CurrentPlan implements OnInit {
       next: () => {
         // 2) record billing history entry (demo fields)
         const invoiceNumber = Math.floor(Date.now() / 1000);
+        const currentUser = this.authService.getCurrentUser();
+        const clientName = (currentUser as any)?.orgname || (currentUser as any)?.fullname || this.selectedPlanForPayment.name || this.plan().name;
         const hist = {
           invoiceNumber: invoiceNumber,
           status: 'Paid',
-          clientName: this.selectedPlanForPayment.name || this.plan().name,
+          clientName: clientName,
           service: this.selectedPlanForPayment.name || this.plan().name,
+          billingCycle: this.selectedCycleForPayment || 'Monthly',
+          gstPercent: 18,
+          clinicAddress: (currentUser as any)?.address || '',
           total: price || this.getMonthlyPrice(this.selectedPlanForPayment),
           issuedDate: new Date().toISOString(),
           balance: 0

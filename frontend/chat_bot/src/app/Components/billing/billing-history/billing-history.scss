@@ -8,3 +8,19 @@ table {
     vertical-align: middle;
   }
 }
+
+.invoice-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+}
+
+.invoice-modal {
+  width: 640px;
+  max-width: 92%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}

@@ -39,12 +39,18 @@ export class BillingTableService {
         this.billing.getBillingHistory(mongoId).subscribe({
         next: (list: any[]) => {
           // map server objects into Invoice models
+          const currentUser = this.auth.getCurrentUser();
+          const clinicName = (currentUser as any)?.orgname || (currentUser as any)?.fullname || '';
+
           const mapped: Invoice[] = (list || []).map((s: any, idx: number) => ({
             id: s._id || String(idx+1),
-            invoiceNumber: s.invoiceNumber || s.invoiceNumber || String(idx+1),
+            invoiceNumber: s.invoiceNumber || String(idx+1),
             status: s.status || 'Paid',
-            clientName: s.clientName || s.clientName || '',
-            service: s.service || s.service || '',
+            clientName: s.clientName || clinicName || '',
+            service: s.service || '',
+            billingCycle: s.billingCycle || undefined,
+            gstPercent: s.gstPercent || undefined,
+            clinicAddress: s.clinicAddress || undefined,
             total: s.total || 0,
             issuedDate: s.issuedDate ? new Date(s.issuedDate) : new Date(),
             balance: s.balance || 0
