@@ -1,11 +1,13 @@
 <app-global-loader></app-global-loader>
 <app-global-toast></app-global-toast>
-<div *ngIf="deactivated()" class="billing-block-overlay">
-	<div class="billing-block-card">
-		<h4>Account inactive</h4>
-		<p>Your subscription has expired or is inactive. Please renew to continue using the application.</p>
-		<div class="d-flex gap-2 justify-content-end">
-			<a class="btn btn-sm btn-outline-secondary" routerLink="/billing">Go to Billing</a>
+<div *ngIf="deactivated()" class="billing-banner">
+	<div class="billing-banner-inner container d-flex align-items-center justify-content-between">
+		<div>
+			<strong>Account inactive:</strong>
+			<span class="ms-2">Your subscription has expired or is inactive. Please renew to continue using protected features.</span>
+		</div>
+		<div>
+			<a class="btn btn-sm btn-light" routerLink="/billing">Renew / Go to Billing</a>
 		</div>
 	</div>
 </div>

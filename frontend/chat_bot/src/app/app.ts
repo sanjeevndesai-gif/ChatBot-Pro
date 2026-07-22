@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { GlobalLoader } from './shared/global-loader';
 import { GlobalToast } from './shared/global-toast';
 import { Header } from './Components/header/header';
@@ -11,7 +12,7 @@ import { BillingStatusService } from './services/billing-status.service';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, GlobalLoader, GlobalToast, Header, Landing],
+  imports: [CommonModule, RouterOutlet, GlobalLoader, GlobalToast, Header, Landing],
   templateUrl: './app.html',
   styleUrls: ['./app.scss']
 })
