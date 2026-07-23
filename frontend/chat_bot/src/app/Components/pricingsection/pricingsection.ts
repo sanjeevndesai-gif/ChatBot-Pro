@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { BillingService } from '../../services/billing.service';
 import { AuthService } from '../../services/auth.service';
 import { catchError } from 'rxjs/operators';
@@ -8,7 +9,7 @@ import { of } from 'rxjs';
 @Component({
   selector: 'app-pricingsection',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './pricingsection.html',
   styleUrls: ['./pricingsection.scss']
 })
