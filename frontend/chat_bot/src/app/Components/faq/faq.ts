@@ -158,13 +158,20 @@ export class Faq {
     'Product & Services': [
       { q: 'What is WhatsApp appointment booking?', a: `Our platform allows customers to book appointments directly through WhatsApp using automated conversations. Customers can view available time slots, schedule appointments, receive confirmations, reminders, and updates without leaving WhatsApp.`, open: false },
       { q: 'Do my customers need to install another app?', a: `No. Customers only need WhatsApp. No additional downloads or registrations are required.`, open: false },
-      { q: 'Can I connect my own WhatsApp Business number?', a: `Yes. You can connect your own WhatsApp Business account through the WhatsApp Business API to send appointment confirmations, reminders, and notifications.`, open: false },
+      { q: 'Can I connect my own WhatsApp Business number?', a: `No. Connecting your own WhatsApp Business number is not required or supported. All WhatsApp appointment booking messages are sent through our managed WhatsApp Business service, allowing you to start using the platform without any additional setup.`, open: false },
       { q: 'Are appointment reminders sent automatically?', a: `Yes. The system can automatically send reminders before scheduled appointments, helping reduce missed bookings.`, open: false },
-      { q: 'Can customers reschedule or cancel appointments?', a: `Yes. Customers can reschedule or cancel appointments through WhatsApp, subject to the rules you configure for your business.`, open: false },
+      { q: 'Can customers reschedule or cancel appointments?', a: `Yes. Customers can reschedule or cancel appointments through WhatsApp`, open: false },
       { q: 'Can I manage multiple staff members or locations?', a: `Yes. Depending on your subscription plan, you can manage multiple staff members, services, business locations, and appointment calendars.`, open: false },
       { q: 'Is customer data secure?', a: `Yes. We use industry-standard security practices to protect customer information and communications. Sensitive payment information is handled securely by our payment providers.`, open: false },
       { q: 'Do you offer a free trial?', a: `Yes (if enabled). New users can explore the platform during the trial period before subscribing to a paid plan.`, open: false },
-      { q: 'How can I contact support?', a: `You can reach our support team through:\n- WhatsApp Support\n- Email Support\n- Live Chat (if available)\n\nOur team is happy to help with setup, billing, and technical questions.`, open: false }
+      { q: 'How can I contact support?', a: `### **How can I contact support?**
+
+    You can contact our support team from the **Support** section of the application.
+
+    - **Scan the displayed QR code** to start a conversation with our support team on WhatsApp.
+    - You can also reach us using the **support email address** provided on the same page.
+
+    Our team will assist you with billing, subscription, technical issues, and general inquiries as quickly as possible.`, open: false }
     ]
   };
 
