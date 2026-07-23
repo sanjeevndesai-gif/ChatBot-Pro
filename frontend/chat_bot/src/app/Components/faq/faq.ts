@@ -43,7 +43,7 @@ import { Component } from '@angular/core';
       </div>
 
       <div *ngIf="item.open" class="answer">
-        <div [innerHTML]="item.a.replace(/\n/g, '<br/>')"></div>
+        <div [innerHTML]="answerHtml(item)"></div>
       </div>
     </div>
   </div>
@@ -134,6 +134,11 @@ export class Faq {
     if (list) {
       list.forEach(f => f.open = false);
     }
+  }
+
+  answerHtml(item: { a: string }) {
+    if (!item || !item.a) return '';
+    return item.a.replace(/\n/g, '<br/>');
   }
 
 }
