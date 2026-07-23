@@ -81,7 +81,7 @@ export class Pricingsection implements OnInit {
           if (f.multiBranch) features.push('Multi-branch support');
           if (f.apiAccess) features.push('API access');
         } else if (typeof p.features === 'string') {
-          features = p.features.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+          features = p.features.split(/\r?\n|,/).map((s: string) => s.trim()).filter(Boolean);
         }
         // include limits if present
         if (p.limits && p.limits.maxDoctors) {
