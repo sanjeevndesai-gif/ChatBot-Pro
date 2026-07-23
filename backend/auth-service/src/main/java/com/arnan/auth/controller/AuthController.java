@@ -104,7 +104,17 @@ public class AuthController {
     @GetMapping({"/plans", "/public/plans"})
     @ResponseStatus(HttpStatus.OK)
     public List<Object> listPlans() {
-        return planService.getAllPlans().stream().map(d -> (Object) d).toList();
+        var plans = planService.getAllPlans();
+        if (plans == null || plans.isEmpty()) {
+            // return a sensible default set so the landing page is populated in dev
+            return java.util.List.of(
+                java.util.Map.of("planName", "Basic", "description", "Free plan for evaluation", "price", 0, "period", "/month", "features", java.util.List.of("1 WhatsApp Account", "Basic chatbot")),
+                java.util.Map.of("planName", "Standard", "description", "Most popular", "price", 499, "period", "/month", "features", java.util.List.of("3 WhatsApp Accounts", "Advanced chatbot", "Email support"), "popular", true),
+                java.util.Map.of("planName", "Premium", "description", "For businesses", "price", 999, "period", "/month", "features", java.util.List.of("Unlimited WhatsApp Accounts", "Priority support", "Custom integrations"))
+            );
+        }
+
+        return plans.stream().map(d -> (Object) d).toList();
     }
 
     @PostMapping("/plans")
