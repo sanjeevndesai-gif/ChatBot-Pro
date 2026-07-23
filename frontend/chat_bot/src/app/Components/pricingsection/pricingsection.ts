@@ -10,7 +10,7 @@ import { of } from 'rxjs';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './pricingsection.html',
-  styleUrl: './pricingsection.scss'
+  styleUrls: ['./pricingsection.scss']
 })
 export class Pricingsection implements OnInit {
   plans: any[] = [];
