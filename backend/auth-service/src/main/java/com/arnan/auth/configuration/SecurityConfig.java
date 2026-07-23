@@ -44,7 +44,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/register", "/login", "/auth-service", "/auth-service/login", "/oauth2/token", "/forgot-password-whatsapp").permitAll()
-                .requestMatchers(HttpMethod.GET, "/plans").permitAll()
+                .requestMatchers(HttpMethod.GET, "/plans", "/public/plans").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));

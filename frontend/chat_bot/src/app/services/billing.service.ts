@@ -43,7 +43,7 @@ export class BillingService {
   }
 
   getPlans(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/plans`);
+    return this.http.get<any[]>(`${this.base}/public/plans`);
   }
 
   recordBillingHistory(mongoId: string, record: any): Observable<void> {

@@ -101,7 +101,7 @@ public class AuthController {
         return Map.of("backfilled", count);
     }
 
-    @GetMapping("/plans")
+    @GetMapping({"/plans", "/public/plans"})
     @ResponseStatus(HttpStatus.OK)
     public List<Object> listPlans() {
         return planService.getAllPlans().stream().map(d -> (Object) d).toList();
