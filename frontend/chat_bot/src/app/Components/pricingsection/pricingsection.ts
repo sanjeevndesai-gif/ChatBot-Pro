@@ -57,9 +57,15 @@ export class Pricingsection implements OnInit {
         return of(this.fallback);
       })
     ).subscribe((plans: any[]) => {
+      // Debug: print raw plans response for testing
+      console.log('RAW plans response:', plans);
+
       // If backend returned empty or malformed data, use local fallback
       const isValid = Array.isArray(plans) && plans.length > 0 && plans.some(p => p && (p.planName || p.name || p.title || p.planCode));
       const source = isValid ? plans : this.fallback;
+
+      // Debug: print chosen source (backend or fallback)
+      console.log('Using plans source:', isValid ? 'backend' : 'fallback', source);
 
       // normalize backend plan documents to UI shape
       this.plans = (source || this.fallback).map(p => {
