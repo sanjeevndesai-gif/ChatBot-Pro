@@ -3,9 +3,10 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-faq',
+  standalone: true,
   imports: [NgFor, NgIf],
   templateUrl: './faq.html',
-  styleUrl: './faq.scss',
+  styleUrls: ['./faq.scss'],
 })
 export class Faq {
    categories = [
