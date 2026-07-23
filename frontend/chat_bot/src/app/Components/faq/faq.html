@@ -14,7 +14,7 @@
   <!-- Sidebar -->
   <div class="sidebar">
     <div *ngFor="let c of categories; let i = index"
-         (click)="active = i"
+         (click)="active = i; currentFaqs.forEach(f => f.open = false)"
          [class.active]="active === i"
          class="menu-item">
 
@@ -28,14 +28,14 @@
     <h2>{{ categories[active].name }}</h2>
     <p class="subtitle">Get help with {{ categories[active].name.toLowerCase() }}</p>
 
-    <div *ngFor="let item of faqs; let i=index" class="faq-box">
+    <div *ngFor="let item of currentFaqs; let i=index" class="faq-box">
       <div class="question" (click)="toggle(i)">
         <span>{{ item.q }}</span>
         <i [class.bi-chevron-up]="item.open" class="bi-chevron-down"></i>
       </div>
 
       <div *ngIf="item.open" class="answer">
-        {{ item.a }}
+        <div [innerHTML]="item.a.replace(/\n/g, '<br/>')"></div>
       </div>
     </div>
   </div>
