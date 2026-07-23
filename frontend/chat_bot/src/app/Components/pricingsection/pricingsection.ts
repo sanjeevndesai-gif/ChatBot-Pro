@@ -69,13 +69,44 @@ export class Pricingsection implements OnInit {
 
       // normalize backend plan documents to UI shape
       this.plans = (source || this.fallback).map(p => {
-        const features = Array.isArray(p.features) ? p.features : (typeof p.features === 'string' ? p.features.split(/\r?\n|,/) : []);
-        const price = p.price ?? p.planPrice ?? p.pricePerPeriod ?? (p.planCode && p.planCode.toLowerCase() === 'enterprise' ? 'Contact Team' : 0);
+        // normalize features: backend may send array or object of flags
+        let features: string[] = [];
+        if (Array.isArray(p.features)) {
+          features = p.features;
+        } else if (p.features && typeof p.features === 'object') {
+          const f = p.features;
+          if (f.whatsappReminders) features.push('WhatsApp reminders');
+          if (f.customBranding) features.push('Custom branding');
+          if (f.analytics) features.push('Analytics');
+          if (f.multiBranch) features.push('Multi-branch support');
+          if (f.apiAccess) features.push('API access');
+        } else if (typeof p.features === 'string') {
+          features = p.features.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+        }
+        // include limits if present
+        if (p.limits && p.limits.maxDoctors) {
+          features.unshift(`Up to ${p.limits.maxDoctors} doctors`);
+        } else if (p.maxDoctors) {
+          features.unshift(`Up to ${p.maxDoctors} doctors`);
+        }
+
+        // price: prefer explicit fields, then first entry of `pricing` array
+        let price: any = p.price ?? p.planPrice ?? p.pricePerPeriod ?? null;
+        if ((price === null || price === undefined) && Array.isArray(p.pricing) && p.pricing.length > 0) {
+          const first = p.pricing[0];
+          price = first.amount ?? first.price ?? first.value ?? first.rate ?? null;
+        }
+        if (price === null || price === undefined) {
+          price = (p.planCode && p.planCode.toLowerCase() === 'enterprise') ? 'Contact Team' : 0;
+        }
+
+        const period = p.period || p.billingPeriod || (Array.isArray(p.pricing) && p.pricing.length > 0 ? (p.pricing[0].period || '') : '/month');
+
         return {
           name: p.planName || p.name || p.title || p.planCode || 'Plan',
           description: p.description || p.brief || '',
           price: price,
-          period: p.period || p.billingPeriod || '/month',
+          period: period,
           features: features,
           popular: !!p.popular || !!p.mostPopular,
           buttonClass: p.buttonClass || (p.popular || p.mostPopular ? 'btn btn-success' : 'btn btn-outline-success')
