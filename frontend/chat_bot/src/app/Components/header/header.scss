@@ -12,3 +12,34 @@
 	margin-top: -2px;
 }
 
+/* Improved logo wrapper and image sizing */
+.brand-logo-wrapper {
+	width: 56px;
+	height: 56px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
+	border-radius: 12px;
+	padding: 6px;
+	box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+.brand-logo {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+.navbar-brand .fw-bold {
+	font-size: 1.05rem;
+	color: #087c5a; /* match theme green */
+}
+
+@media (max-width: 575px) {
+	.brand-logo-wrapper { width: 44px; height: 44px; padding: 4px; }
+	.navbar-brand .fw-bold { font-size: 0.95rem; }
+	.header-sub { font-size: 0.6rem; }
+}
+
