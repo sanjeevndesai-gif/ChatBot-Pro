@@ -48,6 +48,10 @@ export class Pricingsection implements OnInit {
   ngOnInit(): void {
     this.billingService.getPlans().pipe(
       catchError((err) => {
+        // If the backend returns 401 (unauthorized) for anonymous visitors, don't spam console.
+        if (err && err.status === 401) {
+          return of(this.fallback);
+        }
         console.warn('Failed to load plans from backend, using fallback', err);
         return of(this.fallback);
       })
