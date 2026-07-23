@@ -10,9 +10,6 @@ import { Component } from '@angular/core';
 export class Faq {
    categories = [
     { icon: 'bi-credit-card', name: 'Payment' },
-    { icon: 'bi-truck', name: 'Delivery' },
-    { icon: 'bi-arrow-counterclockwise', name: 'Cancellation & Return' },
-    { icon: 'bi-box', name: 'My Orders' },
     { icon: 'bi-gear', name: 'Product & Services' }
   ];
 
