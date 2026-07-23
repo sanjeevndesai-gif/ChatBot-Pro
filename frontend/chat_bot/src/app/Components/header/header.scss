@@ -1,0 +1,14 @@
+(/* Logo highlight and small subtext */)
+.brand-logo-highlight {
+	border-radius: 6px;
+	padding: 2px;
+	box-shadow: 0 0 0 6px rgba(255, 0, 0, 0.08), 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.header-sub {
+	font-size: 0.65rem;
+	letter-spacing: 0.08em;
+	color: rgba(0,0,0,0.55);
+	margin-top: -2px;
+}
+
