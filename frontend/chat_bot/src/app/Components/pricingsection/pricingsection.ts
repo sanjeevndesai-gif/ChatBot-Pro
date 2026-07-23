@@ -47,12 +47,6 @@ export class Pricingsection implements OnInit {
   constructor(private billingService: BillingService, private authService: AuthService) {}
 
   ngOnInit(): void {
-    // If user is not logged in, skip backend call and use fallback to avoid 401 noise.
-    if (!this.authService.isLoggedIn()) {
-      this.plans = this.fallback;
-      return;
-    }
-
     this.billingService.getPlans().pipe(
       catchError((err) => {
         // If the backend returns 401 (unauthorized) for anonymous visitors, don't spam console.
