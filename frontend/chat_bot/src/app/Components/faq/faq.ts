@@ -78,7 +78,59 @@ import { Component } from '@angular/core';
   </div>
 </div>
   `,
-  styles: [],
+  styles: [
+    `
+    .help-banner { width: 100%; padding: 100px 0; background: #cbf1d8; border-radius: 12px; text-align: center; }
+    .help-banner .content { max-width: 600px; margin: auto; padding: 0 15px; }
+    .help-banner h1 { font-size: 32px; font-weight: 600; margin-bottom: 10px; color: #333; }
+    .help-banner p { font-size: 16px; color: #666; margin-bottom: 25px; }
+    .help-banner .search-box { width: 100%; max-width: 500px; margin: auto; display: flex; align-items: center; background: #fff; border-radius: 8px; padding: 12px 18px; box-shadow: 0 2px 8px #d5d6f0; }
+    .help-banner .search-box i { font-size: 18px; color: #5c6bc0; }
+    .help-banner .search-box input { border: none; outline: none; margin-left: 10px; font-size: 16px; width: 100%; }
+    @media (max-width: 480px) {
+      .help-banner { padding: 60px 0; }
+      .help-banner h1 { font-size: 24px; }
+      .help-banner p { font-size: 14px; }
+      .help-banner .search-box { padding: 10px 12px; }
+    }
+
+    .faq-layout { display: flex; gap: 30px; }
+    @media (max-width: 768px) { .faq-layout { flex-direction: column; padding: 10px; gap: 15px; } }
+
+    .sidebar { width: 250px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 3px 10px #d9daf1; }
+    @media (max-width: 768px) { .sidebar { width: 100%; } }
+    .sidebar .menu-item { display: flex; align-items: center; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 16px; cursor: pointer; }
+    .sidebar .menu-item i { margin-right: 10px; font-size: 20px; }
+    .sidebar .menu-item:hover { background: #eef0ff; }
+    .sidebar .menu-item.active { background: #187936; color: #fff; }
+
+    .faq-content { flex: 1; }
+    .faq-content h2 { font-size: 26px; margin-bottom: 5px; }
+    @media (max-width: 480px) { .faq-content h2 { font-size: 22px; } }
+    .faq-content .subtitle { color: #666; margin-bottom: 20px; }
+    .faq-content .faq-box { background: #fff; border-radius: 10px; padding: 15px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px #e0e0f4; }
+    @media (max-width: 480px) { .faq-content .faq-box { padding: 12px 15px; } }
+    .faq-content .faq-box .question { display: flex; justify-content: space-between; cursor: pointer; font-size: 17px; }
+    @media (max-width: 480px) { .faq-content .faq-box .question { font-size: 15px; } }
+    .faq-content .faq-box .answer { margin-top: 10px; color: #555; line-height: 1.5; }
+
+    .contact-section { text-align: center; margin-top: 50px; }
+    .contact-section h3 { font-size: 28px; margin-bottom: 10px; }
+    @media (max-width: 480px) { .contact-section h3 { font-size: 22px; } }
+    .contact-section p { color: #666; margin-bottom: 30px; }
+    .contact-section .contact-cards { display: flex; justify-content: center; gap: 50px; padding: 20px; }
+    @media (max-width: 768px) { .contact-section .contact-cards { flex-direction: column; gap: 20px; padding: 10px; align-items: center; } }
+    .contact-section .card { width: 400px; height: 200px; background: #eef0f8; padding: 25px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px #ccc; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    @media (max-width: 480px) { .contact-section .card { width: 90%; height: auto; padding: 18px; } }
+    .contact-section .card i { font-size: 32px; color: #5c6bc0; }
+    .contact-section .card h4 { margin: 6px 0; }
+    .contact-section .card p { color: #555; margin: 0; }
+    .contact-section .qr-card { text-align: center; }
+    .contact-section .qr-card h4 { margin-top: 18px; color: #187936; font-weight: 600; }
+    .contact-section .qr-card .qr-img { width: 120px; height: 120px; object-fit: contain; margin: 2px; display: block; }
+    .contact-section .qr-card p { margin-bottom: 18px; font-size: 14px; }
+    `
+  ],
 })
 export class Faq {
    categories = [
