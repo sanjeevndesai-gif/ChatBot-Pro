@@ -3,6 +3,7 @@ import { Login } from './Components/login/login';
 import { Register } from './Components/register/register';
 import { Layout } from './pages/layout/layout';
 import { authGuard } from './core/guards/auth.guard';
+import { Faq } from './Components/faq/faq';
 
 export const routes: Routes = [
 
@@ -50,9 +51,7 @@ export const routes: Routes = [
             },
             {
                 path: 'help',
-                loadComponent: () =>
-                    import('./Components/faq/faq')
-                        .then(m => m.Faq),
+                component: Faq,
             },
             {
                 path: 'settings',

@@ -4,9 +4,10 @@ import { RouterModule } from '@angular/router';
  
 @Component({
   selector: 'app-layout',
+  standalone: true,
   imports: [RouterModule, Horizontalmenu],
   templateUrl: './layout.html',
-  styleUrl: './layout.scss'
+  styleUrls: ['./layout.scss']
 })
 export class Layout {
  

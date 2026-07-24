@@ -13,10 +13,10 @@
 
   <!-- Sidebar -->
   <div class="sidebar">
-    <div *ngFor="let c of categories; let i = index"
-         (click)="active = i; currentFaqs.forEach(f => f.open = false)"
-         [class.active]="active === i"
-         class="menu-item">
+        <div *ngFor="let c of categories; let i = index"
+          (click)="selectCategory(i)"
+          [class.active]="active === i"
+          class="menu-item">
 
       <i class="{{c.icon}}"></i>
       <span>{{c.name}}</span>

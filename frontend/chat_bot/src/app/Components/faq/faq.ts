@@ -164,13 +164,9 @@ export class Faq {
       { q: 'Can I manage multiple staff members or locations?', a: `Yes. Depending on your subscription plan, you can manage multiple staff members, services, business locations, and appointment calendars.`, open: false },
       { q: 'Is customer data secure?', a: `Yes. We use industry-standard security practices to protect customer information and communications. Sensitive payment information is handled securely by our payment providers.`, open: false },
       { q: 'Do you offer a free trial?', a: `Yes (if enabled). New users can explore the platform during the trial period before subscribing to a paid plan.`, open: false },
-      { q: 'How can I contact support?', a: `How can I contact support?
-
-    You can contact our support team from the Support section of the application.
-
+      { q: 'How can I contact support?', a: `You can contact our support team from the Support section of the application.
     - Scan the displayed QR code to start a conversation with our support team on WhatsApp.
     - You can also reach us using the support email address provided on the same page.
-
     Our team will assist you with billing, subscription, technical issues, and general inquiries as quickly as possible.`, open: false }
     ]
   };
