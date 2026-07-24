@@ -136,9 +136,19 @@ public class AuthService {
 
 	public Document findById(String id) {
 		try {
-			Document doc = authRepository.findById(new ObjectId(id));
+			// Accept either a Mongo ObjectId hex string (24 chars) or a logical userId
+			if (id != null && id.matches("^[0-9a-fA-F]{24}$")) {
+				Document doc = authRepository.findById(new ObjectId(id));
+				if (doc == null) {
+					throw new NotFoundException("User not found with id: " + id);
+				}
+				return doc;
+			}
+
+			// Fallback: try to find by logical userId
+			Document doc = authRepository.findByUserId(id);
 			if (doc == null) {
-				throw new NotFoundException("User not found with id: " + id);
+				throw new NotFoundException("User not found with id/userId: " + id);
 			}
 			return doc;
 		} catch (Exception e) {
@@ -234,6 +244,44 @@ public class AuthService {
 
 	public MongoTemplate getMongoTemplate() {
 		return mongoTemplate;
+	}
+
+	/**
+	 * Save user settings for the user identified by userId (the internal userId claim in JWT).
+	 * Only users on STANDARD, PREMIUM or PROPLUS plans are allowed to change these settings.
+	 * Throws RuntimeException with message if operation not permitted.
+	 */
+	public void saveSettingsForUserId(String userId, Map<String, Object> settings) {
+		try {
+			if (userId == null || userId.isBlank()) {
+				throw new NotFoundException("Missing user id");
+			}
+
+			Document user = authRepository.findByUserId(userId);
+			if (user == null) throw new NotFoundException("User not found");
+
+			Document billing = (Document) user.get("billing");
+			String planCode = billing != null ? billing.getString("planCode") : null;
+			String planName = billing != null ? billing.getString("planName") : null;
+
+			String effective = planCode != null ? planCode : (planName != null ? planName : "BASIC");
+			effective = effective.toUpperCase();
+
+			// Disallow Basic
+			if ("BASIC".equals(effective)) {
+				throw new RuntimeException("Upgrade required: settings are only available for paid plans");
+			}
+
+			// Persist settings as a sub-document under 'settings'
+			Document sdoc = new Document(settings);
+			org.bson.types.ObjectId oid = user.getObjectId("_id");
+			authRepository.updateById(oid, new Document("settings", sdoc));
+
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to save settings: " + e.getMessage(), e);
+		}
 	}
 	
 	/**
