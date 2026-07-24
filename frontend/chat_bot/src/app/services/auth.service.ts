@@ -113,6 +113,15 @@ export class AuthService {
     return null;
   }
 
+  // Replace the stored current user (used after updating profile/settings)
+  setCurrentUser(user: AuthUser | null): void {
+    if (user) {
+      this.storage.setItem(this.storageKey, user);
+    } else {
+      this.storage.removeItem(this.storageKey);
+    }
+  }
+
   logout(): void {
     this.storage.removeItem(this.accessTokenKey);
     this.storage.removeItem(this.refreshTokenKey);

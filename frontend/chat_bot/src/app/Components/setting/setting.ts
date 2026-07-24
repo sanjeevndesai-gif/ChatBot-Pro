@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-setting',
@@ -24,7 +25,11 @@ export class Setting implements OnInit {
 
   canEdit = false; // only true for paid plans
 
-  constructor(private readonly http: HttpClient, private readonly authService: AuthService) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly authService: AuthService,
+    private readonly toast: ToastService
+  ) {}
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
@@ -80,15 +85,34 @@ export class Setting implements OnInit {
 
     this.http.put<any>(`${this.apiBase}/profile/settings`, payload, { headers }).subscribe({
       next: () => {
-        // optionally update stored user settings
-        const current = this.authService.getCurrentUser();
-        if (current) {
-          (current as any).settings = payload;
+        // After successful save, re-fetch full user document from server and update local cache
+        const userId = this.authService.getUserId();
+        if (userId) {
+          this.http.get<any>(`${this.apiBase}/find/${userId}`).subscribe({
+            next: (freshUser) => {
+              // Normalize similar to AuthService.login behaviour
+              const resolvedUserId = freshUser.userId || freshUser.mongoId || freshUser.id || freshUser._id || userId;
+              const normalized = {
+                ...freshUser,
+                userId: resolvedUserId,
+                mongoId: freshUser.mongoId || freshUser.userId || freshUser.id || freshUser._id || undefined
+              };
+              this.authService.setCurrentUser(normalized as any);
+              this.toast.success('Your settings have been saved successfully');
+            },
+            error: (err) => {
+              console.warn('Saved but failed to refresh user cache', err);
+              this.toast.success('Your settings have been saved successfully');
+            }
+          });
+        } else {
+          this.toast.success('Your settings have been saved successfully');
         }
       },
       error: (err) => {
         console.error('Failed to save settings', err);
-        // revert change on error? For now, keep UI state and show console error.
+        this.toast.error('Failed to save settings');
+        // keep UI state unchanged; user can retry
       }
     });
   }
