@@ -13,7 +13,7 @@
             <span>Say Hi and get report</span>
           </div>
           <label class="switch">
-            <input type="checkbox">
+            <input type="checkbox" [checked]="onDemand" (change)="toggle('onDemand')" [disabled]="!canEdit">
             <span class="slider"></span>
           </label>
         </div>
@@ -24,7 +24,7 @@
             <span>Every day will report</span>
           </div>
           <label class="switch">
-            <input type="checkbox">
+            <input type="checkbox" [checked]="scheduledReport" (change)="toggle('scheduledReport')" [disabled]="!canEdit">
             <span class="slider"></span>
           </label>
         </div>
@@ -47,7 +47,7 @@
             <span>Not Connected</span>
           </div>
           <label class="switch">
-            <input type="checkbox">
+            <input type="checkbox" [checked]="feedbackMessage" (change)="toggle('feedbackMessage')" [disabled]="!canEdit">
             <span class="slider"></span>
           </label>
         </div>
@@ -58,7 +58,7 @@
             <span>Calendar & contacts</span>
           </div>
           <label class="switch">
-            <input type="checkbox">
+            <input type="checkbox" [checked]="reminderMessages" (change)="toggle('reminderMessages')" [disabled]="!canEdit">
             <span class="slider"></span>
           </label>
         </div>

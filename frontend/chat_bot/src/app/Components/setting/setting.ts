@@ -22,6 +22,8 @@ export class Setting implements OnInit {
 
   private readonly apiBase = environment.auth_apiBaseUrl;
 
+  canEdit = false; // only true for paid plans
+
   constructor(private readonly http: HttpClient, private readonly authService: AuthService) {}
 
   ngOnInit(): void {
@@ -31,14 +33,22 @@ export class Setting implements OnInit {
     this.scheduledReport = settings.scheduledReport ?? this.scheduledReport;
     this.feedbackMessage = settings.feedbackMessage ?? this.feedbackMessage;
     this.reminderMessages = settings.reminderMessages ?? this.reminderMessages;
+
+    // Determine whether the current user can edit settings
+    this.loadBillingAndApplyPermissions();
   }
 
   toggle(prop: string) {
+    if (!this.canEdit) {
+      console.warn('Settings editing disabled for Basic plan users');
+      return;
+    }
     (this as any)[prop] = !(this as any)[prop];
     this.saveSettings();
   }
 
   private saveSettings(): void {
+    if (!this.canEdit) return;
     const payload = {
       onDemand: this.onDemand,
       scheduledReport: this.scheduledReport,
@@ -60,6 +70,31 @@ export class Setting implements OnInit {
       error: (err) => {
         console.error('Failed to save settings', err);
         // revert change on error? For now, keep UI state and show console error.
+      }
+    });
+  }
+
+  private loadBillingAndApplyPermissions(): void {
+    const userId = this.authService.getUserId() || (this.authService.getCurrentUser() as any)?.userId;
+    if (!userId) {
+      this.canEdit = false;
+      return;
+    }
+
+    this.http.get<any>(`${this.apiBase}/billing/${userId}`).subscribe({
+      next: (res) => {
+        const planName = (res?.planName || '').toString().toUpperCase();
+        const planCode = (res?.planTemplate?.planCode || res?.planCode || '').toString().toUpperCase();
+        // Allow only STANDARD, PREMIUM, PROPLUS (and any non-BASIC)
+        if (planName === 'BASIC' || planCode === 'BASIC' || !planName) {
+          this.canEdit = false;
+        } else {
+          this.canEdit = true;
+        }
+      },
+      error: (err) => {
+        console.warn('Could not load billing info, disabling settings edit', err);
+        this.canEdit = false;
       }
     });
   }
