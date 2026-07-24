@@ -6,7 +6,7 @@ import { Component } from '@angular/core';
   selector: 'app-herosection',
   // imports: [TranslatePipe],
   templateUrl: './herosection.html',
-  styleUrl: './herosection.scss'
+  styleUrls: ['./herosection.scss']
 })
 export class Herosection {
 
