@@ -5,7 +5,7 @@
 .top-header {
     height: 60px;
     z-index: 1035;
-    border-bottom: 1px solid #eaeaea;
+    border-bottom: none; /* removed thin line under header per design */
     align-content: center;
 }
 
