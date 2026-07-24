@@ -249,4 +249,28 @@ public class AuthController {
         String adminUserId = jwtUtil.extractUserId(token);
         return userManagementService.getUsersByAdminPaginated(adminUserId, page, size, search);
     }
+
+    /**
+     * Save current user's settings. Requires Authorization header.
+     * Only available for paid plans (STANDARD, PREMIUM, PROPLUS).
+     */
+    @PutMapping("/profile/settings")
+    public ResponseEntity<?> saveProfileSettings(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody Map<String, Object> body) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String userId = jwtUtil.extractUserId(token);
+            if (userId == null || userId.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid token"));
+            }
+
+            authService.saveSettingsForUserId(userId, body);
+            return ResponseEntity.ok(Map.of("message", "Settings saved"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to save settings"));
+        }
+    }
 }
