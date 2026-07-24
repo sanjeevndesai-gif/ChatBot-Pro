@@ -28,6 +28,16 @@
 	display: block;
 }
 
+.brand-wordmark-wrap {
+	line-height: 1;
+}
+
+.brand-wordmark {
+	height: 36px;
+	width: auto;
+	display: block;
+}
+
 .navbar-brand .fw-bold {
 	font-size: 1.05rem;
 	color: #087c5a; /* match theme green */
@@ -37,5 +47,6 @@
 	.brand-logo { height: 48px; }
 	.navbar-brand .fw-bold { font-size: 0.95rem; }
 	.header-sub { font-size: 0.6rem; }
+	.brand-wordmark { height: 28px; }
 }
 
