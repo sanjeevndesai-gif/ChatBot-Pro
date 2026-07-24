@@ -22,7 +22,7 @@
 }
 
 .brand-logo {
-	height: 44px;
+	height: 64px;
 	width: auto;
 	object-fit: contain;
 	display: block;
@@ -34,7 +34,7 @@
 }
 
 @media (max-width: 575px) {
-	.brand-logo { height: 36px; }
+	.brand-logo { height: 48px; }
 	.navbar-brand .fw-bold { font-size: 0.95rem; }
 	.header-sub { font-size: 0.6rem; }
 }
