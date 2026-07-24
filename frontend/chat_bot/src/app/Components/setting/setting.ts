@@ -43,8 +43,27 @@ export class Setting implements OnInit {
       console.warn('Settings editing disabled for Basic plan users');
       return;
     }
+    // Toggle local UI state only; do not call backend until user clicks Save
     (this as any)[prop] = !(this as any)[prop];
+  }
+
+  // Called by Save button - performs backend save
+  onSave(): void {
+    if (!this.canEdit) {
+      console.warn('Save blocked: Basic plan users cannot save settings');
+      return;
+    }
     this.saveSettings();
+  }
+
+  // Revert UI state to stored settings
+  onCancel(): void {
+    const user = this.authService.getCurrentUser();
+    const settings = (user as any)?.settings || {};
+    this.onDemand = settings.onDemand ?? this.onDemand;
+    this.scheduledReport = settings.scheduledReport ?? this.scheduledReport;
+    this.feedbackMessage = settings.feedbackMessage ?? this.feedbackMessage;
+    this.reminderMessages = settings.reminderMessages ?? this.reminderMessages;
   }
 
   private saveSettings(): void {

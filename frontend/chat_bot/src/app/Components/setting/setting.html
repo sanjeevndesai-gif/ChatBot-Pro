@@ -69,3 +69,8 @@
   </div>
 
 </div>
+        <!-- Action buttons -->
+        <div class="settings-actions" style="margin-top:16px; display:flex; gap:8px;">
+          <button class="btn btn-primary" (click)="onSave()" [disabled]="!canEdit">Save</button>
+          <button class="btn btn-secondary" (click)="onCancel()">Cancel</button>
+        </div>
