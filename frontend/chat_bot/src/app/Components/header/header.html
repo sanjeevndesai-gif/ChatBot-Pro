@@ -10,6 +10,12 @@
             </div>
         </a>
 
+        <!-- Organization display (right side) -->
+        <div class="org-display ms-auto me-3" *ngIf="orgName">
+            <div class="org-label">Organization</div>
+            <div class="org-name">{{ orgName }}</div>
+        </div>
+
         <button class="navbar-toggler" type="button" (click)="toggleCollapse()" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>

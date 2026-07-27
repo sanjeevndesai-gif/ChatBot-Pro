@@ -26,6 +26,7 @@ export class Header implements OnInit {
   qrDropdownOpen = false;
   qrLoading = false;
   qrError = '';
+  orgName: string | null = null;
 
   constructor(
     private readonly router: Router,
@@ -34,6 +35,7 @@ export class Header implements OnInit {
   ) { }
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
+    this.orgName = user?.orgname || user?.organization || user?.payload?.orgname || user?.payload?.organization || null;
     // Only request backend QR when the user has a valid auth token (prevents unauthenticated 401 calls on public pages)
     if (user?.userId && this.authService.isLoggedIn()) {
       this.qrLoading = true;
