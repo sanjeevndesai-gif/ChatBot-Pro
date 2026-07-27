@@ -146,7 +146,6 @@ export class BookAppointment implements OnInit {
   /** LOAD BOOKED APPOINTMENTS */
   /** LOAD BOOKED APPOINTMENTS */
   loadBookedAppointments(doctorId?: string) {
-
     this.appointmentService.getAppointments()
       .subscribe((appointments: any[]) => {
 
@@ -154,6 +153,14 @@ export class BookAppointment implements OnInit {
         console.log('loadBookedAppointments -> appointments:', appointments);
 
         const items = Array.isArray(appointments) ? appointments : [];
+
+        // Resolve current logged-in user id to scope appointments to this clinic
+        const authUser = this.authService.getCurrentUser();
+        let currentUserId = '';
+        if (authUser) {
+          currentUserId = (authUser as any).userId ?? (authUser as any).mongoId ?? (authUser as any).id ?? (authUser as any)._id ?? '';
+          currentUserId = currentUserId ? String(currentUserId) : '';
+        }
 
         const matchesDoctor = (a: any, id?: string) => {
           if (!id) return true; // no filter
@@ -165,15 +172,26 @@ export class BookAppointment implements OnInit {
           return false;
         };
 
-        const filtered = items.filter(a => matchesDoctor(a, doctorId));
+        // Only include appointments that belong to this clinic (by createdBy/orgId) when a clinic user is logged in
+        const clinicMatches = (a: any) => {
+          if (!currentUserId) return true; // dev / fallback: show all
+          if (!a) return false;
+          const createdBy = typeof a.createdBy === 'object' ? (a.createdBy.id || a.createdBy._id || a.createdBy) : a.createdBy;
+          const orgId = a.orgId || a.organization || a.clinicId || null;
+          if (createdBy && String(createdBy) === currentUserId) return true;
+          if (orgId && String(orgId) === currentUserId) return true;
+          return false;
+        };
+
+        const filtered = items.filter(a => clinicMatches(a) && matchesDoctor(a, doctorId));
 
         console.log('loadBookedAppointments -> filtered count:', filtered.length);
 
         // If appointments don't contain doctor/resource identifiers, fall back
-        // to matching by date+timeSlot when viewing a single doctor's calendar.
+        // to matching by date+time when viewing a single doctor's calendar.
         let toMark = filtered;
         if (doctorId && toMark.length === 0) {
-          const fallback = items.filter(a => a && a.appointmentDate && a.timeSlot && a.status === 'BOOKED');
+          const fallback = items.filter(a => clinicMatches(a) && a && a.appointmentDate && a.timeSlot && a.status === 'BOOKED');
           console.log('loadBookedAppointments -> fallback by date/time count:', fallback.length);
           toMark = fallback;
         }
