@@ -1,8 +1,9 @@
 package com.arnan.chat.Controller;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +71,32 @@ public class WhatsAppWebhookController {
 
 					log.info("➡️ Message from {} : {}", from, text);
 
-					// ✅ Parse appointmentType and userId from QR deep link
-					Map<String, String> params = Arrays.stream(text.split("&")).map(s -> s.split("=", 2))
-							.filter(arr -> arr.length == 2).collect(Collectors.toMap(arr -> arr[0], arr -> arr[1]));
-					String appointmentType = params.getOrDefault("type", "general");
-					String userId = params.getOrDefault("userId", from);
+					// ✅ Support two QR deep-link formats:
+					// 1) Plain params: "type=doctor&userId=..."
+					// 2) REF token: "REF:<base64UrlToken>" where token encodes "type:userId"
+					String appointmentType = "general";
+					String userId = from;
+
+					if (text != null && text.startsWith("REF:")) {
+						String token = text.substring(4).trim();
+						try {
+							String payload = new String(Base64.getUrlDecoder().decode(token), StandardCharsets.UTF_8);
+							int idx = payload.indexOf(':');
+							if (idx > 0) {
+								appointmentType = payload.substring(0, idx);
+								userId = payload.substring(idx + 1);
+							}
+						} catch (Exception e) {
+							log.warn("Failed to decode REF token", e);
+						}
+					} else {
+						Map<String, String> params = java.util.stream.Stream.of(text.split("&"))
+								.map(s -> s.split("=", 2))
+								.filter(arr -> arr.length == 2)
+								.collect(Collectors.toMap(arr -> arr[0], arr -> arr[1]));
+						appointmentType = params.getOrDefault("type", "general");
+						userId = params.getOrDefault("userId", from);
+					}
 					// Decide flowId dynamically
 					String flowId = switch (appointmentType.toLowerCase()) {
 					case "doctor" -> "DOCTOR_FLOW";

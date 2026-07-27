@@ -353,9 +353,10 @@ export class BookAppointment implements OnInit {
 
   setWeekStart(date: Date) {
 
+    // Start the visible week at the exact provided date (so calendar
+    // begins with 'today' when called with today's date).
     const d = new Date(date);
-    d.setDate(d.getDate() - d.getDay());
-
+    d.setHours(0,0,0,0);
     this.currentWeekStart = d;
 
     this.buildWeek();

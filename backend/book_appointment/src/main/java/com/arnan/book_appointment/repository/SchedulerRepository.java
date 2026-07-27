@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 @Repository
@@ -58,27 +57,26 @@ public class SchedulerRepository {
         List<Document> list = new ArrayList<>();
         // Try many common nested paths and also a regex fallback to handle
         // string variations (extra whitespace, stringified JSON, different id field names)
-        List<String> paths = Arrays.asList(
-                "daySlots.slots.createdBy",
-                "daySlots.slots.createdBy.id",
-                "daySlots.slots.createdBy._id",
-                "daySlots.slots.createdBy.userId",
+        List<String> paths = new ArrayList<>();
+        paths.add("daySlots.slots.createdBy");
+        paths.add("daySlots.slots.createdBy.id");
+        paths.add("daySlots.slots.createdBy._id");
+        paths.add("daySlots.slots.createdBy.userId");
 
-                "resourceSchedules.daySlots.slots.createdBy",
-                "resourceSchedules.daySlots.slots.createdBy.id",
-                "resourceSchedules.daySlots.slots.createdBy._id",
-                "resourceSchedules.daySlots.slots.createdBy.userId",
+        paths.add("resourceSchedules.daySlots.slots.createdBy");
+        paths.add("resourceSchedules.daySlots.slots.createdBy.id");
+        paths.add("resourceSchedules.daySlots.slots.createdBy._id");
+        paths.add("resourceSchedules.daySlots.slots.createdBy.userId");
 
-                // sometimes createdBy is stored at resourceSchedules level
-                "resourceSchedules.createdBy",
-                "resourceSchedules.createdBy.id",
+        // sometimes createdBy is stored at resourceSchedules level
+        paths.add("resourceSchedules.createdBy");
+        paths.add("resourceSchedules.createdBy.id");
 
-                // scheduler-level createdBy
-                "createdBy",
-                "createdBy.id",
-                "createdBy._id",
-                "createdBy.userId"
-        );
+        // scheduler-level createdBy
+        paths.add("createdBy");
+        paths.add("createdBy.id");
+        paths.add("createdBy._id");
+        paths.add("createdBy.userId");
 
         List<Document> ors = new ArrayList<>();
 

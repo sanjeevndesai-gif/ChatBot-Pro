@@ -195,6 +195,7 @@ export class Scheduler implements AfterViewInit, OnInit {
   // };
 
   calendarOptions: CalendarOptions = {
+    initialDate: this.todayString,
     // Note: removed hard `validRange` start to allow showing schedules
     // that may have dates before today. This ensures newly-created
     // schedules with explicit dates are visible in the calendar.
@@ -1156,6 +1157,15 @@ export class Scheduler implements AfterViewInit, OnInit {
         this.syncCalendar();
       }
     }, 500);
+    // Ensure calendar always opens focused on today
+    setTimeout(() => {
+      try {
+        const api = this.calendar?.getApi();
+        if (api) api.gotoDate(new Date());
+      } catch (e) {
+        // ignore if calendar not yet ready
+      }
+    }, 700);
   }
 
 

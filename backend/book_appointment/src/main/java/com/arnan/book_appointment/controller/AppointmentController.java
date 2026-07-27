@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.arnan.book_appointment.service.AppointmentService;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +40,14 @@ public class AppointmentController {
 
     // ================= CREATE =================
     @PostMapping
-    public ResponseEntity<Document> create(@RequestBody Object appointmentPayload) {
+        public ResponseEntity<Document> create(
+            @RequestBody Object appointmentPayload,
+            @RequestHeader(name = "X-User-Id", required = false) String forwardedUserId,
+            @RequestHeader(name = "Authorization", required = false) String authHeader) {
+
         Document appointment = toDocument(appointmentPayload);
-        log.info("POST /api/appointments - create: {}", appointment);
-        return ResponseEntity.ok(service.create(appointment));
+        log.info("POST /api/appointments - create request forwardedUserId={}, auth present={}", forwardedUserId != null, authHeader != null);
+        return ResponseEntity.ok(service.createWithInference(appointment, forwardedUserId, authHeader));
     }
 
     // ================= UPDATE =================
@@ -79,6 +81,21 @@ public class AppointmentController {
     public ResponseEntity<List<Document>> getAll() {
         log.info("GET /api/appointments - list all");
         return ResponseEntity.ok(service.getAll());
+    }
+
+    // ================= GET FOR USER'S CLINIC =================
+    @GetMapping("/clinic")
+    public ResponseEntity<List<Document>> getForClinic(@RequestParam(required = false) String userId) {
+        log.info("GET /api/appointments/clinic - userId={}", userId);
+        return ResponseEntity.ok(service.getByClinicForUser(userId));
+    }
+
+    @GetMapping("/clinic/me")
+    public ResponseEntity<List<Document>> getForClinicMe(
+            @RequestHeader(name = "Authorization", required = false) String authHeader,
+            @RequestHeader(name = "X-User-Id", required = false) String forwardedUserId) {
+        log.info("GET /api/appointments/clinic/me - auth present={}, forwardedUserId={}", authHeader != null, forwardedUserId);
+        return ResponseEntity.ok(service.getByClinicForToken(authHeader, forwardedUserId));
     }
 
     // ================= GET BY DATE RANGE =================

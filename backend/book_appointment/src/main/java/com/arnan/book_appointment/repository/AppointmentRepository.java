@@ -3,6 +3,7 @@ package com.arnan.book_appointment.repository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+// avoid Arrays.stream to support older Java/compiler setups
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -106,12 +107,93 @@ public class AppointmentRepository {
         return list;
     }
 
+    public List<Document> findByOrgId(String orgId) {
+        if (orgId == null) return List.of();
+        Bson filter = eq("orgId", orgId);
+        FindIterable<Document> docs = getCollection().find(filter);
+
+        List<Document> list = new ArrayList<>();
+        for (Document d : docs) list.add(d);
+        return list;
+    }
+    
+    public List<Document> findByOrgName(String orgName) {
+        if (orgName == null) return List.of();
+        Bson filter = eq("orgname", orgName);
+        FindIterable<Document> docs = getCollection().find(filter);
+
+        List<Document> list = new ArrayList<>();
+        for (Document d : docs) list.add(d);
+        return list;
+    }
+
+    public List<Document> findByBookingUser(String userId) {
+        if (userId == null) return List.of();
+
+        String id = userId.trim();
+
+        // Common fields that may reference the booking user in various schemas
+        String[] fields = new String[]{"userId", "createdBy", "bookedBy", "bookingUser", "booking_by", "booked_by"};
+
+        // Build string-equality filter
+        Bson[] strParts = java.util.Arrays.stream(fields).map(f -> eq(f, id)).toArray(Bson[]::new);
+        Bson strFilter = or(strParts);
+
+        // If the id is a valid ObjectId, also try ObjectId equality on the same fields
+        Bson finalFilter = strFilter;
+        try {
+            ObjectId oid = new ObjectId(id);
+            Bson[] oidParts = java.util.Arrays.stream(fields).map(f -> eq(f, oid)).toArray(Bson[]::new);
+            Bson oidFilter = or(oidParts);
+            finalFilter = or(strFilter, oidFilter);
+        } catch (IllegalArgumentException ignored) {
+            // not a valid ObjectId, ignore
+        }
+
+        FindIterable<Document> docs = getCollection().find(finalFilter);
+
+        List<Document> list = new ArrayList<>();
+        for (Document d : docs) list.add(d);
+        return list;
+    }
+
+    public List<Document> findByCreatedBy(String createdBy) {
+        if (createdBy == null) return List.of();
+
+        String id = createdBy.trim();
+
+        // Accept both 'createdBy' and 'created_by' field variants
+        String[] fields = new String[]{"createdBy", "created_by"};
+
+        Bson[] strParts = java.util.Arrays.stream(fields).map(f -> eq(f, id)).toArray(Bson[]::new);
+        Bson strFilter = or(strParts);
+
+        Bson finalFilter = strFilter;
+        try {
+            ObjectId oid = new ObjectId(id);
+            Bson[] oidParts = java.util.Arrays.stream(fields).map(f -> eq(f, oid)).toArray(Bson[]::new);
+            Bson oidFilter = or(oidParts);
+            finalFilter = or(strFilter, oidFilter);
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        FindIterable<Document> docs = getCollection().find(finalFilter);
+        List<Document> list = new ArrayList<>();
+        for (Document d : docs) list.add(d);
+        return list;
+    }
+
     public void update(Document doc, ObjectId id) {
 
         Bson filter = eq("_id", id);
         BasicDBObject update = new BasicDBObject("$set", doc);
 
         getCollection().updateOne(filter, update);
+    }
+
+    public Document findByAppointmentNumber(String appointmentNumber) {
+        if (appointmentNumber == null) return null;
+        return getCollection().find(eq("appointmentNumber", appointmentNumber)).first();
     }
 
     public void delete(ObjectId id) {

@@ -37,6 +37,7 @@
                         <option value="Completed">Completed</option>
                         <option value="Pending">Pending</option>
                         <option value="Cancelled">Cancelled</option>
+                        <option value="Inactive">Inactive</option>
                     </select>
                 </div>
 
@@ -44,6 +45,9 @@
                 <div class="button-group">
                     <button class="btn btn-secondary" (click)="resetFilters()">
                         <i class="bi bi-arrow-counterclockwise"></i> Clear Filters
+                    </button>
+                    <button class="btn btn-outline-primary" (click)="refreshFromApi()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
                     </button>
                     <button class="btn btn-primary" (click)="exportCSV()">
                         <i class="bi bi-filetype-csv"></i> Export CSV
@@ -56,11 +60,24 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Customer ID</th>
-                            <th>Name</th>
-                            <th>Date</th>
-                            <th>Slot</th>
-                            <th>Status</th>
+                            <th (click)="sortBy('appointmentNumber')" style="cursor:pointer">Appointment Number
+                                <i *ngIf="sortKey==='appointmentNumber'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
+                            <th (click)="sortBy('name')" style="cursor:pointer">Name
+                                <i *ngIf="sortKey==='name'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
+                            <th (click)="sortBy('phone')" style="cursor:pointer">Phone
+                                <i *ngIf="sortKey==='phone'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
+                            <th (click)="sortBy('date')" style="cursor:pointer">Date
+                                <i *ngIf="sortKey==='date'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
+                            <th (click)="sortBy('slot')" style="cursor:pointer">Slot
+                                <i *ngIf="sortKey==='slot'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
+                            <th (click)="sortBy('status')" style="cursor:pointer">Status
+                                <i *ngIf="sortKey==='status'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -68,14 +85,12 @@
                     <tbody class="table-border-bottom-0">
 
                         <!-- LOOP THROUGH DATA -->
-                        <tr *ngFor="let item of pagedList">
-
-
-                            <td>{{ item.id }}</td>
+                        <tr *ngFor="let item of pagedList" [class.table-warning]="item.reportStatus === 'Not Reported'">
+                            <td>{{ item.appointmentNumber || item.id }}</td>
                             <td>{{ item.name }}</td>
+                            <td>{{ item.phone }}</td>
                             <td>{{ item.date }}</td>
                             <td>{{ item.slot }}</td>
-
                             <!-- Status with Bootstrap Icon + Badge -->
                             <td>
                                 <span class="badge" [ngClass]="statusConfig[item.status].badge">
@@ -86,23 +101,32 @@
 
                             <!-- Actions -->
                             <td>
-                                <div class="dropdown">
-                                    <button type="button" class="btn p-0 hide-arrow" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item" href="http://localhost:4200/layout">
-                                            <i class="bi bi-pencil me-1"></i> Edit
-                                        </a>
-                                        <a class="dropdown-item" href="http://localhost:4200/layout">
-                                            <i class="bi bi-trash me-1"></i> Delete
-                                        </a>
-                                    </div>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-success" [class.active]="item.reportStatus === 'Reported'" (click)="markReported(item)">Reported</button>
+                                    <button class="btn btn-sm btn-outline-danger" [class.active]="item.reportStatus === 'Not Reported'" (click)="openNotReportedModal(item)">Not Reported</button>
                                 </div>
                             </td>
 
                         </tr>
+
+                        <!-- Not Reported modal (simple overlay) -->
+                        <div *ngIf="showNotReportedModal" class="modal-backdrop" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1050;">
+                            <div class="card" style="width:420px;padding:16px;">
+                                <h5>Not Reported - Reason</h5>
+                                <div class="mb-2">
+                                    <label class="form-label">Patient</label>
+                                    <div>{{ modalItem?.name }}</div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Reason</label>
+                                    <textarea class="form-control" rows="3" [(ngModel)]="modalReason"></textarea>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-2">
+                                    <button class="btn btn-secondary" (click)="closeNotReportedModal()">Cancel</button>
+                                    <button class="btn btn-danger" (click)="submitNotReportedModal()">Mark Not Reported</button>
+                                </div>
+                            </div>
+                        </div>
 
                     </tbody>
 

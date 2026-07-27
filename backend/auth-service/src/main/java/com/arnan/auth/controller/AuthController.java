@@ -237,6 +237,26 @@ public class AuthController {
         }
     }
 
+    /**
+     * Return the current user based on the Authorization header (Bearer token).
+     * Useful for other services to resolve org/clinic without parsing JWT locally.
+     */
+    @GetMapping("/profile/me")
+    public ResponseEntity<?> getCurrentProfile(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String userId = jwtUtil.extractUserId(token);
+            if (userId == null || userId.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid token"));
+            }
+            Document user = authService.findById(userId);
+            user.remove("password");
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Failed to resolve user"));
+        }
+    }
+
     // New endpoint: Get users by admin (createdBy)
     @GetMapping("/users/by-admin")
     @ResponseStatus(HttpStatus.OK)

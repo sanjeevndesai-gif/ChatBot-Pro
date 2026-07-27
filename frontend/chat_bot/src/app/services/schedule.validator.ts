@@ -6,6 +6,6 @@ export function isValidSchedule(item: any): item is ScheduleItem {
         typeof item?.name === 'string' &&
         typeof item?.date === 'string' &&
         typeof item?.slot === 'string' &&
-        ['Active', 'Completed', 'Pending', 'Cancelled'].includes(item?.status)
+        ['Active', 'Completed', 'Pending', 'Cancelled', 'Inactive'].includes(item?.status)
     );
 }
