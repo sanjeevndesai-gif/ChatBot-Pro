@@ -85,11 +85,45 @@ Patient / Doctor scans QR code
 ```
 
 ### Flow 1 — APPOINTMENT_FLOW
-Patient scans appointment QR → enters Doctor ID → selects date → selects time slot → appointment booked.
+Patient scans clinic QR code → sees doctors in that clinic → selects doctor → chooses Book or Cancel.
+
+**Book path:** ask date → patient name → purpose of visit → show available slots → select slot → create appointment → generate Google Calendar reminder link → confirmation message.
+
+**Cancel path:** look up patient's existing appointments by WhatsApp phone → pick appointment → cancel.
 
 ```
-[QR Scan] → ASK_DOCTOR_ID → FETCH_DOCTOR_PROFILE → ASK_DATE
-         → FETCH_SLOTS → SELECT_SLOT → BOOK_APPOINTMENT → BOOKING_DONE ✅
+[QR: type=appointment&userId=clinicId]
+         │
+         ▼
+WELCOME_CLINIC ──► GET_DOCTORS_BY_CLINIC
+         │
+         ▼
+SHOW_DOCTORS  "1. Dr. Suresh (General Medicine)
+               2. Dr. Anitha (Dentistry)"
+         │  user types "1"
+         ▼
+RESOLVE_DOCTOR ──► selected_doctor = { userId, name, specialization }
+         │
+         ▼
+ACTION_MENU  "1️⃣ Book Appointment  2️⃣ Cancel Appointment"
+         │
+    ┌────┴────────────────────────────┐
+    │ 1 (Book)                        │ 2 (Cancel)
+    ▼                                 ▼
+ASK_DATE                         CANCEL_LOOKUP ──► GET_PATIENT_APPOINTMENTS
+ASK_PATIENT_NAME                      │              (by patientPhone + clinicId)
+ASK_PURPOSE                           ▼
+FETCH_SLOTS ──► GET_AVAILABLE_SLOTS  SHOW_PATIENT_APPOINTMENTS
+SELECT_SLOT                           │  user picks number
+BOOK_APPOINTMENT ──► CREATE_APPT     RESOLVE_CANCEL ──► appointmentNumber
+GENERATE_CALENDAR ──► Google Cal URL  CONFIRM_CANCEL ──► DELETE /by-ref
+BOOKING_CONFIRMED ✅                  CANCEL_DONE ✅
+
+  🎉 Appointment Confirmed!
+  📅 Date: 05-08-2026
+  👤 Patient: Ravi Kumar
+  📋 Purpose: Checkup
+  📆 Add to Google Calendar: https://calendar.google.com/...
 ```
 
 ### Flow 2 — SUPPORT_FLOW
@@ -354,20 +388,31 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up
 
 ### 7 — WhatsApp QR code format
 
-Generate a QR code that encodes one of the following strings and send it to the WhatsApp number configured via `WHATSAPP_PHONE_ID`:
+Generate a QR code that encodes one of the following strings and send it to the WhatsApp number configured via `WHATSAPP_PHONE_ID`. Each clinic/flow has its **own dedicated QR code**.
 
-| Flow | QR payload string | Flow started |
+| Flow | QR payload | Starts |
 |---|---|---|
-| Book Appointment | `REF:<base64("appointment:DOCTOR_USER_ID")>` | APPOINTMENT_FLOW |
-| Application Support | `REF:<base64("support:DOCTOR_USER_ID")>` | SUPPORT_FLOW |
-| Doctor Help | `REF:<base64("doctor_help:DOCTOR_USER_ID")>` | DOCTOR_HELP_FLOW |
-| Clinic Finder | `REF:<base64("clinic:DOCTOR_USER_ID")>` | CLINIC_FINDER_FLOW |
+| Book / Cancel Appointment | `REF:<base64url("appointment:CLINIC_USER_ID")>` | APPOINTMENT_FLOW |
+| Application Support | `REF:<base64url("support:CLINIC_USER_ID")>` | SUPPORT_FLOW |
+| Doctor Help | `REF:<base64url("doctor_help:DOCTOR_USER_ID")>` | DOCTOR_HELP_FLOW |
+| Clinic Finder | `REF:<base64url("clinic:CLINIC_USER_ID")>` | CLINIC_FINDER_FLOW |
 
-Example (Node.js):
+> `CLINIC_USER_ID` is the clinic admin's `userId` stored in the auth-service database.
+
+Example (Node.js to generate a QR payload):
 ```js
-const token = Buffer.from('appointment:doc001').toString('base64url');
-// QR encodes: REF:<token>
+const token = Buffer.from('appointment:clinic001').toString('base64url');
+const qrContent = `REF:${token}`;
+// → QR image encodes: REF:YXBwb2ludG1lbnQ6Y2xpbmljMDAx
 ```
+
+**What happens when patient scans:**
+1. WhatsApp sends the QR content as the patient's first message
+2. Chat service detects it's a QR payload (starts with `REF:` or contains `type=`)
+3. Decodes `clinicId` from the token
+4. Creates a new session at the flow's first step
+5. Sends the first prompt message to the patient
+6. Patient's **next reply** is their actual response (the QR content is never treated as input)
 
 
 ## Setup and Run Application Locally
