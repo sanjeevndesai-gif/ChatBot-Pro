@@ -1,0 +1,38 @@
+[
+  {
+    "ticketId": "A1B2C3D4",
+    "phone": "911234567890",
+    "issueType": "1",
+    "issueTypeLabel": "Technical Issue",
+    "description": "I cannot log into my account. The page keeps refreshing after entering credentials.",
+    "status": "OPEN",
+    "createdAt": "2026-07-28T09:15:00Z"
+  },
+  {
+    "ticketId": "E5F6G7H8",
+    "phone": "919876543210",
+    "issueType": "2",
+    "issueTypeLabel": "Billing Issue",
+    "description": "I was charged twice for my subscription this month. Please refund the duplicate payment.",
+    "status": "IN_PROGRESS",
+    "createdAt": "2026-07-27T14:30:00Z"
+  },
+  {
+    "ticketId": "I9J0K1L2",
+    "phone": "911122334455",
+    "issueType": "3",
+    "issueTypeLabel": "General Query",
+    "description": "How do I change the language of the chatbot to Tamil?",
+    "status": "RESOLVED",
+    "createdAt": "2026-07-25T10:00:00Z"
+  },
+  {
+    "ticketId": "M3N4O5P6",
+    "phone": "916677889900",
+    "issueType": "1",
+    "issueTypeLabel": "Technical Issue",
+    "description": "The appointment booking QR code is not working on my Android device.",
+    "status": "OPEN",
+    "createdAt": "2026-07-29T07:45:00Z"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "doctorId": "doc001",
+    "patientPhone": "911234567890",
+    "patientName": "Ravi Kumar",
+    "appointmentDate": "2026-08-05",
+    "slot": "1",
+    "startTime": "09:00",
+    "endTime": "09:30",
+    "appointmentType": "appointment",
+    "status": "BOOKED",
+    "appointmentNumber": "APT-001",
+    "userId": "doc001",
+    "appId": "app001",
+    "createdAt": "2026-07-28T10:00:00Z"
+  },
+  {
+    "doctorId": "doc001",
+    "patientPhone": "919876543210",
+    "patientName": "Priya Sharma",
+    "appointmentDate": "2026-08-05",
+    "slot": "2",
+    "startTime": "09:30",
+    "endTime": "10:00",
+    "appointmentType": "appointment",
+    "status": "BOOKED",
+    "appointmentNumber": "APT-002",
+    "userId": "doc001",
+    "appId": "app001",
+    "createdAt": "2026-07-28T11:00:00Z"
+  },
+  {
+    "doctorId": "doc002",
+    "patientPhone": "911122334455",
+    "patientName": "Arjun Nair",
+    "appointmentDate": "2026-08-06",
+    "slot": "1",
+    "startTime": "10:00",
+    "endTime": "10:30",
+    "appointmentType": "appointment",
+    "status": "BOOKED",
+    "appointmentNumber": "APT-003",
+    "userId": "doc002",
+    "appId": "app001",
+    "createdAt": "2026-07-29T09:00:00Z"
+  },
+  {
+    "doctorId": "doc001",
+    "patientPhone": "916677889900",
+    "patientName": "Meena Iyer",
+    "appointmentDate": "2026-08-05",
+    "slot": "3",
+    "startTime": "10:00",
+    "endTime": "10:30",
+    "appointmentType": "general",
+    "status": "CANCELLED",
+    "appointmentNumber": "APT-004",
+    "userId": "doc001",
+    "appId": "app001",
+    "createdAt": "2026-07-27T08:30:00Z"
+  }
+]

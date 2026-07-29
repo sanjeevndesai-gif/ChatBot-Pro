@@ -1,0 +1,42 @@
+[
+  {
+    "key": "welcome_message",
+    "value": "👋 Welcome to *{ClientName}* clinic!\nPlease choose your preferred doctor:\n\n{list of doctor}\n\nReply with a number:",
+    "locale": "en"
+  },
+  {
+    "key": "select_date_message",
+    "value": "📅 Please enter your preferred appointment date (DD-MM-YYYY):",
+    "locale": "en"
+  },
+  {
+    "key": "select_slot_message",
+    "value": "⏰ Available time slots for {date}:\n\n{slots}\n\nPlease reply with a slot number:",
+    "locale": "en"
+  },
+  {
+    "key": "confirm_booking_message",
+    "value": "✅ Your appointment is being confirmed...",
+    "locale": "en"
+  },
+  {
+    "key": "booking_done_message",
+    "value": "🎉 *Booking Confirmed!*\nYour appointment has been successfully booked.\n\nType *hi* to book another or scan the QR code again.",
+    "locale": "en"
+  },
+  {
+    "key": "session_timeout_message",
+    "value": "⏳ Your session has expired due to inactivity.\nPlease scan the QR code again to start a new session.",
+    "locale": "en"
+  },
+  {
+    "key": "support_ticket_created",
+    "value": "✅ *Support Ticket Created!*\nTicket ID: *{ticketId}*\n\nOur team will contact you via WhatsApp within 24 hours.",
+    "locale": "en"
+  },
+  {
+    "key": "schedule_saved",
+    "value": "✅ Your schedule has been saved successfully!\nPatients can now book appointments with you.",
+    "locale": "en"
+  }
+]

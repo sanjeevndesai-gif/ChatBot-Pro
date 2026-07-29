@@ -1,0 +1,58 @@
+[
+  {
+    "userId": "doc001",
+    "name": "Dr. Suresh Patel",
+    "fullname": "Dr. Suresh Patel",
+    "email": "suresh.patel@citycare.com",
+    "phone": "919000000001",
+    "role": "doctor",
+    "specialization": "General Medicine",
+    "clinicName": "City Care Clinic",
+    "address": "Mumbai",
+    "city": "Mumbai",
+    "occupation": "Doctor",
+    "createdBy": "admin001",
+    "createdAt": "2026-01-10T08:00:00Z"
+  },
+  {
+    "userId": "doc002",
+    "name": "Dr. Anitha Reddy",
+    "fullname": "Dr. Anitha Reddy",
+    "email": "anitha.reddy@dentalcare.com",
+    "phone": "919000000002",
+    "role": "doctor",
+    "specialization": "Dentistry",
+    "clinicName": "Dental Care Centre",
+    "address": "Bangalore",
+    "city": "Bangalore",
+    "occupation": "Dentist",
+    "createdBy": "admin001",
+    "createdAt": "2026-02-15T08:00:00Z"
+  },
+  {
+    "userId": "doc003",
+    "name": "Dr. Ramesh Iyer",
+    "fullname": "Dr. Ramesh Iyer",
+    "email": "ramesh.iyer@skincare.com",
+    "phone": "919000000003",
+    "role": "doctor",
+    "specialization": "Dermatology",
+    "clinicName": "Skin & Hair Clinic",
+    "address": "Mumbai",
+    "city": "Mumbai",
+    "occupation": "Doctor",
+    "createdBy": "admin001",
+    "createdAt": "2026-03-20T08:00:00Z"
+  },
+  {
+    "userId": "admin001",
+    "name": "Admin User",
+    "fullname": "Admin User",
+    "email": "admin@chatbotpro.com",
+    "phone": "919999999999",
+    "role": "admin",
+    "address": "India",
+    "occupation": "Administrator",
+    "createdAt": "2026-01-01T00:00:00Z"
+  }
+]

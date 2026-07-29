@@ -1,0 +1,64 @@
+[
+  {
+    "doctorId": "doc001",
+    "userId": "doc001",
+    "createdBy": "doc001",
+    "daySlots": [
+      {
+        "date": "2026-08-05",
+        "unavailable": false,
+        "slots": [
+          { "start": "09:00", "end": "09:30", "booked": false },
+          { "start": "09:30", "end": "10:00", "booked": false },
+          { "start": "10:00", "end": "10:30", "booked": false },
+          { "start": "10:30", "end": "11:00", "booked": false },
+          { "start": "11:00", "end": "11:30", "booked": false },
+          { "start": "11:30", "end": "12:00", "booked": false }
+        ]
+      },
+      {
+        "date": "2026-08-06",
+        "unavailable": false,
+        "slots": [
+          { "start": "09:00", "end": "09:30", "booked": false },
+          { "start": "09:30", "end": "10:00", "booked": false },
+          { "start": "10:00", "end": "10:30", "booked": false },
+          { "start": "14:00", "end": "14:30", "booked": false },
+          { "start": "14:30", "end": "15:00", "booked": false }
+        ]
+      },
+      {
+        "date": "2026-08-07",
+        "unavailable": true,
+        "slots": []
+      }
+    ],
+    "createdAt": "2026-07-01T08:00:00Z"
+  },
+  {
+    "doctorId": "doc002",
+    "userId": "doc002",
+    "createdBy": "doc002",
+    "daySlots": [
+      {
+        "date": "2026-08-05",
+        "unavailable": false,
+        "slots": [
+          { "start": "10:00", "end": "10:30", "booked": false },
+          { "start": "10:30", "end": "11:00", "booked": false },
+          { "start": "15:00", "end": "15:30", "booked": false },
+          { "start": "15:30", "end": "16:00", "booked": false }
+        ]
+      },
+      {
+        "date": "2026-08-06",
+        "unavailable": false,
+        "slots": [
+          { "start": "10:00", "end": "10:30", "booked": false },
+          { "start": "10:30", "end": "11:00", "booked": false }
+        ]
+      }
+    ],
+    "createdAt": "2026-07-10T08:00:00Z"
+  }
+]
