@@ -66,6 +66,9 @@
                             <th (click)="sortBy('name')" style="cursor:pointer">Name
                                 <i *ngIf="sortKey==='name'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
                             </th>
+                            <th (click)="sortBy('doctorName')" style="cursor:pointer">Doctor
+                                <i *ngIf="sortKey==='doctorName'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
+                            </th>
                             <th (click)="sortBy('phone')" style="cursor:pointer">Phone
                                 <i *ngIf="sortKey==='phone'" class="bi" [ngClass]="sortDir==='asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'"></i>
                             </th>
@@ -88,6 +91,7 @@
                         <tr *ngFor="let item of pagedList" [class.table-warning]="item.reportStatus === 'Not Reported'">
                             <td>{{ item.appointmentNumber || item.id }}</td>
                             <td>{{ item.name }}</td>
+                            <td>{{ item.doctorName || '-' }}</td>
                             <td>{{ item.phone }}</td>
                             <td>{{ item.date }}</td>
                             <td>{{ item.slot }}</td>

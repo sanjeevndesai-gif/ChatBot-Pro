@@ -325,6 +325,7 @@ export class Schedulereport {
         this.safe(item.appointmentNumber).includes(text) ||
         this.safe(item.id).includes(text) ||
         this.safe(item.name).includes(text) ||
+        this.safe((item as any).doctorName).includes(text) ||
         this.safe(item.status).includes(text) ||
         this.safe(item.date).includes(text) ||
         this.safe(item.slot).includes(text);
@@ -381,6 +382,7 @@ export class Schedulereport {
     const rows = this.filteredList.map(i => ({
       appointmentNumber: i.appointmentNumber || i.id || '',
       name: i.name,
+      doctorName: i.doctorName || '',
       date: i.date,
       slot: i.slot,
       status: i.status,
@@ -447,6 +449,7 @@ export class Schedulereport {
     ws['!cols'] = [
       { wch: 24 }, // appointmentNumber
       { wch: 20 }, // name
+      { wch: 20 }, // doctorName
       { wch: 12 }, // date
       { wch: 18 }, // slot
       { wch: 12 }, // status

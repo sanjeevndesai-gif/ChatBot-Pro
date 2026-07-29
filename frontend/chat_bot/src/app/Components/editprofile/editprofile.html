@@ -49,8 +49,8 @@
           <select [(ngModel)]="user.country" name="country">
             <option value="">Select</option>
             <option value="India">India</option>
-            <option value="USA">USA</option>
-            <option value="UK">UK</option>
+            <option value="United States">United States</option>
+            <option value="United Kingdom">United Kingdom</option>
             <option value="Canada">Canada</option>
             <option value="Australia">Australia</option>
           </select>
@@ -71,8 +71,7 @@
         <button type="button" class="btn light" (click)="cancel()">Cancel</button>
       </div>
 
-      <div *ngIf="saveError" class="alert alert-danger mt-3">{{ saveError }}</div>
-      <div *ngIf="saveSuccess" class="alert alert-success mt-3">{{ saveSuccess }}</div>
+      <!-- Using global toast for messages; inline alerts removed -->
     </form>
   </div>
 

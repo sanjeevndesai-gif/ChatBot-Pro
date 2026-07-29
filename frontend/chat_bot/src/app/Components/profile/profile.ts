@@ -77,23 +77,35 @@ export class Profile implements OnInit, AfterViewInit {
       });
     }
 
-    // Count existing doctors
-    this.userService.getUsers(0, 1000, '').subscribe({
+    // Count existing doctors — use by-admin endpoint so we only count users created by this admin
+    this.userService.getUsersByAdmin(0, 1000, '').subscribe({
       next: (res: any) => {
         const all: any[] = res?.content ?? [];
-        this.doctorCount = all.filter(
-          (u: any) => (u.payload?.role ?? '').toLowerCase() === 'doctor'
-        ).length;
+        const mongoId = (this.user as any)?.mongoId;
+        const currentId = mongoId || (this.user as any)?.userId || (this.user as any)?.id || (this.user as any)?._id || null;
+        this.doctorCount = all
+          .map((u: any) => ({ usersId: u.id || u._id, ...u.payload }))
+          .filter((u: any) => (u.role ?? '').toLowerCase() === 'doctor' && (u.usersId !== currentId)).length;
+      },
+      error: () => {
+        // if by-admin lookup fails, fallback to safe default (don't block Add User)
+        this.doctorCount = 0;
       }
     });
   }
 
   get profilePhoto(): string {
+    // Prefer photo stored in the user document (saved after profile update)
+    const userPhoto = (this.user as any)?.profilePhoto || (this.user as any)?.photo || null;
+    if (userPhoto) return userPhoto;
+
+    // Backwards compatibility: fall back to legacy localStorage key
     const mongoId = (this.user as any)?.mongoId;
     if (mongoId) {
       const saved = localStorage.getItem('profile_photo_' + mongoId);
       if (saved) return saved;
     }
+
     return 'https://i.pravatar.cc/150';
   }
 

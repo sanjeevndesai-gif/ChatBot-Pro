@@ -267,6 +267,7 @@ export class ScheduleService {
             slot: toSlot(),
             status: toStatus(),
             phone: String(pick('phone', 'mobile', 'contact', 'phoneNumber') || ''),
+            doctorName: String(pick('doctorName', 'doctor', 'practitioner', 'provider', 'doctor_name') || ''),
             reportStatus: (() => {
                 const raw = pick('reportStatus', 'reported', 'isReported');
                 if (raw === null) return 'Reported';

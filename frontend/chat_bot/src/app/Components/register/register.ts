@@ -128,6 +128,8 @@ export class Register {
       fullname: v.fullname,
       email: v.email,
       phone_number: `${v.country_code} ${v.phone_number}`,
+      country: v.country,
+      country_code: v.country_code,
       address: v.address,
       orgname: v.orgname,
       services: v.services === 'other' ? v.otherServices : v.services,

@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 
 import { AuthService } from '../../services/auth.service';
 import { StorageService } from '../../core/services/storage.service';
+import { ToastService } from '../../services/toast.service';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -20,8 +21,7 @@ export class EditProfile implements OnInit {
 
   user: any = {};
   apiUrl = environment.auth_apiBaseUrl;
-  saveError = '';
-  saveSuccess = '';
+  // Using global toast for messages; local saveError/saveSuccess removed
   photoPreview: string | null = null;
 
   currentPassword = '';
@@ -34,6 +34,7 @@ export class EditProfile implements OnInit {
     private http: HttpClient,
     private authService: AuthService,
     private storage: StorageService,
+    private toastService: ToastService,
     private router: Router
   ) { }
 
@@ -47,11 +48,19 @@ export class EditProfile implements OnInit {
     }
 
     // Normalize field names: registration stores phone_number / orgname
+    // Derive country from stored fields. Registration sometimes stores country_code or phone pattern.
+    const derivedCountry = (storedUser as any).country
+      || (storedUser as any).country_code && ((storedUser as any).country_code.indexOf('+91') === 0 ? 'India' :
+          (storedUser as any).country_code.indexOf('+1') === 0 ? 'USA' :
+          (storedUser as any).country_code.indexOf('+44') === 0 ? 'UK' :
+          (storedUser as any).country_code.indexOf('+61') === 0 ? 'Australia' : '')
+      || ((storedUser as any).phone_number || '').toString().startsWith('+91') ? 'India' : '';
+
     this.user = {
       ...storedUser,
       phone: (storedUser as any).phone || (storedUser as any).phone_number || '',
       orgname: (storedUser as any).orgname || (storedUser as any).orgId || '',
-      country: (storedUser as any).country || '',
+      country: derivedCountry || '',
       language: (storedUser as any).language || 'English',
       address: (storedUser as any).address || ''
     };
@@ -68,7 +77,16 @@ export class EditProfile implements OnInit {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      this.saveError = 'Please select a valid image file.';
+      const msg = 'Please select a valid image file.';
+      this.toastService.error(msg);
+      return;
+    }
+
+    // Prevent very large images from being stored in localStorage as Base64
+    const maxBytes = 1.5 * 1024 * 1024; // 1.5 MB
+    if (file.size > maxBytes) {
+      const msg = 'Image too large. Please choose an image smaller than 1.5 MB.';
+      this.toastService.error(msg);
       return;
     }
 
@@ -89,19 +107,15 @@ export class EditProfile implements OnInit {
   saveProfile() {
     const mongoId = this.user.mongoId;
     if (!mongoId) {
-      this.saveError = 'Unable to save: user session is missing ID. Please log out and log in again.';
+      const msg = 'Unable to save: user session is missing ID. Please log out and log in again.';
+      this.toastService.error(msg);
       return;
     }
 
-    this.saveError = '';
-    this.saveSuccess = '';
+    // Clear previous messages handled by toast; no local inline state.
 
-    // Save photo to localStorage (no backend blob storage yet)
-    if (this.photoPreview) {
-      localStorage.setItem('profile_photo_' + mongoId, this.photoPreview);
-    }
-
-    const payload = {
+    // Build payload and include photo (Base64) if present so backend can persist it to DB
+    const payload: any = {
       fullname: this.user.fullname,
       email: this.user.email,
       phone: this.user.phone,
@@ -110,6 +124,10 @@ export class EditProfile implements OnInit {
       language: this.user.language
     };
 
+    if (this.photoPreview) {
+      payload['profilePhoto'] = this.photoPreview;
+    }
+
     this.http.put(`${this.apiUrl}/profile/${mongoId}`, payload).subscribe({
       next: () => {
         const updatedUser = {
@@ -117,13 +135,15 @@ export class EditProfile implements OnInit {
           ...payload,
           phone_number: this.user.phone  // keep registration field in sync
         };
+        // store updated user including profilePhoto so UI can read from storage
         this.storage.setItem('auth_user', updatedUser);
-        this.saveSuccess = 'Profile saved successfully!';
+        this.toastService.success('Profile saved successfully!');
         setTimeout(() => this.router.navigate(['/app/profile']), 1000);
       },
       error: (err) => {
         console.error('Profile update failed', err);
-        this.saveError = err?.error?.message || 'Failed to save profile. Please try again.';
+        const msg = err?.error?.message || 'Failed to save profile. Please try again.';
+        this.toastService.error(msg);
       }
     });
   }

@@ -201,6 +201,7 @@ export class ViewUsers implements OnInit {
   openAddUser() {
     const user = this.authService.getCurrentUser();
     const mongoId = (user as any)?.mongoId;
+    const currentId = mongoId || (user as any)?.userId || (user as any)?.id || (user as any)?._id || null;
 
     if (!mongoId) {
       this.planLimitInlineMessage = 'Unable to verify your plan. Please login again.';
@@ -213,7 +214,7 @@ export class ViewUsers implements OnInit {
     this.billingService.getBilling(mongoId).subscribe({
       next: (billing) => {
         const doctorCount = this.users.filter(
-          (u: any) => (u.role ?? '').toLowerCase() === 'doctor'
+          (u: any) => (u.role ?? '').toLowerCase() === 'doctor' && (u.usersId || u.id || u._id) !== currentId
         ).length;
 
         // Prefer backend maxDoctors; fallback keeps Basic protected if older API response is missing this field.

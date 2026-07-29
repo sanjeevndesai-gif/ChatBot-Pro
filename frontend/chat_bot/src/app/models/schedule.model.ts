@@ -7,6 +7,7 @@ export interface ScheduleItem {
     slot: string; // HH:MM AM - HH:MM PM
     status: 'Active' | 'Completed' | 'Pending' | 'Cancelled' | 'Inactive';
     phone?: string;
+    doctorName?: string;
     reportStatus?: 'Reported' | 'Not Reported';
     reportReason?: string;
 }

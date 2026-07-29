@@ -12,25 +12,6 @@
 	margin-top: -2px;
 }
 
-.org-display {
-	text-align: right;
-	.org-label {
-		font-size: 0.7rem;
-		color: #6c757d;
-	}
-	.org-name {
-		font-weight: 600;
-		background: #f8f9fa;
-		padding: 6px 10px;
-		border-radius: 6px;
-		border: 1px solid #e9ecef;
-		max-width: 220px;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-}
-
 /* Improved logo wrapper and image sizing */
 .brand-logo-wrapper {
 	display: inline-flex;

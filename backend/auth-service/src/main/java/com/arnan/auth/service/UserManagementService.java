@@ -189,8 +189,21 @@ public class UserManagementService {
         }
         // Always update updatedDate
         doc.put("updatedDate", new java.util.Date());
-        authRepository.updateById(new org.bson.types.ObjectId(id), doc);
-        log.info("Profile updated: id={}", id);
+        org.bson.types.ObjectId oid = null;
+        // id may be either a MongoDB ObjectId hex (24 chars) or a business userId string.
+        if (id != null && id.matches("^[a-fA-F0-9]{24}$")) {
+            oid = new org.bson.types.ObjectId(id);
+        } else {
+            // try finding by userId field
+            Document found = authRepository.findByUserId(id);
+            if (found == null) {
+                throw new RuntimeException("User not found for id=" + id);
+            }
+            oid = found.getObjectId("_id");
+        }
+
+        authRepository.updateById(oid, doc);
+        log.info("Profile updated: id={} (oid={})", id, oid != null ? oid.toHexString() : null);
     } catch (Exception e) {
         log.error("Error updating profile id={}", id, e);
         throw e;

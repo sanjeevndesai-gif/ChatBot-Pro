@@ -12,6 +12,7 @@ interface BookingInfo {
   phone: string;
   purpose?: string;
   appointmentId?: string;
+  doctorName?: string;
 }
 
 interface Slot {
@@ -584,7 +585,10 @@ export class BookAppointment implements OnInit {
       timeSlot: this.selectedSlot.time,
       fullName: this.patient.fullName,
       phone: this.patient.countryCode + this.patient.phone,
-      purpose: this.patient.purpose
+      purpose: this.patient.purpose,
+      // include doctor details so backend persists who the appointment is for
+      doctorId: this.selectedSlot.resourceId || this.selectedDoctor || null,
+      doctorName: ((this.doctors || []).find(d => d.id === (this.selectedSlot.resourceId || this.selectedDoctor)) || { name: '' }).name || ''
 
     };
 
@@ -597,7 +601,8 @@ export class BookAppointment implements OnInit {
           fullName: this.patient.fullName,
           phone: payload.phone,
           purpose: this.patient.purpose,
-          appointmentId: res?.id || res?._id || res?.appointmentId || ''
+          appointmentId: res?.id || res?._id || res?.appointmentId || '',
+          doctorName: payload.doctorName || ''
         };
 
         // Send WhatsApp confirmation message
@@ -612,7 +617,7 @@ export class BookAppointment implements OnInit {
 
           const dateStr = this.selectedDay ? this.selectedDay.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : this.formatDate(new Date(this.selectedSlot?.time || ''));
 
-          const message = `Hello ${this.patient.fullName}, your appointment at ${clinicName}${doctorName ? ' with ' + doctorName : ''} is confirmed for ${dateStr} at ${this.selectedSlot.time}. Appointment ID: ${this.selectedSlot.bookingInfo.appointmentId}. Address: ${clinicAddress}.`;
+          const message = `Hello ${this.patient.fullName}, your appointment at ${clinicName}${doctorName ? ' with ' + doctorName : ''} is confirmed for ${dateStr} at ${this.selectedSlot.time}. Appointment ID: ${this.selectedSlot.bookingInfo?.appointmentId || ''}. Address: ${clinicAddress}.`;
 
           this.whatsappService.sendMessage(payload.phone, message).subscribe(() => {
             console.log('WhatsApp confirmation sent to', payload.phone);
