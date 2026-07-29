@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChatBot-Pro — Chat Service Architecture</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      color: #1a3c5e;
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+    p.subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    .btn-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 22px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-png  { background: #2196f3; color: #fff; }
+    .btn-jpg  { background: #4caf50; color: #fff; }
+    .btn-png:hover { background: #1769aa; }
+    .btn-jpg:hover { background: #357a38; }
+    .btn-zoom { background: #ff9800; color: #fff; }
+    .btn-zoom:hover { background: #c66900; }
+
+    #diagram-wrapper {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+      padding: 32px 24px;
+      overflow-x: auto;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    #diagram-container { display: flex; justify-content: center; }
+    #diagram-container svg {
+      max-width: 100%;
+      height: auto;
+    }
+    #status {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #888;
+      min-height: 18px;
+    }
+    .legend {
+      max-width: 1400px;
+      margin: 22px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+    .legend-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      font-size: 12px;
+    }
+    .legend-card h3 { font-size: 13px; color: #1a3c5e; margin-bottom: 6px; }
+    .legend-card p  { color: #555; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<h1>🤖 ChatBot-Pro — Chat Service Architecture</h1>
+<p class="subtitle">WhatsApp Conversation Engine · Spring Boot · MongoDB · Redis</p>
+
+<div class="btn-row">
+  <button class="btn-png"  onclick="downloadDiagram('png')">⬇ Download PNG</button>
+  <button class="btn-jpg"  onclick="downloadDiagram('jpg')">⬇ Download JPG</button>
+  <button class="btn-zoom" onclick="toggleZoom()">🔍 Toggle Full Width</button>
+</div>
+
+<div id="diagram-wrapper">
+  <div id="diagram-container">
+    <div id="mermaid-src" class="mermaid">
+flowchart TD
+    WA["📱 WhatsApp Cloud API<br/>(Patient / Doctor)"]
+
+    subgraph GW["🔀 API Gateway :8080"]
+        direction LR
+        GW1["JWT Validation"]
+        GW2["Route Forwarding"]
+    end
+
+    subgraph CHAT["💬 Chat Service :9090"]
+        direction TB
+        WC["📨 WhatsAppWebhookController<br/>POST /api/whatsapp/webhook"]
+
+        subgraph QR_ROUTE["QR-based Flow Routing"]
+            direction LR
+            R1["type=appointment → APPOINTMENT_FLOW"]
+            R2["type=support → SUPPORT_FLOW"]
+            R3["type=doctor_help → DOCTOR_HELP_FLOW"]
+            R4["type=clinic → CLINIC_FINDER_FLOW"]
+            R5["type=doctor → DOCTOR_FLOW (legacy)"]
+        end
+
+        CE["⚙️ ChatEngine<br/>Session Manager"]
+        FR["🔄 FlowResolver<br/>Step Executor"]
+        VE["✅ ValidationEngine<br/>Input Validator"]
+        CD["🔀 ConditionEvaluator<br/>Next-step Resolver"]
+
+        subgraph AE["🎯 ActionExecutor"]
+            direction TB
+            AE1["FLOW_REDIRECT<br/>Switch active flow"]
+            AE2["RESOLVE_CHOICE<br/>List index → context value"]
+            AE3["GENERATE_CALENDAR_LINK<br/>Build Google Calendar URL"]
+            AE4["MONGO_INSERT<br/>Save to MongoDB directly"]
+            AE5["API calls<br/>AUTH / BOOK_APPOINTMENT"]
+        end
+
+        MTS["📝 MessageTemplateService<br/>{list of doctor} {slots}<br/>{clinic_list} {calendar_link}<br/>{patient_name} {purpose}"]
+        WS["📤 WhatsAppSender<br/>sendText / sendTemplate"]
+        FSS["🌱 FlowSeedService<br/>Seeds 5 flows on startup"]
+    end
+
+    subgraph MONGO["🍃 MongoDB (chatdb)"]
+        direction LR
+        C1[("conversations<br/>Active sessions")]
+        C2[("flows<br/>Flow definitions")]
+        C3[("messages<br/>Template strings")]
+        C4[("support_tickets<br/>SUPPORT_FLOW tickets")]
+    end
+
+    REDIS[("🔴 Redis Cache<br/>flows collection")]
+
+    subgraph AUTH["🔐 auth-service :8082"]
+        direction LR
+        A1["GET /auth-service/find/:id<br/>Doctor profile"]
+        A2["GET /auth-service/doctors<br/>Doctors by clinic"]
+        A3["GET /auth-service/clinics<br/>Clinics by city"]
+    end
+
+    subgraph BOOK["📅 book_appointment :9091"]
+        direction LR
+        B1["GET /api/schedulers/:id<br/>Available slots"]
+        B2["POST /api/appointments<br/>Create booking"]
+        B3["GET /api/appointments/patient<br/>Patient appointments"]
+        B4["DELETE /api/appointments/by-ref<br/>Cancel by ref"]
+    end
+
+    %% Main flow
+    WA -->|"HTTPS POST"| GW
+    GW -->|"Route to chat"| WC
+    WC --> QR_ROUTE
+    QR_ROUTE --> CE
+    CE -->|"Load / create session"| C1
+    CE -->|"First step on new session"| WS
+    CE -->|"Existing session"| FR
+    FR -->|"getFlowFromCache()"| REDIS
+    REDIS -.->|"Cache miss"| C2
+    FR --> VE
+    FR --> CD
+    FR --> AE
+    AE --> AE1 & AE2 & AE3 & AE4 & AE5
+    AE4 -->|"Insert ticket"| C4
+    AE5 --> AUTH & BOOK
+    AUTH --> A1 & A2 & A3
+    BOOK --> B1 & B2 & B3 & B4
+    FR -->|"Build reply message"| MTS
+    MTS -->|"Lookup templates"| C3
+    FR -->|"Save session state"| C1
+    FR --> WS
+    WS -->|"HTTPS POST<br/>Graph API"| WA
+    FSS -->|"Seed on startup"| C2
+
+    %% Styling
+    classDef whatsapp  fill:#25d366,stroke:#128c7e,color:#fff,font-weight:bold
+    classDef gateway   fill:#1565c0,stroke:#0d47a1,color:#fff
+    classDef engine    fill:#1976d2,stroke:#0d47a1,color:#fff
+    classDef action    fill:#e65100,stroke:#bf360c,color:#fff
+    classDef mongo     fill:#4caf50,stroke:#2e7d32,color:#fff
+    classDef redis     fill:#f44336,stroke:#b71c1c,color:#fff
+    classDef external  fill:#7b1fa2,stroke:#4a148c,color:#fff
+    classDef seed      fill:#795548,stroke:#3e2723,color:#fff
+
+    class WA whatsapp
+    class GW,GW1,GW2 gateway
+    class WC,CE,FR,VE,CD,MTS,WS engine
+    class AE,AE1,AE2,AE3,AE4,AE5 action
+    class MONGO,C1,C2,C3,C4 mongo
+    class REDIS redis
+    class AUTH,A1,A2,A3,BOOK,B1,B2,B3,B4 external
+    class FSS seed
+    </div>
+  </div>
+</div>
+
+<div id="status">Rendering diagram…</div>
+
+<div class="legend">
+  <div class="legend-card">
+    <h3>🟢 WhatsApp</h3>
+    <p>Entry point. Patient or Doctor scans a QR code. WhatsApp Cloud API sends the QR payload as a webhook POST to the Chat Service via the API Gateway.</p>
+  </div>
+  <div class="legend-card">
+    <h3>🔵 Chat Engine Core</h3>
+    <p><b>ChatEngine</b> — manages per-user sessions in MongoDB.<br/>
+    <b>FlowResolver</b> — loads flow doc from Redis cache, validates input, executes actions, resolves next step.<br/>
+    <b>ValidationEngine</b> — checks input against allowed values with retry limit.</p>
+  </div>
+  <div class="legend-card">
+    <h3>🟠 ActionExecutor</h3>
+    <p><b>FLOW_REDIRECT</b> — switch to another flow mid-session.<br/>
+    <b>RESOLVE_CHOICE</b> — map user's number (1/2/3) to a list item.<br/>
+    <b>GENERATE_CALENDAR_LINK</b> — build Google Calendar URL.<br/>
+    <b>MONGO_INSERT</b> — save support tickets directly.<br/>
+    <b>API</b> — call auth-service or book_appointment.</p>
+  </div>
+  <div class="legend-card">
+    <h3>🟣 Downstream Services</h3>
+    <p><b>auth-service</b> — doctor profiles, clinic doctor list, clinics by city.<br/>
+    <b>book_appointment</b> — available slots, create/cancel appointments, patient appointment lookup.</p>
+  </div>
+  <div class="legend-card">
+    <h3>🍃 MongoDB (chatdb)</h3>
+    <p><b>conversations</b> — active session state.<br/>
+    <b>flows</b> — editable flow definitions (no deploy needed to change steps).<br/>
+    <b>messages</b> — template strings.<br/>
+    <b>support_tickets</b> — raised by SUPPORT_FLOW.</p>
+  </div>
+  <div class="legend-card">
+    <h3>🔴 Redis Cache</h3>
+    <p>Flow documents are cached in Redis via Spring <code>@Cacheable</code>. This prevents repeated MongoDB reads on every message. Cache is invalidated when the service restarts.</p>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' },
+    securityLevel: 'loose'
+  });
+
+  let zoomed = false;
+  function toggleZoom() {
+    const wrapper = document.getElementById('diagram-wrapper');
+    zoomed = !zoomed;
+    wrapper.style.maxWidth = zoomed ? 'none' : '1400px';
+    document.querySelector('.btn-zoom').textContent = zoomed ? '🔍 Restore Width' : '🔍 Toggle Full Width';
+  }
+
+  function downloadDiagram(format) {
+    const status = document.getElementById('status');
+    status.textContent = 'Preparing download…';
+
+    const svg = document.querySelector('#diagram-container svg');
+    if (!svg) { status.textContent = '⚠ Diagram not ready yet. Please wait a moment.'; return; }
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    const bbox = svg.getBoundingClientRect();
+    const scale = 2; // retina quality
+    const w = Math.max(bbox.width, 1200) * scale;
+    const h = Math.max(bbox.height, 800) * scale;
+
+    const img = new Image();
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      // white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+      const quality  = format === 'jpg' ? 0.95 : 1.0;
+      const dataUrl  = canvas.toDataURL(mimeType, quality);
+
+      const link = document.createElement('a');
+      link.download = `chatbot-pro-chat-service.${format}`;
+      link.href = dataUrl;
+      link.click();
+
+      URL.revokeObjectURL(url);
+      status.textContent = `✅ Downloaded as chatbot-pro-chat-service.${format}`;
+      setTimeout(() => status.textContent = '', 3000);
+    };
+    img.onerror = function () {
+      status.textContent = '⚠ Download failed. Try right-clicking the diagram and saving the image.';
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  }
+
+  // Update status once diagram renders
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const svg = document.querySelector('#diagram-container svg');
+      const status = document.getElementById('status');
+      if (svg) {
+        status.textContent = '✅ Diagram ready — click Download PNG or Download JPG';
+      } else {
+        status.textContent = '⏳ Still rendering…';
+      }
+    }, 1500);
+  });
+</script>
+</body>
+</html>
