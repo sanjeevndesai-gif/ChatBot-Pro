@@ -37,11 +37,17 @@ public class MessageTemplateService {
         String clientName = extractClientName(context);
         String doctorList = formatDoctorList(context);
         String slotList = formatSlots(context);
+        String clinicList = formatClinicList(context);
+        String report = formatReport(context);
+        String ticketId = context.getOrDefault("ticketId", "").toString();
 
         return template
                 .replace("{ClientName}", clientName)
                 .replace("{list of doctor}", doctorList)
-                .replace("{slots}", slotList);
+                .replace("{slots}", slotList)
+                .replace("{clinic_list}", clinicList)
+                .replace("{report}", report)
+                .replace("{ticketId}", ticketId);
     }
 
     @SuppressWarnings("unchecked")
@@ -161,5 +167,52 @@ public class MessageTemplateService {
             }
         }
         return "";
+    }
+
+    /**
+     * Formats context.clinics (list of clinic/doctor maps) as a numbered list.
+     * Used for {clinic_list} substitution in CLINIC_FINDER_FLOW messages.
+     */
+    @SuppressWarnings("unchecked")
+    private String formatClinicList(Map<String, Object> ctx) {
+        Object clinicsObj = ctx.get("clinics");
+        if (!(clinicsObj instanceof List<?> clinics)) return "";
+        List<String> rows = new ArrayList<>();
+        int i = 1;
+        for (Object item : clinics) {
+            if (!(item instanceof Map<?, ?> m)) continue;
+            Map<String, Object> doc = (Map<String, Object>) m;
+            String name = firstNonBlank(doc.get("name"), doc.get("fullname"), doc.get("clinicName"), doc.get("_id"));
+            String city = firstNonBlank(doc.get("city"), doc.get("address"));
+            rows.add(i++ + ". " + name + (city.isBlank() ? "" : " (" + city + ")"));
+        }
+        return String.join("\n", rows);
+    }
+
+    /**
+     * Formats context.report (list of appointment maps) as a summary.
+     * Used for {report} substitution in DOCTOR_HELP_FLOW messages.
+     */
+    @SuppressWarnings("unchecked")
+    private String formatReport(Map<String, Object> ctx) {
+        Object reportObj = ctx.get("report");
+        if (reportObj == null) return "No data available.";
+        List<Map<String, Object>> appts = new ArrayList<>();
+        if (reportObj instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> m) appts.add((Map<String, Object>) m);
+            }
+        }
+        if (appts.isEmpty()) return "No appointments found.";
+        List<String> rows = new ArrayList<>();
+        rows.add("Total: " + appts.size() + " appointment(s)");
+        int i = 1;
+        for (Map<String, Object> a : appts) {
+            String patient = firstNonBlank(a.get("patientName"), a.get("patient"), a.get("phone"));
+            String slot = firstNonBlank(a.get("slot"), a.get("startTime"), a.get("time"));
+            String status = firstNonBlank(a.get("status"), "Booked");
+            rows.add(i++ + ". " + patient + " | " + slot + " | " + status);
+        }
+        return String.join("\n", rows);
     }
 }

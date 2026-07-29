@@ -167,6 +167,25 @@ public class FlowResolver {
 
         executor.execute(step, ctx);
 
+        // ── FLOW_REDIRECT: ActionExecutor sets __redirectTo in ctx to switch flows ──
+        String redirectTarget = (String) ctx.remove("__redirectTo");
+        if (redirectTarget != null && !redirectTarget.isBlank()) {
+            Map<String, Object> targetFlowDoc = self.getFlowFromCache(redirectTarget);
+            if (targetFlowDoc == null) {
+                return end(convo, "❌ Target flow not found: " + redirectTarget);
+            }
+            String targetStart = (String) targetFlowDoc.get("start");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> targetSteps = (Map<String, Object>) targetFlowDoc.get("steps");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> targetStartStep = (Map<String, Object>) targetSteps.get(targetStart);
+            convo.put("flowId", redirectTarget);
+            convo.put("currentStep", targetStart);
+            convo.put("message", new HashMap<>((Map<String, Object>) targetStartStep.get("message")));
+            convo.put("lastMessageAt", Instant.now());
+            return convo;
+        }
+
         String next = evaluator.resolve(step, ctx);
 
         @SuppressWarnings("unchecked")

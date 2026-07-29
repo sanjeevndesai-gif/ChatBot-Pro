@@ -103,4 +103,50 @@ public class ExternalApiService {
                 payload
         );
     }
+
+    /**
+     * Returns all doctors from auth-service (role=doctor).
+     */
+    public JsonNode getAllDoctors() {
+        return callGetApi(
+                props.getDoctorServiceUrl(),
+                "/auth-service/findall",
+                null
+        );
+    }
+
+    /**
+     * Returns doctors whose address/city matches the given city string.
+     * Requires GET /clinics?city={city} in auth-service.
+     */
+    public JsonNode getClinicsByLocation(String city) {
+        return callGetApi(
+                props.getDoctorServiceUrl(),
+                "/auth-service/clinics",
+                Map.of("city", city)
+        );
+    }
+
+    /**
+     * Fetches appointments for a doctor on a specific date.
+     * Uses GET /api/appointments/clinic?userId={doctorId} and filters by date.
+     */
+    public JsonNode getAppointmentReport(String doctorId, String date) {
+        return callGetApi(
+                props.getSlotServiceUrl(),
+                "/api/appointments/clinic",
+                Map.of("userId", doctorId, "date", date)
+        );
+    }
+
+    /**
+     * Saves a new schedule via POST /api/schedulers.
+     */
+    public JsonNode saveSchedule(Map<String, Object> payload) {
+        return callPostApi(
+                props.getSlotServiceUrl(),
+                "/api/schedulers",
+                payload
+        );
+    }
 }

@@ -102,7 +102,8 @@ public class WhatsAppWebhookController {
 					case "doctor" -> "DOCTOR_FLOW";
 					case "dentist" -> "DENTIST_FLOW";
 					case "salon" -> "SALON_FLOW";
-					default -> "DEFAULT_FLOW";
+					// plain "hi" (no QR) → show main menu so patient/doctor can choose flow
+					default -> "MAIN_MENU_FLOW";
 					};
 					// Pass everything to chat engine 
 					chatEngine.process(from, text, flowId, appointmentType, userId);

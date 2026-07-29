@@ -271,6 +271,17 @@ public class AuthController {
     }
 
     /**
+     * Returns doctors filtered by city/address — used by chat CLINIC_FINDER_FLOW.
+     * GET /auth-service/clinics?city={city}
+     */
+    @GetMapping({ "/clinics", "/auth-service/clinics" })
+    @ResponseStatus(HttpStatus.OK)
+    public List<Map<String, Object>> getClinicsByCity(
+            @RequestParam(defaultValue = "") String city) {
+        return userManagementService.getClinicsByCity(city);
+    }
+
+    /**
      * Save current user's settings. Requires Authorization header.
      * Only available for paid plans (STANDARD, PREMIUM, PROPLUS).
      */

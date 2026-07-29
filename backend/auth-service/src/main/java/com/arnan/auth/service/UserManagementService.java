@@ -277,4 +277,37 @@ public void updateStaffUser(String id, Map<String, Object> body) {
         }
         return "";
     }
+
+    /**
+     * Returns doctors whose address or city field contains the given city string (case-insensitive).
+     * Used by the chat CLINIC_FINDER_FLOW via GET /auth-service/clinics?city={city}.
+     */
+    public List<Map<String, Object>> getClinicsByCity(String city) {
+        try {
+            List<Object> allDocs = authRepository.getAll();
+            String q = city == null ? "" : city.toLowerCase();
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (Object obj : allDocs) {
+                Document doc = (Document) obj;
+                String role = doc.getString("role") != null ? doc.getString("role").toLowerCase() : "";
+                if (!"doctor".equals(role)) continue;
+                String address = getField(doc, "address", "city", "location");
+                if (!q.isBlank() && !address.toLowerCase().contains(q)) continue;
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("id", doc.getObjectId("_id") != null ? doc.getObjectId("_id").toHexString() : "");
+                entry.put("name", getField(doc, "name", "fullname"));
+                entry.put("userId", doc.getString("userId") != null ? doc.getString("userId") : "");
+                entry.put("phone", getField(doc, "phone", "phone_number"));
+                entry.put("specialization", doc.getString("specialization") != null ? doc.getString("specialization") : "");
+                entry.put("address", address);
+                entry.put("city", getField(doc, "city", "address"));
+                results.add(entry);
+            }
+            return results;
+        } catch (Exception e) {
+            log.error("Error fetching clinics by city={}", city, e);
+            throw e;
+        }
+    }
 }
+
