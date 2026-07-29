@@ -196,6 +196,26 @@ public class AppointmentRepository {
         return getCollection().find(eq("appointmentNumber", appointmentNumber)).first();
     }
 
+    /**
+     * Returns appointments for a patient phone within a clinic.
+     * Used by chat APPOINTMENT_FLOW cancel branch.
+     */
+    public List<Document> findByPatientPhone(String phone, String clinicId) {
+        if (phone == null) return List.of();
+        Bson phoneFilter = or(
+                eq("patientPhone", phone),
+                eq("phone",        phone),
+                eq("patient_phone", phone)
+        );
+        Bson finalFilter = (clinicId != null && !clinicId.isBlank())
+                ? and(phoneFilter, or(eq("orgId", clinicId), eq("createdBy", clinicId),
+                                     eq("doctorId", clinicId), eq("userId", clinicId)))
+                : phoneFilter;
+        List<Document> list = new ArrayList<>();
+        for (Document d : getCollection().find(finalFilter)) list.add(d);
+        return list;
+    }
+
     public void delete(ObjectId id) {
         getCollection().deleteOne(eq("_id", id));
     }

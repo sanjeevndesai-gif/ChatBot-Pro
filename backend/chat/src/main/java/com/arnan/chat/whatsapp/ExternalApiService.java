@@ -108,45 +108,65 @@ public class ExternalApiService {
      * Returns all doctors from auth-service (role=doctor).
      */
     public JsonNode getAllDoctors() {
-        return callGetApi(
-                props.getDoctorServiceUrl(),
-                "/auth-service/findall",
-                null
-        );
+        return callGetApi(props.getDoctorServiceUrl(), "/auth-service/findall", null);
+    }
+
+    /**
+     * Returns doctors belonging to a specific clinic (createdBy = clinicId, role = doctor).
+     * Requires GET /auth-service/doctors?clinicId= in auth-service.
+     */
+    public JsonNode getDoctorsByClinic(String clinicId) {
+        return callGetApi(props.getDoctorServiceUrl(), "/auth-service/doctors",
+                Map.of("clinicId", clinicId));
     }
 
     /**
      * Returns doctors whose address/city matches the given city string.
-     * Requires GET /clinics?city={city} in auth-service.
      */
     public JsonNode getClinicsByLocation(String city) {
-        return callGetApi(
-                props.getDoctorServiceUrl(),
-                "/auth-service/clinics",
-                Map.of("city", city)
-        );
+        return callGetApi(props.getDoctorServiceUrl(), "/auth-service/clinics",
+                Map.of("city", city));
     }
 
     /**
      * Fetches appointments for a doctor on a specific date.
-     * Uses GET /api/appointments/clinic?userId={doctorId} and filters by date.
      */
     public JsonNode getAppointmentReport(String doctorId, String date) {
-        return callGetApi(
-                props.getSlotServiceUrl(),
-                "/api/appointments/clinic",
-                Map.of("userId", doctorId, "date", date)
-        );
+        return callGetApi(props.getSlotServiceUrl(), "/api/appointments/clinic",
+                Map.of("userId", doctorId, "date", date));
     }
 
     /**
      * Saves a new schedule via POST /api/schedulers.
      */
     public JsonNode saveSchedule(Map<String, Object> payload) {
-        return callPostApi(
-                props.getSlotServiceUrl(),
-                "/api/schedulers",
-                payload
-        );
+        return callPostApi(props.getSlotServiceUrl(), "/api/schedulers", payload);
+    }
+
+    /**
+     * Returns appointments for a patient phone within a specific clinic.
+     * Requires GET /api/appointments/patient?phone=&clinicId= in book_appointment.
+     */
+    public JsonNode getPatientAppointments(String clinicId, String patientPhone) {
+        return callGetApi(props.getSlotServiceUrl(), "/api/appointments/patient",
+                Map.of("clinicId", clinicId, "phone", patientPhone));
+    }
+
+    /**
+     * Cancels an appointment identified by its appointmentNumber reference.
+     * Requires DELETE /api/appointments/by-ref?ref= in book_appointment.
+     */
+    public JsonNode cancelAppointmentByRef(String appointmentNumber) {
+        return webClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path(props.getSlotServiceUrl() + "/api/appointments/by-ref")
+                        .queryParam("ref", appointmentNumber)
+                        .build())
+                .retrieve()
+                .onStatus(status -> status.isError(),
+                        response -> response.bodyToMono(String.class)
+                                .map(body -> new RuntimeException("Cancel error: " + body)))
+                .bodyToMono(JsonNode.class)
+                .block();
     }
 }

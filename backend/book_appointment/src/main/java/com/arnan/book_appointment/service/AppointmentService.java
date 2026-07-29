@@ -272,4 +272,32 @@ public class AppointmentService {
 
         return create(appointment);
     }
+
+    // ================= GET BY PATIENT PHONE =================
+    /**
+     * Returns appointments for a specific patient phone within a clinic.
+     * Used by the APPOINTMENT_FLOW cancel branch.
+     */
+    public List<Document> getByPatientPhone(String phone, String clinicId) {
+        log.info("Fetching appointments for phone={} clinicId={}", phone, clinicId);
+        return repository.findByPatientPhone(phone, clinicId);
+    }
+
+    // ================= CANCEL BY APPOINTMENT NUMBER =================
+    /**
+     * Cancels an appointment identified by its human-readable appointmentNumber.
+     * Used by the APPOINTMENT_FLOW cancel branch via chat.
+     */
+    public void cancelByRef(String appointmentNumber) {
+        log.info("Canceling appointment by ref={}", appointmentNumber);
+        Document existing = repository.findByAppointmentNumber(appointmentNumber);
+        if (existing == null) {
+            log.warn("Appointment not found for ref={}", appointmentNumber);
+            throw new AppointmentNotFoundException("Appointment not found: " + appointmentNumber);
+        }
+        org.bson.types.ObjectId id = existing.getObjectId("_id");
+        if (id == null) throw new AppointmentNotFoundException("Cannot resolve id for ref: " + appointmentNumber);
+        repository.delete(id);
+        log.info("Appointment cancelled by ref={}", appointmentNumber);
+    }
 }

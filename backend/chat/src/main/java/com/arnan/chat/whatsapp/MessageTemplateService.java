@@ -34,20 +34,28 @@ public class MessageTemplateService {
                 ? Map.of()
                 : (Map<String, Object>) convo.getOrDefault("context", Map.of());
 
-        String clientName = extractClientName(context);
-        String doctorList = formatDoctorList(context);
-        String slotList = formatSlots(context);
-        String clinicList = formatClinicList(context);
-        String report = formatReport(context);
-        String ticketId = context.getOrDefault("ticketId", "").toString();
+        String clientName    = extractClientName(context);
+        String doctorList    = formatDoctorList(context);
+        String slotList      = formatSlots(context);
+        String clinicList    = formatClinicList(context);
+        String report        = formatReport(context);
+        String ticketId      = context.getOrDefault("ticketId",      "").toString();
+        String calendarLink  = context.getOrDefault("calendar_link", "").toString();
+        String patientName   = context.getOrDefault("patient_name",  "").toString();
+        String purpose       = context.getOrDefault("purpose",       "").toString();
+        String apptList      = formatAppointmentList(context);
 
         return template
-                .replace("{ClientName}", clientName)
-                .replace("{list of doctor}", doctorList)
-                .replace("{slots}", slotList)
-                .replace("{clinic_list}", clinicList)
-                .replace("{report}", report)
-                .replace("{ticketId}", ticketId);
+                .replace("{ClientName}",       clientName)
+                .replace("{list of doctor}",   doctorList)
+                .replace("{slots}",            slotList)
+                .replace("{clinic_list}",      clinicList)
+                .replace("{report}",           report)
+                .replace("{ticketId}",         ticketId)
+                .replace("{calendar_link}",    calendarLink)
+                .replace("{patient_name}",     patientName)
+                .replace("{purpose}",          purpose)
+                .replace("{appointment_list}", apptList);
     }
 
     @SuppressWarnings("unchecked")
@@ -89,22 +97,23 @@ public class MessageTemplateService {
 
     @SuppressWarnings("unchecked")
     private String formatDoctorList(Map<String, Object> ctx) {
-        Object profileObj = ctx.get("profile");
-        if (!(profileObj instanceof Map<?, ?> profile)) {
-            return "";
+        // ① New clinic-based flows: doctors fetched directly into context.doctors
+        Object doctorsObj = ctx.get("doctors");
+
+        // ② Legacy DOCTOR_FLOW: doctors come from context.profile.doctors
+        if (!(doctorsObj instanceof List<?>)) {
+            Object profileObj = ctx.get("profile");
+            if (profileObj instanceof Map<?, ?> profile) {
+                doctorsObj = ((Map<String, Object>) profile).get("doctors");
+            }
         }
 
-        Object doctorsObj = ((Map<String, Object>) profile).get("doctors");
-        if (!(doctorsObj instanceof List<?> doctors)) {
-            return "";
-        }
+        if (!(doctorsObj instanceof List<?> doctors)) return "";
 
         List<String> rows = new ArrayList<>();
         int index = 1;
         for (Object doctorObj : doctors) {
-            if (!(doctorObj instanceof Map<?, ?> doctorMapObj)) {
-                continue;
-            }
+            if (!(doctorObj instanceof Map<?, ?> doctorMapObj)) continue;
             Map<String, Object> doctorMap = (Map<String, Object>) doctorMapObj;
             String name = firstNonBlank(
                     doctorMap.get("name"),
@@ -112,10 +121,11 @@ public class MessageTemplateService {
                     doctorMap.get("doctorName"),
                     doctorMap.get("_id")
             );
-            rows.add(index + ". " + name);
+            String spec = doctorMap.get("specialization") != null
+                    ? " (" + doctorMap.get("specialization") + ")" : "";
+            rows.add(index + ". " + name + spec);
             index++;
         }
-
         return String.join("\n", rows);
     }
 
@@ -154,6 +164,27 @@ public class MessageTemplateService {
         }
 
         return String.join("\n", rows);
+    }
+
+    /**
+     * Formats context.patient_appointments list for the cancel flow.
+     */
+    @SuppressWarnings("unchecked")
+    private String formatAppointmentList(Map<String, Object> ctx) {
+        Object apptObj = ctx.get("patient_appointments");
+        if (!(apptObj instanceof List<?> list)) return "No appointments found.";
+        List<String> rows = new ArrayList<>();
+        int i = 1;
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> m)) continue;
+            Map<String, Object> a = (Map<String, Object>) m;
+            String ref    = firstNonBlank(a.get("appointmentNumber"), a.get("_id"));
+            String date   = firstNonBlank(a.get("appointmentDate"),   a.get("date"));
+            String slot   = firstNonBlank(a.get("slot"),              a.get("startTime"));
+            String status = firstNonBlank(a.get("status"), "BOOKED");
+            rows.add(i++ + ". " + ref + " | " + date + " " + slot + " | " + status);
+        }
+        return rows.isEmpty() ? "No upcoming appointments found." : String.join("\n", rows);
     }
 
     private String firstNonBlank(Object... values) {

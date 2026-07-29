@@ -271,6 +271,18 @@ public class AuthController {
     }
 
     /**
+     * Returns doctors belonging to a specific clinic (createdBy = clinicId, role = doctor).
+     * Used by chat service APPOINTMENT_FLOW.
+     * GET /auth-service/doctors?clinicId={clinicId}
+     */
+    @GetMapping({ "/doctors", "/auth-service/doctors" })
+    @ResponseStatus(HttpStatus.OK)
+    public List<Map<String, Object>> getDoctorsByClinic(
+            @RequestParam(defaultValue = "") String clinicId) {
+        return userManagementService.getDoctorsByClinic(clinicId);
+    }
+
+    /**
      * Returns doctors filtered by city/address — used by chat CLINIC_FINDER_FLOW.
      * GET /auth-service/clinics?city={city}
      */

@@ -99,43 +99,76 @@ public class FlowSeedService implements ApplicationRunner {
 
     // ─────────────────────────────────────────────────────────────────────────
     // APPOINTMENT_FLOW
-    // Patient enters doctor ID → selects date → selects slot → confirms booking.
+    // QR encodes clinicId. Flow: fetch clinic doctors → select doctor
+    //   → 1=Book (date/name/purpose/slot/book/calendar) | 2=Cancel
+    // context.userId     = clinicId (from QR)
+    // context.patientPhone = patient's WhatsApp 'from' number
     // ─────────────────────────────────────────────────────────────────────────
     private Document buildAppointmentFlow() {
         return Document.parse("""
         {
           "_id": "APPOINTMENT_FLOW",
-          "start": "ASK_DOCTOR_ID",
+          "start": "WELCOME_CLINIC",
           "steps": {
-            "ASK_DOCTOR_ID": {
-              "message": { "en": "🏥 *Book an Appointment*\\nPlease enter the Doctor\\'s ID (visible on their profile page):" },
-              "saveAs": "target_doctor_id",
-              "next": "FETCH_DOCTOR_PROFILE"
-            },
-            "FETCH_DOCTOR_PROFILE": {
-              "message": { "en": "🔍 Fetching doctor info..." },
+            "WELCOME_CLINIC": {
+              "message": { "en": "🏥 Welcome! Fetching available doctors..." },
               "action": {
                 "type": "API",
                 "service": "AUTH_SERVICE",
-                "operation": "GET_USER_PROFILE",
-                "request": { "userId": "context.target_doctor_id" },
-                "saveAs": "profile"
+                "operation": "GET_DOCTORS_BY_CLINIC",
+                "request": { "clinicId": "context.userId" },
+                "saveAs": "doctors"
               },
-              "next": "ASK_DATE"
+              "next": "SHOW_DOCTORS"
+            },
+            "SHOW_DOCTORS": {
+              "message": { "en": "👨‍⚕️ *Available Doctors:*\\n\\n{list of doctor}\\n\\nPlease enter the doctor number to continue:" },
+              "validate": { "values": ["1","2","3","4","5"], "maxRetries": 3 },
+              "saveAs": "doctor_choice",
+              "next": "RESOLVE_DOCTOR"
+            },
+            "RESOLVE_DOCTOR": {
+              "message": { "en": "👍 Doctor selected. What would you like to do?" },
+              "action": {
+                "type": "RESOLVE_CHOICE",
+                "list": "doctors",
+                "choice": "doctor_choice",
+                "saveAs": "selected_doctor"
+              },
+              "next": "ACTION_MENU"
+            },
+            "ACTION_MENU": {
+              "message": { "en": "What would you like to do?\\n\\n1️⃣ Book Appointment\\n2️⃣ Cancel Appointment\\n\\nReply 1 or 2:" },
+              "validate": { "values": ["1","2"], "maxRetries": 3 },
+              "saveAs": "action_choice",
+              "next": [
+                { "when": "context.action_choice == '1'", "go": "ASK_DATE" },
+                { "when": "context.action_choice == '2'", "go": "CANCEL_LOOKUP" }
+              ]
             },
             "ASK_DATE": {
-              "message": { "en": "📅 *{ClientName}*\\nPlease enter the appointment date (DD-MM-YYYY):" },
+              "message": { "en": "📅 Please enter the preferred appointment date (DD-MM-YYYY):" },
               "saveAs": "date",
+              "next": "ASK_PATIENT_NAME"
+            },
+            "ASK_PATIENT_NAME": {
+              "message": { "en": "👤 Please enter the patient's full name:" },
+              "saveAs": "patient_name",
+              "next": "ASK_PURPOSE"
+            },
+            "ASK_PURPOSE": {
+              "message": { "en": "📋 Please enter the purpose / reason for visit:" },
+              "saveAs": "purpose",
               "next": "FETCH_SLOTS"
             },
             "FETCH_SLOTS": {
-              "message": { "en": "🔍 Checking available slots..." },
+              "message": { "en": "🔍 Checking available slots for {date}..." },
               "action": {
                 "type": "API",
                 "service": "BOOK_APPOINTMENT_SERVICE",
                 "operation": "GET_AVAILABLE_SLOTS",
                 "request": {
-                  "doctorId": "context.target_doctor_id",
+                  "doctorId": "context.selected_doctor.userId",
                   "date": "context.date"
                 },
                 "saveAs": "slots"
@@ -143,7 +176,7 @@ public class FlowSeedService implements ApplicationRunner {
               "next": "SELECT_SLOT"
             },
             "SELECT_SLOT": {
-              "message": { "en": "⏰ Available slots:\\n{slots}\\n\\nEnter slot number:" },
+              "message": { "en": "⏰ *Available time slots:*\\n\\n{slots}\\n\\nEnter slot number to select:" },
               "validate": { "values": ["1","2","3","4","5","6","7","8"], "maxRetries": 3 },
               "saveAs": "slot_choice",
               "next": "BOOK_APPOINTMENT"
@@ -155,18 +188,73 @@ public class FlowSeedService implements ApplicationRunner {
                 "service": "BOOK_APPOINTMENT_SERVICE",
                 "operation": "CREATE_APPOINTMENT",
                 "request": {
-                  "doctorId": "context.target_doctor_id",
-                  "patientPhone": "context.userId",
+                  "doctorId":        "context.selected_doctor.userId",
+                  "clinicId":        "context.userId",
+                  "orgId":           "context.userId",
+                  "patientPhone":    "context.patientPhone",
+                  "patientName":     "context.patient_name",
+                  "purpose":         "context.purpose",
                   "appointmentDate": "context.date",
-                  "slot": "context.slot_choice",
-                  "appointmentType": "context.appointment_type"
+                  "slot":            "context.slot_choice",
+                  "appointmentType": "appointment"
                 },
                 "saveAs": "booking_result"
               },
-              "next": "BOOKING_DONE"
+              "next": "GENERATE_CALENDAR"
             },
-            "BOOKING_DONE": {
-              "message": { "en": "🎉 *Appointment Booked!*\\nYour appointment has been confirmed. Type *hi* to start over." },
+            "GENERATE_CALENDAR": {
+              "message": { "en": "📆 Generating calendar reminder..." },
+              "action": { "type": "GENERATE_CALENDAR_LINK" },
+              "next": "BOOKING_CONFIRMED"
+            },
+            "BOOKING_CONFIRMED": {
+              "message": { "en": "🎉 *Appointment Confirmed!*\\n\\n📅 Date: {date}\\n👤 Patient: {patient_name}\\n📋 Purpose: {purpose}\\n\\n📆 *Add to Google Calendar:*\\n{calendar_link}\\n\\nThank you! Type *hi* to start over." },
+              "next": null
+            },
+            "CANCEL_LOOKUP": {
+              "message": { "en": "🔍 Searching your appointments..." },
+              "action": {
+                "type": "API",
+                "service": "BOOK_APPOINTMENT_SERVICE",
+                "operation": "GET_PATIENT_APPOINTMENTS",
+                "request": {
+                  "clinicId":     "context.userId",
+                  "patientPhone": "context.patientPhone"
+                },
+                "saveAs": "patient_appointments"
+              },
+              "next": "SHOW_PATIENT_APPOINTMENTS"
+            },
+            "SHOW_PATIENT_APPOINTMENTS": {
+              "message": { "en": "📋 *Your Appointments:*\\n\\n{appointment_list}\\n\\nEnter number to cancel:" },
+              "validate": { "values": ["1","2","3","4","5"], "maxRetries": 3 },
+              "saveAs": "cancel_choice",
+              "next": "RESOLVE_CANCEL"
+            },
+            "RESOLVE_CANCEL": {
+              "message": { "en": "🗑 Cancelling your appointment..." },
+              "action": {
+                "type": "RESOLVE_CHOICE",
+                "list": "patient_appointments",
+                "choice": "cancel_choice",
+                "field": "appointmentNumber",
+                "saveAs": "cancel_ref"
+              },
+              "next": "CONFIRM_CANCEL"
+            },
+            "CONFIRM_CANCEL": {
+              "message": { "en": "Processing cancellation..." },
+              "action": {
+                "type": "API",
+                "service": "BOOK_APPOINTMENT_SERVICE",
+                "operation": "CANCEL_APPOINTMENT_BY_REF",
+                "request": { "ref": "context.cancel_ref" },
+                "saveAs": "cancel_result"
+              },
+              "next": "CANCEL_DONE"
+            },
+            "CANCEL_DONE": {
+              "message": { "en": "✅ *Appointment Cancelled*\\nYour appointment has been successfully cancelled. Type *hi* to start over." },
               "next": null
             }
           }

@@ -82,7 +82,8 @@ public class ChatEngine {
             // Build the new session at the start step
             Map<String, Object> ctx = new HashMap<>();
             ctx.put("appointment_type", appointmentType);
-            ctx.put("userId", userId);
+            ctx.put("userId", userId);          // clinicId / doctorId from QR
+            ctx.put("patientPhone", user);       // WhatsApp 'from' number — the actual patient
 
             convo = new HashMap<>();
             convo.put("_id", UUID.randomUUID().toString());

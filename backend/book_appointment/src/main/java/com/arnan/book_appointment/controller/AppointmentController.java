@@ -107,4 +107,21 @@ public class AppointmentController {
         log.info("GET /api/appointments/range?from={}&to={}", from, to);
         return ResponseEntity.ok(service.getByDateRange(from, to));
     }
+
+    // ================= GET BY PATIENT PHONE (chat cancel flow) =================
+    @GetMapping("/patient")
+    public ResponseEntity<List<Document>> getByPatientPhone(
+            @RequestParam String phone,
+            @RequestParam(required = false, defaultValue = "") String clinicId) {
+        log.info("GET /api/appointments/patient phone={} clinicId={}", phone, clinicId);
+        return ResponseEntity.ok(service.getByPatientPhone(phone, clinicId));
+    }
+
+    // ================= CANCEL BY APPOINTMENT NUMBER (chat cancel flow) =================
+    @DeleteMapping("/by-ref")
+    public ResponseEntity<Void> cancelByRef(@RequestParam String ref) {
+        log.info("DELETE /api/appointments/by-ref ref={}", ref);
+        service.cancelByRef(ref);
+        return ResponseEntity.noContent().build();
+    }
 }
