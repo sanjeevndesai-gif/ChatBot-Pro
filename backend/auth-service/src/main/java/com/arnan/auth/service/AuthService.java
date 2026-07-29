@@ -166,6 +166,16 @@ public class AuthService {
 		}
 	}
 
+	/** Find a user by their phone number. Returns null if not found. */
+	public Document findByPhone(String phone) {
+		try {
+			return authRepository.findByPhone(phone);
+		} catch (Exception e) {
+			log.error("Error finding auth record by phone={}", phone, e);
+			return null;
+		}
+	}
+
 	public void update(Map<String, Object> documentInfo, String orgId, String id) {
 		try {
 			if (documentInfo.containsKey("password")) {

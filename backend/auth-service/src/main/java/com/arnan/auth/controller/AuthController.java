@@ -271,6 +271,24 @@ public class AuthController {
     }
 
     /**
+     * Find a user by phone number. Used by chat STAFF_FLOW authentication.
+     * GET /auth-service/find-by-phone?phone={phone}
+     */
+    @GetMapping({ "/find-by-phone", "/auth-service/find-by-phone" })
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<?> findByPhone(@RequestParam String phone) {
+        try {
+            Document user = authService.findByPhone(phone);
+            if (user == null) return ResponseEntity.notFound().build();
+            user.remove("password");
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error finding user by phone"));
+        }
+    }
+
+    /**
      * Returns doctors belonging to a specific clinic (createdBy = clinicId, role = doctor).
      * Used by chat service APPOINTMENT_FLOW.
      * GET /auth-service/doctors?clinicId={clinicId}

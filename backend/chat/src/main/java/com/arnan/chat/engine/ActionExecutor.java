@@ -44,7 +44,26 @@ public class ActionExecutor {
         // ── FLOW_REDIRECT ──────────────────────────────────────────────────────
         if ("FLOW_REDIRECT".equals(actionType)) {
             String targetFlow = String.valueOf(action.getOrDefault("targetFlow", ""));
+            // Apply optional context overrides before redirecting
+            @SuppressWarnings("unchecked")
+            Map<String, Object> setCtx = (Map<String, Object>) action.getOrDefault("setContext", Map.of());
+            setCtx.forEach((k, v) -> {
+                Object resolved = v instanceof String ref ? resolveRef(ref, ctx) : v;
+                if (resolved != null) ctx.put(k, resolved);
+            });
             if (!targetFlow.isBlank()) ctx.put("__redirectTo", targetFlow);
+            return;
+        }
+
+        // ── COPY_CONTEXT ───────────────────────────────────────────────────────
+        // Copies a nested context path to a flat key.  Useful before cancel steps.
+        if ("COPY_CONTEXT".equals(actionType)) {
+            String fromPath = String.valueOf(action.getOrDefault("from", ""));
+            String toKey    = String.valueOf(action.getOrDefault("to",   ""));
+            if (!fromPath.isBlank() && !toKey.isBlank()) {
+                Object val = resolveRef("context." + fromPath, ctx);
+                if (val != null) ctx.put(toKey, val);
+            }
             return;
         }
 
@@ -173,6 +192,22 @@ public class ActionExecutor {
                 String city = str(resolveRef(str(request.getOrDefault("city", "")), ctx));
                 return objectMapper.convertValue(externalApiService.getClinicsByLocation(city), Object.class);
             }
+
+            // ── Staff authentication by phone number ──────────────────────────
+            if ("AUTHENTICATE_STAFF".equals(operation)) {
+                String phone = str(resolveRef(str(request.getOrDefault("phone", "")), ctx));
+                com.fasterxml.jackson.databind.JsonNode result = externalApiService.findStaffByPhone(phone);
+                if (result != null && !result.isNull()) {
+                    Map<String, Object> profile = objectMapper.convertValue(result, Map.class);
+                    String role = str(profile.getOrDefault("role", ""));
+                    if ("doctor".equalsIgnoreCase(role) || "staff".equalsIgnoreCase(role)
+                            || "admin".equalsIgnoreCase(role)) {
+                        profile.put("authenticated", "true");
+                        return profile;
+                    }
+                }
+                return Map.of("authenticated", "false");
+            }
         }
 
         // ── BOOK_APPOINTMENT_SERVICE ───────────────────────────────────────────
@@ -209,17 +244,38 @@ public class ActionExecutor {
             }
 
             if ("GET_PATIENT_APPOINTMENTS".equals(operation)) {
-                String clinicId      = str(resolveRef(str(request.getOrDefault("clinicId",     "")), ctx));
-                String patientPhone  = str(resolveRef(str(request.getOrDefault("patientPhone", "")), ctx));
+                String clinicId     = str(resolveRef(str(request.getOrDefault("clinicId",     "")), ctx));
+                String patientPhone = str(resolveRef(str(request.getOrDefault("patientPhone", "")), ctx));
                 return objectMapper.convertValue(
                         externalApiService.getPatientAppointments(clinicId, patientPhone), List.class);
             }
 
             if ("CANCEL_APPOINTMENT_BY_REF".equals(operation)) {
                 String ref = str(resolveRef(str(request.getOrDefault("ref", "")), ctx));
-                return objectMapper.convertValue(
-                        externalApiService.cancelAppointmentByRef(ref), Object.class);
+                return objectMapper.convertValue(externalApiService.cancelAppointmentByRef(ref), Object.class);
             }
+
+            // ── Check if patient has an upcoming appointment (auto-branch) ────
+            if ("CHECK_UPCOMING_APPOINTMENT".equals(operation)) {
+                String clinicId     = str(resolveRef(str(request.getOrDefault("clinicId",     "")), ctx));
+                String patientPhone = str(resolveRef(str(request.getOrDefault("patientPhone", "")), ctx));
+                com.fasterxml.jackson.databind.JsonNode result =
+                        externalApiService.getUpcomingAppointment(clinicId, patientPhone);
+                if (result != null && !result.isNull() && !result.isEmpty()) {
+                    Map<String, Object> appt = objectMapper.convertValue(result, Map.class);
+                    appt.put("found", "true");
+                    return appt;
+                }
+                return Map.of("found", "false");
+            }
+        }
+
+        // ── PORTAL_SERVICE ────────────────────────────────────────────────────
+        if ("PORTAL_SERVICE".equals(service) && "GENERATE_PORTAL_LINK".equals(operation)) {
+            String baseUrl  = externalApiService.getPortalUrl();
+            String clinicId = str(ctx.getOrDefault("userId", ""));
+            String link = baseUrl + "/appointments?clinic=" + clinicId;
+            return Map.of("portalLink", link, "url", link);
         }
 
         if ("GOOGLE_CALENDAR".equals(service) && "CREATE_REMINDER".equals(operation)) {

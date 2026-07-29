@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.arnan.chat.engine.ConditionEvaluator;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -39,23 +40,37 @@ public class MessageTemplateService {
         String slotList      = formatSlots(context);
         String clinicList    = formatClinicList(context);
         String report        = formatReport(context);
+        String apptList      = formatAppointmentList(context);
         String ticketId      = context.getOrDefault("ticketId",      "").toString();
         String calendarLink  = context.getOrDefault("calendar_link", "").toString();
         String patientName   = context.getOrDefault("patient_name",  "").toString();
         String purpose       = context.getOrDefault("purpose",       "").toString();
-        String apptList      = formatAppointmentList(context);
 
-        return template
+        String text = template
                 .replace("{ClientName}",       clientName)
                 .replace("{list of doctor}",   doctorList)
                 .replace("{slots}",            slotList)
                 .replace("{clinic_list}",      clinicList)
                 .replace("{report}",           report)
+                .replace("{appointment_list}", apptList)
                 .replace("{ticketId}",         ticketId)
                 .replace("{calendar_link}",    calendarLink)
                 .replace("{patient_name}",     patientName)
-                .replace("{purpose}",          purpose)
-                .replace("{appointment_list}", apptList);
+                .replace("{purpose}",          purpose);
+
+        // Generic {context.path.to.value} substitution — resolves any nested context key
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("\\{context\\.([^}]+)\\}")
+                .matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (m.find()) {
+            String path = m.group(1);
+            Object val = ConditionEvaluator.resolveNestedPath(context, path);
+            m.appendReplacement(sb, val != null
+                    ? java.util.regex.Matcher.quoteReplacement(String.valueOf(val)) : "");
+        }
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     @SuppressWarnings("unchecked")

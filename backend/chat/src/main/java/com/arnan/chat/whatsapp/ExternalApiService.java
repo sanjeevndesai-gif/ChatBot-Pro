@@ -153,6 +153,29 @@ public class ExternalApiService {
     }
 
     /**
+     * Returns the patient's next upcoming appointment for a clinic.
+     * Requires GET /api/appointments/upcoming?phone=&clinicId= in book_appointment.
+     */
+    public JsonNode getUpcomingAppointment(String clinicId, String patientPhone) {
+        return callGetApi(props.getSlotServiceUrl(), "/api/appointments/upcoming",
+                Map.of("clinicId", clinicId, "phone", patientPhone));
+    }
+
+    /**
+     * Finds a staff/doctor user by phone. Used by STAFF_FLOW authentication.
+     * Requires GET /auth-service/find-by-phone?phone= in auth-service.
+     */
+    public JsonNode findStaffByPhone(String phone) {
+        return callGetApi(props.getDoctorServiceUrl(), "/auth-service/find-by-phone",
+                Map.of("phone", phone));
+    }
+
+    /** Returns the clinic portal URL from configuration. */
+    public String getPortalUrl() {
+        return props.getPortalUrl();
+    }
+
+    /**
      * Cancels an appointment identified by its appointmentNumber reference.
      * Requires DELETE /api/appointments/by-ref?ref= in book_appointment.
      */

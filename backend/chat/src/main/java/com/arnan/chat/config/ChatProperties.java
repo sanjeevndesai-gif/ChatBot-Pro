@@ -71,21 +71,14 @@ public class ChatProperties {
     public static class External {
         private String doctorServiceUrl;
         private String slotServiceUrl;
+        /** Secure clinic portal base URL (used by GENERATE_PORTAL_LINK action). */
+        private String portalUrl = "https://portal.tridlio.com";
 
-        public String getDoctorServiceUrl() {
-            return doctorServiceUrl;
-        }
-
-        public void setDoctorServiceUrl(String doctorServiceUrl) {
-            this.doctorServiceUrl = doctorServiceUrl;
-        }
-
-        public String getSlotServiceUrl() {
-            return slotServiceUrl;
-        }
-
-        public void setSlotServiceUrl(String slotServiceUrl) {
-            this.slotServiceUrl = slotServiceUrl;
-        }
+        public String getDoctorServiceUrl() { return doctorServiceUrl; }
+        public void setDoctorServiceUrl(String doctorServiceUrl) { this.doctorServiceUrl = doctorServiceUrl; }
+        public String getSlotServiceUrl() { return slotServiceUrl; }
+        public void setSlotServiceUrl(String slotServiceUrl) { this.slotServiceUrl = slotServiceUrl; }
+        public String getPortalUrl() { return portalUrl; }
+        public void setPortalUrl(String portalUrl) { this.portalUrl = portalUrl; }
     }
 }

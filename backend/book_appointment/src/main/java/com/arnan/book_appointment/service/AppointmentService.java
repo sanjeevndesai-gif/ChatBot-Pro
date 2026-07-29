@@ -274,13 +274,24 @@ public class AppointmentService {
     }
 
     // ================= GET BY PATIENT PHONE =================
-    /**
-     * Returns appointments for a specific patient phone within a clinic.
-     * Used by the APPOINTMENT_FLOW cancel branch.
-     */
     public List<Document> getByPatientPhone(String phone, String clinicId) {
         log.info("Fetching appointments for phone={} clinicId={}", phone, clinicId);
         return repository.findByPatientPhone(phone, clinicId);
+    }
+
+    // ================= GET UPCOMING FOR PATIENT =================
+    /**
+     * Returns the next BOOKED appointment for a patient at a clinic.
+     * Returns null if none found.
+     */
+    public Document getUpcoming(String phone, String clinicId) {
+        log.info("Fetching upcoming appointment for phone={} clinicId={}", phone, clinicId);
+        List<Document> all = repository.findByPatientPhone(phone, clinicId);
+        // Return the first BOOKED appointment (already sorted by date in the query, or take first)
+        return all.stream()
+                .filter(d -> "BOOKED".equalsIgnoreCase(String.valueOf(d.getOrDefault("status", ""))))
+                .findFirst()
+                .orElse(null);
     }
 
     // ================= CANCEL BY APPOINTMENT NUMBER =================

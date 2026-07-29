@@ -158,7 +158,7 @@ public class FlowResolver {
                     "❌ Too many invalid attempts. Session ended.");
         }
 
-        if (step.containsKey("saveAs")) {
+        if (step.containsKey("saveAs") && input != null && !input.isBlank()) {
 
             ctx.put(
                     step.get("saveAs").toString(),
@@ -204,6 +204,11 @@ public class FlowResolver {
                         (Map<String, Object>) nextStep.get("message")));
 
         convo.put("lastMessageAt", Instant.now());
+
+        // autoAdvance: step needs no user input — execute immediately without waiting
+        if (Boolean.TRUE.equals(nextStep.get("autoAdvance"))) {
+            return handle(convo, "");
+        }
 
         return convo;
     }

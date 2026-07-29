@@ -117,6 +117,17 @@ public class AppointmentController {
         return ResponseEntity.ok(service.getByPatientPhone(phone, clinicId));
     }
 
+    // ================= GET UPCOMING FOR PATIENT (chat PATIENT_FLOW) =================
+    @GetMapping("/upcoming")
+    public ResponseEntity<Document> getUpcoming(
+            @RequestParam String phone,
+            @RequestParam(required = false, defaultValue = "") String clinicId) {
+        log.info("GET /api/appointments/upcoming phone={} clinicId={}", phone, clinicId);
+        Document doc = service.getUpcoming(phone, clinicId);
+        if (doc == null) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(doc);
+    }
+
     // ================= CANCEL BY APPOINTMENT NUMBER (chat cancel flow) =================
     @DeleteMapping("/by-ref")
     public ResponseEntity<Void> cancelByRef(@RequestParam String ref) {

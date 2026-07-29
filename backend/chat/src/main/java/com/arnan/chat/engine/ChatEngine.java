@@ -106,6 +106,14 @@ public class ChatEngine {
             mongo.save(convo, "conversations");
             sender.sendAuto(user, convo);
             log.info("New session started: flowId={} userId={} startStep={}", flowId, userId, startStepId);
+
+            // If the start step is autoAdvance (e.g. WELCOME_CHECK fetching data),
+            // process it immediately so the patient sees the result without typing.
+            if (Boolean.TRUE.equals(startStep.get("autoAdvance"))) {
+                Map<String, Object> advanced = resolver.handle(convo, "");
+                mongo.save(advanced, "conversations");
+                sender.sendAuto(user, advanced);
+            }
             return;
         }
 

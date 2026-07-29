@@ -101,18 +101,22 @@ public class WhatsAppWebhookController {
 					// Each flow has its own QR code; the type field in the QR payload
 					// determines which conversation is started.
 					String flowId = switch (appointmentType.toLowerCase()) {
+					// ── New v1.0 QR flows ──
+					case "patient"                      -> "PATIENT_FLOW";
+					case "find_clinic", "findc"          -> "CLINIC_SEARCH_FLOW";
+					case "staff", "support_staff"        -> "STAFF_FLOW";
 					// ── Legacy QR flows (unchanged) ──
-					case "doctor"                       -> "DOCTOR_FLOW";
-					case "dentist"                      -> "DENTIST_FLOW";
-					case "salon"                        -> "SALON_FLOW";
-					// ── New QR flows ──
-					case "appointment"                  -> "APPOINTMENT_FLOW";
-					case "support"                      -> "SUPPORT_FLOW";
-					case "doctor_help", "doctorhelp"    -> "DOCTOR_HELP_FLOW";
+					case "doctor"                        -> "DOCTOR_FLOW";
+					case "dentist"                       -> "DENTIST_FLOW";
+					case "salon"                         -> "SALON_FLOW";
+					// ── v0.x flows still reachable ──
+					case "appointment"                   -> "APPOINTMENT_FLOW";
+					case "support"                       -> "SUPPORT_FLOW";
+					case "doctor_help", "doctorhelp"     -> "DOCTOR_HELP_FLOW";
 					case "clinic", "clinicfinder",
-					     "clinic_finder"               -> "CLINIC_FINDER_FLOW";
-					// ── Fallback: plain 'hi' without QR → main menu ──
-					default                             -> "MAIN_MENU_FLOW";
+					     "clinic_finder"                -> "CLINIC_FINDER_FLOW";
+					// ── Plain 'hi' fallback ──
+					default                              -> "MAIN_MENU_FLOW";
 					};
 					// Pass everything to chat engine 
 					chatEngine.process(from, text, flowId, appointmentType, userId);

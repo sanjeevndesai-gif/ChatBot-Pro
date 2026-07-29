@@ -19,7 +19,6 @@ public class ConditionEvaluator {
 		if (next instanceof Map) {
 			@SuppressWarnings("unchecked")
 			Map<String, String> nextMap = (Map<String, String>) next;
-// Example: use a value from context to decide
 			String choice = (String) ctx.get("menu_choice");
 			return nextMap.get(choice);
 		}
@@ -29,11 +28,13 @@ public class ConditionEvaluator {
 			List<Map<String, String>> rules = (List<Map<String, String>>) next;
 			for (Map<String, String> r : rules) {
 				String when = r.get("when");
-				if (when.contains("==")) {
-					String[] parts = when.split("==");
-					String key = parts[0].replace("context.", "").trim();
+				if (when != null && when.contains("==")) {
+					String[] parts = when.split("==", 2);
+					String keyPath = parts[0].replace("context.", "").trim();
 					String val = parts[1].replace("'", "").trim();
-					if (val.equals(ctx.get(key))) {
+					// Resolve nested path: context.X.Y.Z
+					Object ctxVal = resolveNestedPath(ctx, keyPath);
+					if (val.equals(String.valueOf(ctxVal))) {
 						return r.get("go");
 					}
 				}
@@ -43,4 +44,20 @@ public class ConditionEvaluator {
 		return null;
 	}
 
+	/**
+	 * Resolves a dot-separated path against a Map context.
+	 * e.g. "upcoming_appointment.found" → ctx["upcoming_appointment"]["found"]
+	 */
+	@SuppressWarnings("unchecked")
+	public static Object resolveNestedPath(Map<String, Object> ctx, String path) {
+		String[] parts = path.split("\\.");
+		Object current = ctx;
+		for (String part : parts) {
+			if (!(current instanceof Map<?, ?> m)) return null;
+			current = ((Map<String, Object>) m).get(part);
+			if (current == null) return null;
+		}
+		return current;
+	}
 }
+

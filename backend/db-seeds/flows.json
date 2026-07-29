@@ -1,5 +1,367 @@
 [
   {
+    "_id": "PATIENT_FLOW",
+    "_version": "1.0",
+    "_comment": "QR: type=patient&userId=<clinicId>. Auto-checks upcoming appointment on scan.",
+    "start": "WELCOME_CHECK",
+    "steps": {
+      "WELCOME_CHECK": {
+        "message": { "en": "🏥 Welcome! Checking your appointment record..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "BOOK_APPOINTMENT_SERVICE", "operation": "CHECK_UPCOMING_APPOINTMENT",
+          "request": { "clinicId": "context.userId", "patientPhone": "context.patientPhone" },
+          "saveAs": "upcoming_appointment"
+        },
+        "next": [
+          { "when": "context.upcoming_appointment.found == 'true'",  "go": "SHOW_EXISTING_APPT" },
+          { "when": "context.upcoming_appointment.found == 'false'", "go": "NO_APPT_MENU" }
+        ]
+      },
+      "SHOW_EXISTING_APPT": {
+        "message": { "en": "👋 Welcome back!\n\nYour upcoming appointment:\n──────────────────────\n📅 {context.upcoming_appointment.appointmentDate}\n🕒 {context.upcoming_appointment.startTime}\n🔖 {context.upcoming_appointment.appointmentNumber}\n──────────────────────\n\n1️⃣ Book New Appointment\n2️⃣ Cancel This Appointment" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "appt_action",
+        "next": [
+          { "when": "context.appt_action == '1'", "go": "LOAD_DOCTORS" },
+          { "when": "context.appt_action == '2'", "go": "PREPARE_CANCEL_EXISTING" }
+        ]
+      },
+      "NO_APPT_MENU": {
+        "message": { "en": "👋 Welcome!\n\n1️⃣ Book Appointment" },
+        "validate": { "values": ["1"], "maxRetries": 3 },
+        "saveAs": "menu_choice",
+        "next": "LOAD_DOCTORS"
+      },
+      "LOAD_DOCTORS": {
+        "message": { "en": "👨‍⚕️ Loading available doctors..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "AUTH_SERVICE", "operation": "GET_DOCTORS_BY_CLINIC",
+          "request": { "clinicId": "context.userId" }, "saveAs": "doctors"
+        },
+        "next": "SELECT_DOCTOR"
+      },
+      "SELECT_DOCTOR": {
+        "message": { "en": "👨‍⚕️ *Available Doctors:*\n\n{list of doctor}\n\nEnter doctor number:" },
+        "validate": { "values": ["1","2","3","4","5"], "maxRetries": 3 },
+        "saveAs": "doctor_choice",
+        "next": "RESOLVE_DOCTOR"
+      },
+      "RESOLVE_DOCTOR": {
+        "message": { "en": "⏳ Loading doctor details..." },
+        "autoAdvance": true,
+        "action": { "type": "RESOLVE_CHOICE", "list": "doctors", "choice": "doctor_choice", "saveAs": "selected_doctor" },
+        "next": "SELECT_DATE"
+      },
+      "SELECT_DATE": {
+        "message": { "en": "📅 Enter preferred appointment date (DD-MM-YYYY):" },
+        "saveAs": "date",
+        "next": "LOAD_SLOTS"
+      },
+      "LOAD_SLOTS": {
+        "message": { "en": "🔍 Checking available slots..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "BOOK_APPOINTMENT_SERVICE", "operation": "GET_AVAILABLE_SLOTS",
+          "request": { "doctorId": "context.selected_doctor.userId", "date": "context.date" },
+          "saveAs": "slots"
+        },
+        "next": "SELECT_SLOT"
+      },
+      "SELECT_SLOT": {
+        "message": { "en": "⏰ *Available Slots:*\n\n{slots}\n\nEnter slot number:" },
+        "validate": { "values": ["1","2","3","4","5","6","7","8"], "maxRetries": 3 },
+        "saveAs": "slot_choice",
+        "next": "ENTER_PATIENT_NAME"
+      },
+      "ENTER_PATIENT_NAME": {
+        "message": { "en": "👤 Enter patient's full name:" },
+        "saveAs": "patient_name",
+        "next": "REASON_FOR_VISIT"
+      },
+      "REASON_FOR_VISIT": {
+        "message": { "en": "📋 Reason for visit:" },
+        "saveAs": "purpose",
+        "next": "REVIEW_BOOKING"
+      },
+      "REVIEW_BOOKING": {
+        "message": { "en": "📝 *Review Your Booking*\n\n👨‍⚕️ Doctor: {context.selected_doctor.name}\n📅 Date: {context.date}\n🕒 Slot: {context.slot_choice}\n👤 Patient: {context.patient_name}\n📋 Reason: {context.purpose}\n\n1️⃣ Confirm Booking\n2️⃣ Start Over" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "review_choice",
+        "next": [
+          { "when": "context.review_choice == '1'", "go": "CREATE_APPOINTMENT" },
+          { "when": "context.review_choice == '2'", "go": "NO_APPT_MENU" }
+        ]
+      },
+      "CREATE_APPOINTMENT": {
+        "message": { "en": "✅ Creating your appointment..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "BOOK_APPOINTMENT_SERVICE", "operation": "CREATE_APPOINTMENT",
+          "request": {
+            "doctorId": "context.selected_doctor.userId",
+            "clinicId": "context.userId", "orgId": "context.userId",
+            "patientPhone": "context.patientPhone",
+            "patientName": "context.patient_name",
+            "purpose": "context.purpose",
+            "appointmentDate": "context.date",
+            "slot": "context.slot_choice",
+            "appointmentType": "appointment"
+          },
+          "saveAs": "booking_result"
+        },
+        "next": "GENERATE_ICS"
+      },
+      "GENERATE_ICS": {
+        "message": { "en": "📆 Generating calendar reminder..." },
+        "autoAdvance": true,
+        "action": { "type": "GENERATE_CALENDAR_LINK" },
+        "next": "BOOKING_CONFIRMED"
+      },
+      "BOOKING_CONFIRMED": {
+        "message": { "en": "🎉 *Appointment Confirmed!*\n\n🔖 ID: {context.booking_result.appointmentNumber}\n📅 {context.date}\n🕒 {context.slot_choice}\n👨‍⚕️ {context.selected_doctor.name}\n👤 {context.patient_name}\n\n📆 Add to Calendar:\n{calendar_link}\n──────────────────────\n1️⃣ Book Another Appointment\n2️⃣ Cancel This Appointment\n3️⃣ Exit" },
+        "validate": { "values": ["1","2","3"], "maxRetries": 3 },
+        "saveAs": "post_booking_choice",
+        "next": [
+          { "when": "context.post_booking_choice == '1'", "go": "LOAD_DOCTORS" },
+          { "when": "context.post_booking_choice == '2'", "go": "PREPARE_CANCEL_NEW" },
+          { "when": "context.post_booking_choice == '3'", "go": "EXIT" }
+        ]
+      },
+      "PREPARE_CANCEL_EXISTING": {
+        "message": { "en": "⏳ Preparing cancellation..." },
+        "autoAdvance": true,
+        "action": { "type": "COPY_CONTEXT", "from": "upcoming_appointment.appointmentNumber", "to": "cancel_ref" },
+        "next": "CONFIRM_CANCEL"
+      },
+      "PREPARE_CANCEL_NEW": {
+        "message": { "en": "⏳ Preparing cancellation..." },
+        "autoAdvance": true,
+        "action": { "type": "COPY_CONTEXT", "from": "booking_result.appointmentNumber", "to": "cancel_ref" },
+        "next": "CONFIRM_CANCEL"
+      },
+      "CONFIRM_CANCEL": {
+        "message": { "en": "⚠️ Cancel appointment *{context.cancel_ref}*?\n\n1️⃣ Yes, Cancel It\n2️⃣ No, Keep It" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "cancel_confirm",
+        "next": [
+          { "when": "context.cancel_confirm == '1'", "go": "EXECUTE_CANCEL" },
+          { "when": "context.cancel_confirm == '2'", "go": "EXIT" }
+        ]
+      },
+      "EXECUTE_CANCEL": {
+        "message": { "en": "🗑 Cancelling appointment..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "BOOK_APPOINTMENT_SERVICE", "operation": "CANCEL_APPOINTMENT_BY_REF",
+          "request": { "ref": "context.cancel_ref" }, "saveAs": "cancel_result"
+        },
+        "next": "OFFER_BOOK_NEW"
+      },
+      "OFFER_BOOK_NEW": {
+        "message": { "en": "✅ *Appointment Cancelled*\n\n1️⃣ Book New Appointment\n2️⃣ Exit" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "after_cancel_choice",
+        "next": [
+          { "when": "context.after_cancel_choice == '1'", "go": "LOAD_DOCTORS" },
+          { "when": "context.after_cancel_choice == '2'", "go": "EXIT" }
+        ]
+      },
+      "EXIT": {
+        "message": { "en": "👋 Thank you! Have a great day.\nScan the QR code again whenever you need us." },
+        "next": null
+      }
+    }
+  },
+  {
+    "_id": "CLINIC_SEARCH_FLOW",
+    "_version": "1.0",
+    "_comment": "QR: type=find_clinic. Patient searches clinics by area/PIN → sees details → books via PATIENT_FLOW.",
+    "start": "SEARCH_WELCOME",
+    "steps": {
+      "SEARCH_WELCOME": {
+        "message": { "en": "📍 *Find a Clinic*\n\nHow would you like to search?\n\n1️⃣ Area / Locality\n2️⃣ PIN Code\n3️⃣ Address\n\nReply 1, 2 or 3:" },
+        "validate": { "values": ["1","2","3"], "maxRetries": 3 },
+        "saveAs": "search_method",
+        "next": "ENTER_SEARCH_VALUE"
+      },
+      "ENTER_SEARCH_VALUE": {
+        "message": { "en": "🔎 Please enter your search value (area name, PIN code or address):" },
+        "saveAs": "search_value",
+        "next": "SELECT_SPECIALIZATION"
+      },
+      "SELECT_SPECIALIZATION": {
+        "message": { "en": "👨‍⚕️ Optional: filter by specialization\n\n1️⃣ Any Doctor\n2️⃣ General Physician\n3️⃣ Dentist\n4️⃣ Pediatrician\n5️⃣ Dermatologist\n6️⃣ Orthopedic\n7️⃣ Cardiologist\n8️⃣ Gynecologist\n\nReply 1–8:" },
+        "validate": { "values": ["1","2","3","4","5","6","7","8"], "maxRetries": 3 },
+        "saveAs": "specialization_choice",
+        "next": "SEARCH_CLINICS"
+      },
+      "SEARCH_CLINICS": {
+        "message": { "en": "🔍 Searching clinics..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "AUTH_SERVICE", "operation": "GET_CLINICS_BY_LOCATION",
+          "request": { "city": "context.search_value" },
+          "saveAs": "clinics"
+        },
+        "next": "SHOW_CLINICS"
+      },
+      "SHOW_CLINICS": {
+        "message": { "en": "🏥 *Clinics Near You:*\n\n{clinic_list}\n\nEnter clinic number:" },
+        "validate": { "values": ["1","2","3","4","5"], "maxRetries": 3 },
+        "saveAs": "clinic_choice",
+        "next": "RESOLVE_CLINIC"
+      },
+      "RESOLVE_CLINIC": {
+        "message": { "en": "⏳ Loading clinic details..." },
+        "autoAdvance": true,
+        "action": { "type": "RESOLVE_CHOICE", "list": "clinics", "choice": "clinic_choice", "saveAs": "selected_clinic" },
+        "next": "SHOW_CLINIC_DETAILS"
+      },
+      "SHOW_CLINIC_DETAILS": {
+        "message": { "en": "🏥 *{context.selected_clinic.name}*\n📍 {context.selected_clinic.address}\n👨‍⚕️ {context.selected_clinic.specialization}\n\n1️⃣ Book Appointment\n2️⃣ Get Directions\n3️⃣ Search Again\n\nReply 1, 2 or 3:" },
+        "validate": { "values": ["1","2","3"], "maxRetries": 3 },
+        "saveAs": "clinic_action",
+        "next": [
+          { "when": "context.clinic_action == '1'", "go": "REDIRECT_TO_PATIENT" },
+          { "when": "context.clinic_action == '2'", "go": "GET_DIRECTIONS" },
+          { "when": "context.clinic_action == '3'", "go": "SEARCH_WELCOME" }
+        ]
+      },
+      "REDIRECT_TO_PATIENT": {
+        "message": { "en": "🏥 Connecting to clinic booking..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "FLOW_REDIRECT", "targetFlow": "PATIENT_FLOW",
+          "setContext": { "userId": "context.selected_clinic.userId" }
+        },
+        "next": "EXIT"
+      },
+      "GET_DIRECTIONS": {
+        "message": { "en": "📍 *{context.selected_clinic.name}*\nAddress: {context.selected_clinic.address}\n\n1️⃣ Book Appointment\n2️⃣ Search Again" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "directions_choice",
+        "next": [
+          { "when": "context.directions_choice == '1'", "go": "REDIRECT_TO_PATIENT" },
+          { "when": "context.directions_choice == '2'", "go": "SEARCH_WELCOME" }
+        ]
+      },
+      "EXIT": {
+        "message": { "en": "👋 Thank you! Scan the QR again whenever you need us." },
+        "next": null
+      }
+    }
+  },
+  {
+    "_id": "STAFF_FLOW",
+    "_version": "1.0",
+    "_comment": "QR: type=staff&userId=<clinicId>. Staff only. Auth by phone → report / portal / support.",
+    "start": "AUTHENTICATE",
+    "steps": {
+      "AUTHENTICATE": {
+        "message": { "en": "🔐 Authenticating staff..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "AUTH_SERVICE", "operation": "AUTHENTICATE_STAFF",
+          "request": { "phone": "context.patientPhone" },
+          "saveAs": "staff_profile"
+        },
+        "next": [
+          { "when": "context.staff_profile.authenticated == 'true'",  "go": "STAFF_MENU" },
+          { "when": "context.staff_profile.authenticated == 'false'", "go": "ACCESS_DENIED" }
+        ]
+      },
+      "ACCESS_DENIED": {
+        "message": { "en": "🚫 *Access Denied*\nThis QR is for clinic staff only.\nContact your clinic administrator for access." },
+        "next": null
+      },
+      "STAFF_MENU": {
+        "message": { "en": "👋 Welcome, *{context.staff_profile.name}*!\n\n1️⃣ 📄 View Appointment Report\n2️⃣ 📅 Cancel / Modify Appointment\n3️⃣ 🛠 Application Support\n\nReply 1, 2 or 3:" },
+        "validate": { "values": ["1","2","3"], "maxRetries": 3 },
+        "saveAs": "staff_action",
+        "next": [
+          { "when": "context.staff_action == '1'", "go": "SELECT_REPORT_DATE" },
+          { "when": "context.staff_action == '2'", "go": "GENERATE_PORTAL" },
+          { "when": "context.staff_action == '3'", "go": "SUPPORT_CATEGORY" }
+        ]
+      },
+      "SELECT_REPORT_DATE": {
+        "message": { "en": "📅 Enter date for the appointment report (DD-MM-YYYY):" },
+        "saveAs": "report_date",
+        "next": "LOAD_REPORT"
+      },
+      "LOAD_REPORT": {
+        "message": { "en": "📊 Generating appointment report..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "BOOK_APPOINTMENT_SERVICE", "operation": "GET_APPOINTMENT_REPORT",
+          "request": { "userId": "context.staff_profile.userId", "date": "context.report_date" },
+          "saveAs": "report"
+        },
+        "next": "SHOW_REPORT"
+      },
+      "SHOW_REPORT": {
+        "message": { "en": "📋 *Appointment Report — {context.report_date}*\n\n{report}\n\n1️⃣ View Another Date\n2️⃣ Main Menu" },
+        "validate": { "values": ["1","2"], "maxRetries": 3 },
+        "saveAs": "after_report_choice",
+        "next": [
+          { "when": "context.after_report_choice == '1'", "go": "SELECT_REPORT_DATE" },
+          { "when": "context.after_report_choice == '2'", "go": "STAFF_MENU" }
+        ]
+      },
+      "GENERATE_PORTAL": {
+        "message": { "en": "🔗 Generating secure portal link..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "API", "service": "PORTAL_SERVICE", "operation": "GENERATE_PORTAL_LINK",
+          "request": {}, "saveAs": "portal"
+        },
+        "next": "SEND_PORTAL"
+      },
+      "SEND_PORTAL": {
+        "message": { "en": "📅 *Appointment Management*\n\nUse the Clinic Portal to cancel or modify appointments and manage schedules.\n\n🔗 *Open Portal:*\n{context.portal.url}\n\nAfter login you can:\n• Modify appointments\n• Cancel appointments\n• Manage schedules\n\n1️⃣ Main Menu" },
+        "validate": { "values": ["1"], "maxRetries": 3 },
+        "saveAs": "portal_choice",
+        "next": "STAFF_MENU"
+      },
+      "SUPPORT_CATEGORY": {
+        "message": { "en": "🛠 *Application Support*\n\n1️⃣ Login Issue\n2️⃣ Appointment Issue\n3️⃣ Technical Issue\n4️⃣ Feature Request\n5️⃣ Other\n\nReply 1–5:" },
+        "validate": { "values": ["1","2","3","4","5"], "maxRetries": 3 },
+        "saveAs": "issue_type",
+        "next": "DESCRIBE_ISSUE"
+      },
+      "DESCRIBE_ISSUE": {
+        "message": { "en": "📝 Please describe your issue in detail:" },
+        "saveAs": "issue_description",
+        "next": "CREATE_TICKET"
+      },
+      "CREATE_TICKET": {
+        "message": { "en": "📋 Creating support ticket..." },
+        "autoAdvance": true,
+        "action": {
+          "type": "MONGO_INSERT",
+          "collection": "support_tickets",
+          "saveAs": "ticket",
+          "request": {
+            "phone": "context.patientPhone",
+            "staffName": "context.staff_profile.name",
+            "issueType": "context.issue_type",
+            "description": "context.issue_description",
+            "status": "OPEN"
+          }
+        },
+        "next": "TICKET_DONE"
+      },
+      "TICKET_DONE": {
+        "message": { "en": "✅ *Ticket Created!*\nTicket ID: *{ticketId}*\n\nWe'll respond via WhatsApp.\n\n1️⃣ Main Menu" },
+        "validate": { "values": ["1"], "maxRetries": 3 },
+        "saveAs": "ticket_choice",
+        "next": "STAFF_MENU"
+      }
+    }
+  },
+  {
     "_id": "MAIN_MENU_FLOW",
     "start": "MAIN_MENU",
     "steps": {
