@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../services/auth.service';
 import { QrService } from '../../services/qr.service';
+import { ToastService } from '../../services/toast.service';
 
 interface MenuItem {
   title: string;
@@ -29,7 +30,7 @@ export class Horizontalmenu {
   mobileMenuOpen: boolean = false;
   openMobileSubmenus: Set<string> = new Set();
 
-  constructor(public authService: AuthService, private qrService: QrService) {}
+  constructor(public authService: AuthService, private qrService: QrService, private toast: ToastService) {}
 
 
   // Helper to get userId for QR
@@ -98,6 +99,15 @@ export class Horizontalmenu {
 
   logout() {
     this.authService.logout();
+  }
+
+  // Show friendly message when notification items are clicked but none exist
+  showNoMessages() {
+    this.toast.info('No messages');
+  }
+
+  showNoAlerts() {
+    this.toast.info('There are no server alerts');
   }
 
 }

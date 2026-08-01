@@ -28,12 +28,7 @@
                 </div>
             </div> -->
 
-            <!-- Download QR (same QR as profile) -->
-            <button class="icon-btn" title="Download QR" (click)="downloadQr()">
-                <i class="bi bi-qr-code"></i>
-            </button>
-
-
+            
             <!-- NOTIFICATIONS -->
             <div ngbDropdown class="icon-dropdown position-relative">
                 <i class="bi bi-bell" ngbDropdownToggle></i>
@@ -41,10 +36,10 @@
 
                 <ul ngbDropdownMenu>
                     <li>
-                        <button ngbDropdownItem>New message</button>
+                        <button ngbDropdownItem (click)="showNoMessages(); $event.stopPropagation()">New message</button>
                     </li>
                     <li>
-                        <button ngbDropdownItem>Server alert</button>
+                        <button ngbDropdownItem (click)="showNoAlerts(); $event.stopPropagation()">Server alert</button>
                     </li>
                 </ul>
             </div>
