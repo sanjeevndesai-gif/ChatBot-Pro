@@ -10,6 +10,6 @@ export const environment = {
     i18n_apiBaseUrl: 'http://localhost:8080/i18n',
     whatsappPhoneId: '1168782922978723',
     // Configurable phone numbers used by QR generator (changeable from one place)
-    supportPhoneNumber: '125482568',
+    supportPhoneNumber: '8867377399',
     clinicPhoneNumber: '125482568'
 };

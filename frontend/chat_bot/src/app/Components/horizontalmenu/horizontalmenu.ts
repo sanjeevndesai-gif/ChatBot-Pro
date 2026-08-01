@@ -29,6 +29,9 @@ export class Horizontalmenu {
 
   mobileMenuOpen: boolean = false;
   openMobileSubmenus: Set<string> = new Set();
+  // Notification indicators (updated by real-time/periodic checks elsewhere)
+  hasNewMessages: boolean = false;
+  hasServerAlerts: boolean = false;
 
   constructor(public authService: AuthService, private qrService: QrService, private toast: ToastService) {}
 
