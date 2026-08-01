@@ -24,8 +24,6 @@ export class Header implements OnInit {
 
   qrImgUrl: string | null = null;
   qrDropdownOpen = false;
-  qrLoading = false;
-  qrError = '';
 
   constructor(
     private readonly router: Router,
@@ -35,19 +33,7 @@ export class Header implements OnInit {
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
     // Only request backend QR when the user has a valid auth token (prevents unauthenticated 401 calls on public pages)
-    if (user?.userId && this.authService.isLoggedIn()) {
-      this.qrLoading = true;
-      this.qrService.generateQr(user.userId, 'doctor').subscribe({
-        next: (blob: Blob) => {
-          this.qrImgUrl = URL.createObjectURL(blob);
-          this.qrLoading = false;
-        },
-        error: (err) => {
-          this.qrError = 'Failed to load QR code';
-          this.qrLoading = false;
-        }
-      });
-    }
+    // header QR removed — no fetch in header to avoid extra requests
   }
   toggleQrDropdown(): void {
     this.qrDropdownOpen = !this.qrDropdownOpen;

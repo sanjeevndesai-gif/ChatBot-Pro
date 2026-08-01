@@ -12,9 +12,10 @@ export class QrService {
   /**
    * Fetch QR code as a blob (PNG image)
    */
-  generateQr(profileId: string, appointmentType: string = 'doctor'): Observable<Blob> {
+  generateQr(profileId: string, appointmentType: string = 'doctor', qrType: string = 'patient'): Observable<Blob> {
     const phoneNumber = environment.whatsappPhoneId;
-    const params = {
+    const params: any = {
+      qrType,
       phoneNumber,
       appointmentType,
       userId: profileId
