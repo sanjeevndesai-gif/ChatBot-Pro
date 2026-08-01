@@ -58,7 +58,7 @@ import { environment } from '../../../environments/environment';
   <div class="contact-cards">
     <div class="card">
       <i class="bi bi-telephone"></i>
-      <h4>+1 2548 2568</h4>
+      <h4>+91-8867377399</h4>
       <p>We are always happy to help</p>
     </div>
 
@@ -73,7 +73,7 @@ import { environment } from '../../../environments/environment';
     
     <div class="card">
       <i class="bi bi-envelope"></i>
-      <h4>help@help.com</h4>
+      <h4>support@tridlio.com</h4>
       <p>Best way to get a quick answer</p>
     </div>
   </div>
