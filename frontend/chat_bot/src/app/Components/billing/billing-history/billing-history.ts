@@ -68,7 +68,7 @@ export class BillingHistory {
       const currentUser = this.authService.getCurrentUser();
       const toName = (currentUser as any)?.orgname || inv.clientName || (currentUser as any)?.fullname || '-';
       const toAddress = inv.clinicAddress || (currentUser as any)?.address || '';
-      const fromName = 'Arana Tech Solutions';
+      const fromName = 'Tridlio Tech Solutions';
       const fromAddress = 'F#413 Srivari Forest Breeze\nSubramanyapura Road, Bengaluru, Karnataka 560061';
 
       const issued = new Date(inv.issuedDate).toLocaleDateString();

@@ -4,6 +4,7 @@ import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { BillingService, BillingInfo } from '../../../services/billing.service';
 import { AuthService } from '../../../services/auth.service';
 import { BillingTableService } from '../billing-history/billing-table';
+import { ToastService } from '../../../services/toast.service';
 
 interface Plan {
   name: string;
@@ -47,7 +48,8 @@ export class CurrentPlan implements OnInit {
     private modalService: NgbModal,
     private billingService: BillingService,
     private authService: AuthService,
-    private billingTable: BillingTableService
+    private billingTable: BillingTableService,
+    private toast: ToastService
   ) {}
 
   ngOnInit() {
@@ -133,7 +135,12 @@ export class CurrentPlan implements OnInit {
   }
 
   confirmPayment(successModal: any) {
-    if (!this.mongoId || !this.selectedPlanForPayment || !this.selectedCycleForPayment) return;
+    if (!this.mongoId || !this.selectedPlanForPayment || !this.selectedCycleForPayment) {
+      this.toast.warning('Unable to confirm payment: missing user or plan information.');
+      return;
+    }
+
+    this.toast.info('Processing payment confirmation...');
 
     // resolve price from plan pricing array
     let price: number | undefined = undefined;
@@ -220,6 +227,7 @@ export class CurrentPlan implements OnInit {
       error: () => {
         // handle upgrade error (dismiss QR modal)
         this.modalService.dismissAll();
+        this.toast.error('Payment confirmation failed. Please try again or contact support.');
       }
     });
   }
