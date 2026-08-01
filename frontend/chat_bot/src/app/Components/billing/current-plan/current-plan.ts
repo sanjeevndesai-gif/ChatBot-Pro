@@ -135,6 +135,9 @@ export class CurrentPlan implements OnInit {
   }
 
   confirmPayment(successModal: any) {
+    // Diagnostic log to help trace missing context
+    console.debug('confirmPayment called', { mongoId: this.mongoId, selectedPlanForPayment: this.selectedPlanForPayment, selectedCycleForPayment: this.selectedCycleForPayment });
+
     if (!this.mongoId || !this.selectedPlanForPayment || !this.selectedCycleForPayment) {
       this.toast.warning('Unable to confirm payment: missing user or plan information.');
       return;
@@ -230,6 +233,11 @@ export class CurrentPlan implements OnInit {
         this.toast.error('Payment confirmation failed. Please try again or contact support.');
       }
     });
+  }
+
+  // Exposed helper used by template to enable/disable the confirm button
+  canConfirmPayment(): boolean {
+    return !!this.mongoId && !!this.selectedPlanForPayment && !!this.selectedCycleForPayment;
   }
 
   openSmallModal(content: any) {
