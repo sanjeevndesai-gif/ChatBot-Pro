@@ -5,4 +5,24 @@
 <app-pricingsection></app-pricingsection>
 <app-testimonialssection></app-testimonialssection>
 <app-ctasection></app-ctasection>
+<!-- QR quick-actions: Clinic Finder + Support (non-intrusive, uses same card styles) -->
+<div class="qr-landing-section mx-3 p-4">
+	<h3 class="mb-3">Quick Actions</h3>
+	<div class="contact-cards">
+		<div class="card qr-card">
+			<h4>Clinic Finder</h4>
+			<img [src]="clinicQrUrl" alt="Clinic Finder QR" class="qr-img" />
+			<p>Scan to message the clinic and find nearby locations</p>
+			<a [href]="clinicWaLink" target="_blank" class="qr-cta">Scan with WhatsApp</a>
+		</div>
+
+		<div class="card qr-card">
+			<h4>Support</h4>
+			<img [src]="supportQrUrl" alt="Support QR" class="qr-img" />
+			<p>Scan to contact support via WhatsApp</p>
+			<a [href]="supportWaLink" target="_blank" class="qr-cta">Scan with WhatsApp</a>
+		</div>
+	</div>
+</div>
+
 <app-footersection></app-footersection>

@@ -60,17 +60,6 @@ public class AuthService {
 		}
 	}
 
-	public Document findByPhone(String phone) {
-		try {
-			return authRepository.findByPhone(phone);
-		} catch (Exception e) {
-			log.error("Error finding user by phone {}", phone, e);
-			return null;
-		}
-	}
-
-	
-
 	@PostConstruct
 	public void debugInit() {
 		System.out.println(">>> AuthService CREATED");

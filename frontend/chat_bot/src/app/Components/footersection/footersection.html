@@ -36,21 +36,17 @@
                     <li><a href="#">Contact</a></li>
                 </ul>
             </div>
-
-            <div class="col-md-2">
-                <h5 class="footer-title">Support</h5>
-                <ul class="list-unstyled">
-                    <li><a href="#">Help Center</a></li>
-                    <li><a href="#">Documentation</a></li>
-                    <li><a href="#">Status</a></li>
-                    <li><a href="#">Contact Support</a></li>
-                </ul>
+            <div class="col-md-2 d-flex flex-column align-items-center justify-content-start">
+                <h5 class="footer-title text-center">Contact Support</h5>
+                <div class="footer-qr-top mt-2">
+                    <img [src]="supportQrUrl" alt="Support QR" class="footer-qr-img" />
+                </div>
             </div>
         </div>
 
         <div class="footer-bottom d-flex justify-content-between flex-wrap pt-4 border-top">
             <p class="mb-0">© 2025 ChatBot Pro. All rights reserved.</p>
-            <div class="policy-links">
+            <div class="policy-links d-flex align-items-center">
                 <a href="#">Terms of Service</a>
                 <a href="#">Privacy Policy</a>
                 <a href="#">Cookie Policy</a>

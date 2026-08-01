@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .pathMatchers("/actuator/**").permitAll()
                 .pathMatchers(HttpMethod.POST, "/auth/oauth2/token", "/auth/register", "/auth/login", "/auth/auth-service", "/auth/auth-service/login", "/auth/forgot-password-whatsapp").permitAll()
                 .pathMatchers(HttpMethod.GET, "/auth/plans", "/auth/public/plans").permitAll()
+                .pathMatchers(HttpMethod.GET, "/api/whatsapp/qr/generate").permitAll()
                 .anyExchange().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             .build();

@@ -282,6 +282,32 @@ public void updateStaffUser(String id, Map<String, Object> body) {
      * Returns doctors whose address or city field contains the given city string (case-insensitive).
      * Used by the chat CLINIC_FINDER_FLOW via GET /auth-service/clinics?city={city}.
      */
+    public List<Map<String, Object>> getDoctorsByClinic(String clinicId) {
+        try {
+            List<Object> allDocs = clinicId == null || clinicId.isBlank()
+                    ? authRepository.getAll()
+                    : authRepository.getAllByCreatedBy(clinicId);
+            List<Map<String, Object>> results = new ArrayList<>();
+            for (Object obj : allDocs) {
+                Document doc = (Document) obj;
+                String role = doc.getString("role") != null ? doc.getString("role").toLowerCase() : "";
+                if (!"doctor".equals(role)) continue;
+                Map<String, Object> entry = new HashMap<>();
+                entry.put("id", doc.getObjectId("_id") != null ? doc.getObjectId("_id").toHexString() : "");
+                entry.put("name", getField(doc, "name", "fullname"));
+                entry.put("userId", doc.getString("userId") != null ? doc.getString("userId") : "");
+                entry.put("phone", getField(doc, "phone", "phone_number"));
+                entry.put("specialization", doc.getString("specialization") != null ? doc.getString("specialization") : "");
+                entry.put("address", getField(doc, "address", "city", "location"));
+                results.add(entry);
+            }
+            return results;
+        } catch (Exception e) {
+            log.error("Error fetching doctors by clinicId={}", clinicId, e);
+            throw e;
+        }
+    }
+
     public List<Map<String, Object>> getClinicsByCity(String city) {
         try {
             List<Object> allDocs = authRepository.getAll();
