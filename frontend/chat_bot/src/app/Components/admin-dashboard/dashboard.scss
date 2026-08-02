@@ -8,6 +8,22 @@
 .kpi .meta { color:var(--success); font-size:13px }
 .pending-approvals { margin-top:28px }
 .table { background:var(--panel-bg); border:1px solid rgba(15,23,42,0.04); border-radius:12px; padding:14px }
-.row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:12px 0; border-bottom:1px solid rgba(15,23,42,0.03); align-items:center }
-.row.header { font-weight:700; color:var(--muted) }
+.table { background:var(--panel-bg); border:1px solid rgba(15,23,42,0.04); border-radius:12px; padding:14px; overflow-x:auto }
+.row { display:grid; grid-template-columns: minmax(180px,2fr) minmax(140px,1.4fr) minmax(110px,1fr) minmax(120px,1fr) minmax(180px,1.6fr) 110px 120px; padding:12px 0; border-bottom:1px solid rgba(15,23,42,0.03); align-items:center; column-gap:12px }
+.row.header { font-weight:700; color:var(--muted); background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4)); border-bottom:1px solid rgba(15,23,42,0.02); }
 .row.empty { color:#9CA3AF }
+
+.contact-cell a, .email-cell a { display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100% }
+.contact-cell { font-weight:500 }
+.email-cell { font-weight:500 }
+
+.action-buttons { display:flex; flex-direction:row; gap:8px; align-items:center; justify-self:end }
+.action-buttons .btn { min-width:72px }
+.status { display:inline-block; padding:6px 10px; border-radius:8px; background:#fff; border:1px solid rgba(15,23,42,0.04); color:#111827 }
+
+@media (max-width: 900px) {
+	.row { grid-template-columns: 1fr 1fr 1fr; grid-auto-rows: auto }
+	.row.header { display:none }
+	.row > div { padding:8px 0 }
+	.action-buttons { justify-self:start }
+}

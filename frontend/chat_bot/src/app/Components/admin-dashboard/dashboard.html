@@ -34,18 +34,33 @@
         <div>Clinic</div>
         <div>Owner</div>
         <div>Plan</div>
+        <div>Contact</div>
+        <div>Email</div>
         <div>Status</div>
         <div>Action</div>
       </div>
       <div *ngIf="approvals?.length === 0" class="row empty">
-        <div colspan="5">No data loaded. Use Approvals page for action.</div>
+        <div colspan="7">No data loaded. Use Approvals page for action.</div>
       </div>
       <div *ngFor="let c of approvals" class="row">
         <div>{{ c.name || c.orgname || c.orgName || '-' }}</div>
         <div>{{ c.ownerName || c.userName || c.fullname || c.phone || '-' }}</div>
         <div>{{ (c.billing && (c.billing.planName || c.billing.plan)) || '-' }}</div>
+        <div class="contact-cell">
+          <a *ngIf="c.phone_number || c.contactNumber || c.phone; else noPhone"
+             [href]="'tel:' + (c.phone_number || c.contactNumber || c.phone)">
+            {{ c.phone_number || c.contactNumber || c.phone }}
+          </a>
+          <ng-template #noPhone>-</ng-template>
+        </div>
+        <div class="email-cell">
+          <a *ngIf="c.email || c.ownerEmail; else noEmail" [href]="'mailto:' + (c.email || c.ownerEmail)">
+            {{ c.email || c.ownerEmail }}
+          </a>
+          <ng-template #noEmail>-</ng-template>
+        </div>
         <div><span class="status">{{ c.status || 'pending' }}</span></div>
-        <div>
+        <div class="action-buttons">
           <button class="btn btn-sm btn-success" (click)="approve(c)">Approve</button>
           <button class="btn btn-sm btn-danger" (click)="reject(c)">Reject</button>
         </div>
