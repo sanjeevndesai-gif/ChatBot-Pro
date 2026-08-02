@@ -61,6 +61,36 @@ export class Horizontalmenu {
       { title: 'Plan & Billing', icon: 'bi-credit-card', route: '/app/plan-billing' }
   ];
 
+  // Compute visible menu based on user role (admins should not see regular app items)
+  get visibleMenu(): MenuItem[] {
+    const user = this.authService.getCurrentUser() as any;
+    // Normalize roles into an array and require explicit 'admin' membership.
+    const roles: string[] = [];
+    if (user) {
+      if (Array.isArray(user.roles)) {
+        user.roles.forEach((r: any) => { if (r) roles.push(r.toString().toLowerCase()); });
+      } else if (user.role) {
+        roles.push(user.role.toString().toLowerCase());
+      }
+    }
+
+    // If user is admin, hide user-facing app items that are not relevant to admin
+    if (roles.includes('admin')) {
+      const excludedRoutes = new Set([
+        '/app/book-appointment',
+        '/app/scheduler',
+        '/app/schedulereport',
+        '/app/help',
+        '/app/settings',
+        '/app/plan-billing'
+      ]);
+
+      return this.menu.filter(m => !m.route || !excludedRoutes.has(m.route));
+    }
+
+    return this.menu;
+  }
+
   toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
   }

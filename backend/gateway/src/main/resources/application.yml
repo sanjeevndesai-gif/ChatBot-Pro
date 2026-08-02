@@ -30,6 +30,12 @@ spring:
             - Path=/auth/**
           filters:
             - StripPrefix=1
+        - id: auth-admin
+          uri: http://localhost:8082
+          predicates:
+            - Path=/admin/**
+          filters:
+            - StripPrefix=0
         - id: book-appointment
           uri: http://localhost:9091
           predicates:

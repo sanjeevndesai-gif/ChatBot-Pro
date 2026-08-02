@@ -115,21 +115,27 @@ export class Login {
 
         // AuthService already stored token + user
         // Redirect admins to the admin dashboard
-        try {
-          const current = this.authService.getCurrentUser() as any;
-          const role = (current?.role || current?.roles || '').toString().toLowerCase();
-          if (role.includes('admin')) {
-            this.router.navigate(['/app/admin']);
-          } else {
-            this.router.navigate(['/app/profile']);
+        // Normalize roles into an array and require explicit 'admin' membership.
+        const current = this.authService.getCurrentUser() as any;
+        const roles: string[] = [];
+        if (current) {
+          if (Array.isArray(current.roles)) {
+            current.roles.forEach((r: any) => { if (r) roles.push(r.toString().toLowerCase()); });
+          } else if (current.role) {
+            roles.push(current.role.toString().toLowerCase());
           }
-        } catch (e) {
+        }
+
+        if (roles.includes('admin')) {
+          this.router.navigate(['/app/admin']);
+        } else {
           this.router.navigate(['/app/profile']);
         }
       },
       error: (err) => {
         this.isSubmitting = false;
-        this.apiErrorMessage = err?.error?.message || 'Invalid Email or Password ❌';
+        // Prefer server-provided JSON message, then Error.message produced by AuthService, then fallback
+        this.apiErrorMessage = err?.error?.message || err?.message || 'Invalid Email or Password ❌';
       }
     });
   }

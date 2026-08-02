@@ -74,7 +74,7 @@
         <div class="mobile-menu d-lg-none" [class.open]="mobileMenuOpen">
             <ul class="mobile-nav">
 
-                <li class="mobile-item" *ngFor="let m of menu; let i = index">
+                <li class="mobile-item" *ngFor="let m of visibleMenu; let i = index">
 
                     <a *ngIf="m.route" [routerLink]="m.route" (click)="toggleMobileMenu()">
                         <i class="bi" [ngClass]="m.icon"></i>
@@ -95,7 +95,7 @@
         <nav class="top-nav d-none d-lg-flex">
             <ul class="nav gap-4">
 
-                <li class="nav-item" *ngFor="let m of menu">
+                <li class="nav-item" *ngFor="let m of visibleMenu">
 
                     <a class="nav-link" [routerLink]="m.route" routerLinkActive="active">
                         <i class="bi" [ngClass]="m.icon"></i>

@@ -87,6 +87,7 @@ export const routes: Routes = [
             {
                 path: 'admin',
                 loadComponent: () => import('./Components/admin-dashboard/admin-layout').then(m => m.AdminLayout),
+                canActivate: [() => import('./core/guards/admin.guard').then(m => m.adminGuard) as any],
                 children: [
                     {
                         path: '',

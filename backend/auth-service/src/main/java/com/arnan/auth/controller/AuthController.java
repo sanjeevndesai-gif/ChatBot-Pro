@@ -216,9 +216,21 @@ public class AuthController {
 
     // ✅ LOGIN
     @PostMapping({ "/login", "/auth-service/login" })
-    @ResponseStatus(HttpStatus.OK)
-    public Map<String, Object> login(@RequestBody Map<String, Object> body) {
-        return authService.login(body);
+    public ResponseEntity<?> login(@RequestBody Map<String, Object> body) {
+        try {
+            Map<String, Object> resp = authService.login(body);
+            return ResponseEntity.ok(resp);
+        } catch (RuntimeException e) {
+            String msg = e.getMessage() == null ? "Login failed" : e.getMessage();
+            // Translate pending-approval to a friendly 403 for the UI
+            if (msg.toLowerCase().contains("pending admin approval") || msg.toLowerCase().contains("pending")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Registration received. Your account is waiting for admin approval. Our support team will contact you for verification."));
+            }
+            return ResponseEntity.badRequest().body(Map.of("message", msg));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Login service error"));
+        }
     }
 
     /**

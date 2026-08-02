@@ -11,3 +11,6 @@ import { DashboardPage } from './dashboard.page';
   styleUrls: ['./admin-layout.scss']
 })
 export class AdminLayout {}
+
+// Debug helper: log when admin layout is instantiated
+console.debug('[AdminLayout] admin layout module loaded');

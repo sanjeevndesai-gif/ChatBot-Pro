@@ -12,13 +12,17 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
     const toast = inject(ToastService);
 
     const token = authService.getToken();
+    console.debug('[authInterceptor] ', req.method, req.urlWithParams, 'hasToken=', !!token);
 
     if (token) {
+        console.debug('[authInterceptor] attaching Authorization header');
         req = req.clone({
             setHeaders: {
                 Authorization: `Bearer ${token}`
             }
         });
+    } else {
+        console.debug('[authInterceptor] no token available for request');
     }
 
     return next(req).pipe(

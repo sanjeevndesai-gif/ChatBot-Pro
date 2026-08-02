@@ -1,7 +1,56 @@
-.admin-shell { display:flex; height:100vh; font-family: Arial, sans-serif; }
-.admin-sidebar { width:240px; background:#fff; border-right:1px solid #E6EAF0; padding:16px; }
-.admin-sidebar .logo { font-weight:700; margin-bottom:12px }
-.admin-sidebar nav a { display:block; padding:8px 4px; color:#374151; text-decoration:none }
-.admin-main { flex:1; display:flex; flex-direction:column }
-.admin-topbar { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:#fff; border-bottom:1px solid #E6EAF0 }
-.admin-content { padding:20px; background:#F5F7FA; height:calc(100vh - 64px); overflow:auto }
+.admin-shell { display:flex; flex-direction:row; align-items:flex-start; min-height: calc(100vh - var(--global-header-offset)); font-family: Inter, Arial, sans-serif; }
+
+:root {
+	--sidebar-width: 240px;
+	--brand-accent: #2563eb; /* light blue accent (retained for cards) */
+	--brand-accent-dark: #1e40af; /* darker blue for text */
+	--panel-bg: #ffffff;
+	--content-color: #0b1220; /* default page text color (near-black) */
+	--muted: #6B7280;
+	--success: #10B981;
+	--sidebar-gradient-start: #062244; /* deep navy */
+	--sidebar-gradient-end: #0b69a3; /* teal-blue */
+	--pill-bg: #ffffff;
+	--pill-border: rgba(15,23,42,0.04);
+}
+
+/* Left sidebar that contains admin links (sticky inside page flow) */
+.admin-sidebar { width:var(--sidebar-width); background: var(--panel-bg); color: var(--content-color); padding:18px; box-sizing:border-box; position:sticky; top:var(--global-header-offset); align-self:flex-start; border-radius:8px; box-shadow: 0 12px 36px rgba(2,6,23,0.06); border:1px solid var(--pill-border); z-index:30; min-height:240px }
+.brand-header { display:flex; align-items:center; gap:12px; padding-top:8px }
+.brand-logo { width:44px; height:44px; border-radius:8px; object-fit:cover; box-shadow:0 2px 6px rgba(2,6,23,0.04); border:1px solid rgba(0,0,0,0.04); background:#fff }
+.brand-name { font-weight:800; color:var(--content-color); letter-spacing:0.6px; margin-left:6px }
+.sidebar-nav { display:flex; flex-direction:column; gap:12px; margin-top:18px }
+.sidebar-link { display:block; color: var(--content-color); text-decoration:none; padding:12px 14px; border-radius:12px; font-size:15px; font-weight:600; background: var(--pill-bg); border:1px solid var(--pill-border); box-shadow: 0 6px 20px rgba(2,6,23,0.03); transition:all .12s ease }
+.sidebar-link:hover { transform:none; background: var(--pill-bg); box-shadow: 0 12px 28px rgba(36, 37, 44, 0.04) }
+.sidebar-link.active, .sidebar-link[routerlinkactive] { background: var(--pill-bg); box-shadow: 0 12px 30px rgba(2,6,23,0.06); border-left:4px solid var(--brand-accent) }
+
+/* Main area to the right of sidebar */
+.admin-main { margin-left:0; flex:1; display:flex; flex-direction:column; background: linear-gradient(180deg,#feffff 0%, #f7fbff 100%); color: var(--content-color) }
+.admin-content { padding:28px; background: transparent; min-height:calc(100vh - var(--global-header-offset)); overflow:auto; color: var(--content-color) }
+
+/* Ensure sidebar sits below the global header (top header + horizontal menu). Adjust this value if header height changes. */
+:root { --global-header-offset: 88px; }
+.admin-sidebar { top: var(--global-header-offset); height: calc(100vh - var(--global-header-offset)); }
+.admin-main { margin-top: var(--global-header-offset); }
+.admin-content { min-height: calc(100vh - var(--global-header-offset)); }
+
+/* Topbar inside main */
+.admin-topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 28px; background:linear-gradient(90deg,#ffffffaa, #ffffff55); border-bottom: 1px solid rgba(15,23,42,0.04); box-shadow: 0 1px 0 rgba(16,24,40,0.03) }
+.topbar-left { display:flex; align-items:center; gap:12px }
+.logo-small { width:40px; height:40px; object-fit:cover; border-radius:6px; box-shadow:0 2px 8px rgba(2,6,23,0.08) }
+.title-wrap .app-title { font-weight:700; color:var(--content-color); font-size:18px }
+.title-wrap .app-sub { font-size:12px; color:#4b5563 }
+.topbar-right { display:flex; align-items:center; gap:10px }
+.top-search { padding:8px 12px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); min-width:220px }
+.btn.accent { background:linear-gradient(90deg,#06b6d4,#3b82f6); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer }
+.profile-sm { padding:8px 10px; background:#fff; border-radius:8px; box-shadow:0 1px 4px rgba(2,6,23,0.06); color:#0b1220 }
+
+.admin-secondrow { height:72px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#FFFFFF; border-bottom:1px solid #E6EAF0 }
+.brand { font-weight:700 }
+.admin-pills { display:flex; gap:12px; align-items:center }
+.pill { background:#F3F4F6; padding:6px 12px; border-radius:999px; color:#111827; text-decoration:none }
+.pill.active, .pill[routerlinkactive] { background:#E6EEF8 }
+.second-actions { display:flex; gap:12px; align-items:center }
+.second-actions .search { border:1px solid #E6EAF0; padding:8px 10px; border-radius:6px }
+.second-actions .btn-icon { background:transparent; border:none; font-size:16px }
+.profile { padding:6px 10px; border-radius:6px; background:#F3F4F6 }

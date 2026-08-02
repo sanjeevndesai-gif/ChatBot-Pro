@@ -23,10 +23,12 @@ export class ApprovalsPage implements OnInit {
   constructor(private admin: AdminService, private modal: NgbModal, private toast: ToastService) { }
 
   ngOnInit(): void {
+    console.debug('[ApprovalsPage] ngOnInit');
     this.loadApprovals();
   }
 
   loadApprovals(): void {
+    console.debug('[ApprovalsPage] loadApprovals called');
     this.loading = true;
     this.admin.getApprovals(0, 50).subscribe({
       next: (res: any) => {

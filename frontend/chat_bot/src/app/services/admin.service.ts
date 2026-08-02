@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { Observable, catchError, throwError } from 'rxjs';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
 
   private readonly apiUrl = `${environment.apiGatewayUrl}/admin`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private authService: AuthService) { }
 
   private handleError(err: any) {
     console.error('AdminService ERROR', err);
@@ -20,19 +21,25 @@ export class AdminService {
   }
 
   getOverview(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/metrics/overview`).pipe(
+    const url = `${this.apiUrl}/metrics/overview`;
+    console.debug('[AdminService] GET', url, 'hasToken=', !!this.authService.getToken());
+    return this.http.get(url).pipe(
       catchError(err => this.handleError(err))
     );
   }
 
   getApprovals(page = 0, size = 20): Observable<any> {
-    return this.http.get(`${this.apiUrl}/approvals/queue?page=${page}&size=${size}`).pipe(
+    const url = `${this.apiUrl}/approvals/queue?page=${page}&size=${size}`;
+    console.debug('[AdminService] GET', url, 'hasToken=', !!this.authService.getToken());
+    return this.http.get(url).pipe(
       catchError(err => this.handleError(err))
     );
   }
 
   performAction(clinicId: string, action: string, payload: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/clinics/${clinicId}/action`, { action, ...payload }).pipe(
+    const url = `${this.apiUrl}/clinics/${clinicId}/action`;
+    console.debug('[AdminService] POST', url, 'action=', action, 'hasToken=', !!this.authService.getToken());
+    return this.http.post(url, { action, ...payload }).pipe(
       catchError(err => this.handleError(err))
     );
   }

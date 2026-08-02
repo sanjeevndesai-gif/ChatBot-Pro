@@ -1,7 +1,7 @@
-.approvals-page h2 { margin-bottom:12px }
-.table { background:#fff; border:1px solid #E6EAF0; border-radius:8px; padding:12px }
-.row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:8px 0; border-bottom:1px solid #F3F4F6; align-items:center }
-.row.header { font-weight:600; color:#6B7280 }
+.approvals-page h2 { margin-bottom:12px; color:var(--brand-accent) }
+.table { background:var(--panel-bg); border:1px solid rgba(33, 40, 56, 0.04); border-radius:12px; padding:14px }
+.row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:12px 0; border-bottom:1px solid rgba(15,23,42,0.03); align-items:center }
+.row.header { font-weight:700; color:var(--muted) }
 .row.empty { color:#9CA3AF }
 .actions button { margin-right:6px }
-.status { padding:4px 8px; border-radius:6px; background:#F3F4F6 }
+.status { padding:6px 10px; border-radius:8px; background:#F3F4F6; color:var(--muted) }

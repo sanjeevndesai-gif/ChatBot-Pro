@@ -105,6 +105,26 @@ public class AuthService {
 			Document finalDoc = new Document();
 			finalDoc.put("userId", userId);
 			finalDoc.putAll(documentInfo);
+			// Persist role information — support both legacy `role` string and new `roles` array.
+			String requestedRole = documentInfo.containsKey("role") ? String.valueOf(documentInfo.get("role")).toLowerCase() : null;
+			boolean wantsClinicAdmin = false;
+			if (requestedRole != null && (requestedRole.equals("clinic_admin") || requestedRole.equals("clinicadmin") || requestedRole.equals("admin"))) {
+				wantsClinicAdmin = true;
+			}
+			// Heuristic: if orgname provided, treat as clinic registration
+			if (!wantsClinicAdmin && documentInfo.containsKey("orgname") && documentInfo.get("orgname") != null && !String.valueOf(documentInfo.get("orgname")).isBlank()) {
+				wantsClinicAdmin = true;
+			}
+			if (wantsClinicAdmin) {
+				finalDoc.put("roles", java.util.List.of("clinic_admin"));
+				finalDoc.put("role", "clinic_admin"); // legacy compat
+			} else {
+				finalDoc.put("roles", java.util.List.of("user"));
+				finalDoc.put("role", "user");
+			}
+			// New users must be approved by admin before becoming active
+			finalDoc.put("status", "pending");
+			finalDoc.put("clinicId", null);
 			// Set createdDate and updatedDate for admin user
 			finalDoc.put("createdDate", new java.util.Date());
 			finalDoc.put("updatedDate", new java.util.Date());
@@ -209,6 +229,12 @@ public class AuthService {
 			String hashedPassword = user.getString("password");
 			if (!passwordEncoder.matches(password, hashedPassword)) {
 				throw new RuntimeException("Invalid credentials");
+			}
+
+			// Enforce admin approval: only users with status == "active" may obtain a login token
+			String status = user.getString("status");
+			if (status == null || !"active".equalsIgnoreCase(status)) {
+				throw new RuntimeException("Account pending admin approval");
 			}
 
 			String token = jwtUtil.generateToken(user);

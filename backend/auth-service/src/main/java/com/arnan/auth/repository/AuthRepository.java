@@ -206,4 +206,58 @@ public class AuthRepository {
         }
         return list;
     }
+
+    // New: find pending approvals with paging and sorting, excluding admin users
+    public List<Document> findPendingApprovals(int page, int size) {
+        List<Document> result = new ArrayList<>();
+        BasicDBObject sort = new BasicDBObject("createdDate", -1);
+
+        FindIterable<Document> docs = getCollection().find(
+                and(
+                        eq("status", "pending"),
+                        ne("role", "admin"),
+                        ne("roles", "admin")
+                )
+        ).sort(sort).skip(page * size).limit(size);
+
+        for (Document d : docs) result.add(d);
+        return result;
+    }
+
+    // New: count pending approvals excluding admin users
+    public long countPendingApprovals() {
+        return getCollection().countDocuments(
+                and(
+                        eq("status", "pending"),
+                        ne("role", "admin"),
+                        ne("roles", "admin")
+                )
+        );
+    }
+
+    // New: insert an approvals audit record
+    public void insertApprovalAudit(Document audit) {
+        MongoDatabase db = getMongoClient().getDatabase(appConfig.getMongoDatabase());
+        db.getCollection("approvals_audit").insertOne(audit);
+    }
+
+    // New: count clinics (separate collection)
+    public long countClinics() {
+        MongoDatabase db = getMongoClient().getDatabase(appConfig.getMongoDatabase());
+        return db.getCollection("clinics").countDocuments();
+    }
+
+    // New: run native aggregation pipeline on `auth` collection and return first document
+    public Document aggregateOverview(List<Document> pipeline) {
+        MongoDatabase db = getMongoClient().getDatabase(appConfig.getMongoDatabase());
+        return db.getCollection(appConfig.getCollection()).aggregate(pipeline).first();
+    }
+
+    // New: insert a clinic document into `clinics` collection and return inserted _id
+    public ObjectId insertClinic(Document clinic) {
+        MongoDatabase db = getMongoClient().getDatabase(appConfig.getMongoDatabase());
+        db.getCollection("clinics").insertOne(clinic);
+        ObjectId oid = clinic.getObjectId("_id");
+        return oid;
+    }
 }

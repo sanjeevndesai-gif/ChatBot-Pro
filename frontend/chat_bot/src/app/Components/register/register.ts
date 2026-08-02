@@ -11,6 +11,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -34,7 +35,8 @@ export class Register {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toast: ToastService
   ) {
     this.registerForm = this.fb.group(
       {
@@ -138,7 +140,11 @@ export class Register {
     };
 
     this.authService.register(payload).subscribe(() => {
+      // Inform user that registration requires admin approval
+      this.toast.info('Registration submitted. Your account is pending admin approval.');
       this.router.navigate(['/login']);
+    }, (err) => {
+      this.toast.error(err?.message || 'Registration failed');
     });
   }
 }

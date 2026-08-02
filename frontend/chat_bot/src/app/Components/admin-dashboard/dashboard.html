@@ -1,8 +1,5 @@
 <div class="dashboard">
-  <div class="welcome">
-    <h2>Welcome Back, Admin 👋</h2>
-    <p>Monitor clinics, users and approvals in real time</p>
-  </div>
+  
 
   <div class="kpi-grid">
     <div class="kpi">
@@ -18,9 +15,9 @@
     </div>
 
     <div class="kpi">
-      <div class="title">Today's Logins</div>
-      <div class="value">{{ metrics.todaysLogins }}</div>
-      <div class="meta">Sign-ins</div>
+      <div class="title">Revenue</div>
+      <div class="value">{{ metrics.totalRevenue }}</div>
+      <div class="meta">Revenue</div>
     </div>
 
     <div class="kpi">
@@ -40,8 +37,18 @@
         <div>Status</div>
         <div>Action</div>
       </div>
-      <div class="row empty">
+      <div *ngIf="approvals?.length === 0" class="row empty">
         <div colspan="5">No data loaded. Use Approvals page for action.</div>
+      </div>
+      <div *ngFor="let c of approvals" class="row">
+        <div>{{ c.name || c.orgname || c.orgName || '-' }}</div>
+        <div>{{ c.ownerName || c.userName || c.fullname || c.phone || '-' }}</div>
+        <div>{{ (c.billing && (c.billing.planName || c.billing.plan)) || '-' }}</div>
+        <div><span class="status">{{ c.status || 'pending' }}</span></div>
+        <div>
+          <button class="btn btn-sm btn-success" (click)="approve(c)">Approve</button>
+          <button class="btn btn-sm btn-danger" (click)="reject(c)">Reject</button>
+        </div>
       </div>
     </div>
   </div>
