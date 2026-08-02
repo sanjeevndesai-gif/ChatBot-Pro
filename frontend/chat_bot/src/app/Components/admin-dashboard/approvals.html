@@ -1,0 +1,30 @@
+<div class="approvals-page">
+  <h2>Approvals Queue</h2>
+
+  <div *ngIf="loading">Loading...</div>
+
+  <div class="table" *ngIf="!loading">
+    <div class="row header">
+      <div>Clinic</div>
+      <div>Owner</div>
+      <div>Plan</div>
+      <div>Status</div>
+      <div>Action</div>
+    </div>
+
+    <div *ngFor="let c of approvals" class="row">
+      <div>{{ c.name || c.clinicName }}</div>
+      <div>{{ c.ownerName || c.owner }}</div>
+      <div>{{ c.plan || c.planName }}</div>
+      <div><span class="status">{{ c.status }}</span></div>
+      <div class="actions">
+        <button class="btn btn-sm btn-success" (click)="openApprove(c)">✔ Approve</button>
+        <button class="btn btn-sm btn-outline-danger" (click)="openReject(c)">✖ Reject</button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="openRequestInfo(c)">Request Info</button>
+        <button class="btn btn-sm btn-outline-primary" (click)="openAssignReviewer(c)">Assign</button>
+      </div>
+    </div>
+
+    <div *ngIf="approvals.length===0" class="row empty">No pending approvals</div>
+  </div>
+</div>

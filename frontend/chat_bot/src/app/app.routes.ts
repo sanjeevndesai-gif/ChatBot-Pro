@@ -83,6 +83,21 @@ export const routes: Routes = [
                     import('./Components/view-users/view-users')
                         .then(m => m.ViewUsers),
             },
+            // Admin area (lazy-loaded standalone admin layout with child routes)
+            {
+                path: 'admin',
+                loadComponent: () => import('./Components/admin-dashboard/admin-layout').then(m => m.AdminLayout),
+                children: [
+                    {
+                        path: '',
+                        loadComponent: () => import('./Components/admin-dashboard/dashboard.page').then(m => m.DashboardPage)
+                    },
+                    {
+                        path: 'approvals',
+                        loadComponent: () => import('./Components/admin-dashboard/approvals.page').then(m => m.ApprovalsPage)
+                    }
+                ]
+            },
 
 
             // // ✅ Optional: default inside layout

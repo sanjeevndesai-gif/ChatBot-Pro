@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="900" fill="#F5F7FA"/>
+  <!-- Topbar -->
+  <rect x="0" y="0" width="1440" height="64" fill="#FFFFFF" stroke="#E6EAF0"/>
+  <text x="24" y="40" font-family="Arial" font-size="18" fill="#1F2937">Logo</text>
+  <rect x="160" y="14" width="520" height="36" rx="6" fill="#F0F2F5"/>
+  <text x="170" y="36" font-family="Arial" font-size="13" fill="#9AA3B2">Search...</text>
+  <text x="1100" y="36" font-family="Arial" font-size="14" fill="#1F2937">🔔 Notifications</text>
+  <text x="1250" y="36" font-family="Arial" font-size="14" fill="#1F2937">👤 Admin</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="64" width="240" height="836" fill="#FFFFFF" stroke="#E6EAF0"/>
+  <text x="24" y="104" font-family="Arial" font-size="14" fill="#374151">Dashboard</text>
+  <text x="24" y="136" font-family="Arial" font-size="14" fill="#374151">Clinics</text>
+  <text x="24" y="168" font-family="Arial" font-size="14" fill="#374151">Users</text>
+  <text x="24" y="200" font-family="Arial" font-size="14" fill="#374151">Approval</text>
+  <text x="24" y="232" font-family="Arial" font-size="14" fill="#374151">Analytics</text>
+  <text x="24" y="264" font-family="Arial" font-size="14" fill="#374151">WhatsApp</text>
+  <text x="24" y="296" font-family="Arial" font-size="14" fill="#374151">Plans</text>
+  <text x="24" y="328" font-family="Arial" font-size="14" fill="#374151">Reports</text>
+  <text x="24" y="360" font-family="Arial" font-size="14" fill="#374151">Settings</text>
+
+  <!-- Main content area -->
+  <rect x="260" y="84" width="1100" height="760" fill="none"/>
+
+  <!-- Welcome -->
+  <text x="280" y="120" font-family="Arial" font-size="24" fill="#111827">Welcome Back, Admin 👋</text>
+  <text x="280" y="148" font-family="Arial" font-size="13" fill="#6B7280">Monitor clinics, users and approvals in real time</text>
+
+  <!-- KPI tiles -->
+  <g>
+    <rect x="280" y="180" width="240" height="100" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+    <text x="300" y="210" font-family="Arial" font-size="12" fill="#6B7280">Clinics</text>
+    <text x="300" y="245" font-family="Arial" font-size="22" fill="#111827">324</text>
+    <text x="420" y="245" font-family="Arial" font-size="12" fill="#10B981">+18 Today</text>
+
+    <rect x="540" y="180" width="240" height="100" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+    <text x="560" y="210" font-family="Arial" font-size="12" fill="#6B7280">Users</text>
+    <text x="560" y="245" font-family="Arial" font-size="22" fill="#111827">12,842</text>
+    <text x="700" y="245" font-family="Arial" font-size="12" fill="#10B981">+125 Today</text>
+
+    <rect x="800" y="180" width="240" height="100" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+    <text x="820" y="210" font-family="Arial" font-size="12" fill="#6B7280">Sign-ins</text>
+    <text x="820" y="245" font-family="Arial" font-size="22" fill="#111827">3,421</text>
+    <text x="960" y="245" font-family="Arial" font-size="12" fill="#059669">+12%</text>
+
+    <rect x="1060" y="180" width="240" height="100" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+    <text x="1080" y="210" font-family="Arial" font-size="12" fill="#6B7280">Revenue</text>
+    <text x="1080" y="245" font-family="Arial" font-size="22" fill="#111827">₹1.28L</text>
+    <text x="1220" y="245" font-family="Arial" font-size="12" fill="#059669">+9%</text>
+  </g>
+
+  <!-- Charts -->
+  <rect x="280" y="300" width="520" height="240" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+  <text x="300" y="324" font-family="Arial" font-size="14" fill="#111827">User Growth</text>
+  <rect x="820" y="300" width="520" height="240" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+  <text x="840" y="324" font-family="Arial" font-size="14" fill="#111827">Clinic Status</text>
+
+  <!-- Pending Approvals Table -->
+  <text x="280" y="570" font-family="Arial" font-size="16" fill="#111827">Pending Clinic Approvals</text>
+  <rect x="280" y="590" width="1100" height="200" rx="8" fill="#FFFFFF" stroke="#E6EAF0"/>
+  <text x="300" y="612" font-family="Arial" font-size="12" fill="#6B7280">Clinic</text>
+  <text x="480" y="612" font-family="Arial" font-size="12" fill="#6B7280">Owner</text>
+  <text x="640" y="612" font-family="Arial" font-size="12" fill="#6B7280">Plan</text>
+  <text x="760" y="612" font-family="Arial" font-size="12" fill="#6B7280">Status</text>
+  <text x="920" y="612" font-family="Arial" font-size="12" fill="#6B7280">Action</text>
+
+  <text x="300" y="640" font-family="Arial" font-size="14" fill="#111827">Smile Care</text>
+  <text x="480" y="640" font-family="Arial" font-size="14" fill="#111827">John</text>
+  <text x="640" y="640" font-family="Arial" font-size="14" fill="#111827">Pro</text>
+  <text x="760" y="640" font-family="Arial" font-size="14" fill="#F59E0B">Pending</text>
+  <text x="920" y="640" font-family="Arial" font-size="14" fill="#10B981">✔ Approve</text>
+  <text x="1000" y="640" font-family="Arial" font-size="14" fill="#EF4444">✖ Reject</text>
+
+  <text x="300" y="670" font-family="Arial" font-size="14" fill="#111827">City Clinic</text>
+  <text x="480" y="670" font-family="Arial" font-size="14" fill="#111827">David</text>
+  <text x="640" y="670" font-family="Arial" font-size="14" fill="#111827">Basic</text>
+  <text x="760" y="670" font-family="Arial" font-size="14" fill="#F59E0B">Pending</text>
+  <text x="920" y="670" font-family="Arial" font-size="14" fill="#10B981">✔ Approve</text>
+  <text x="1000" y="670" font-family="Arial" font-size="14" fill="#EF4444">✖ Reject</text>
+
+</svg>

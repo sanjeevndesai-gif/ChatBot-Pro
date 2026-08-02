@@ -114,7 +114,18 @@ export class Login {
         }
 
         // AuthService already stored token + user
-        this.router.navigate(['/app/profile']);
+        // Redirect admins to the admin dashboard
+        try {
+          const current = this.authService.getCurrentUser() as any;
+          const role = (current?.role || current?.roles || '').toString().toLowerCase();
+          if (role.includes('admin')) {
+            this.router.navigate(['/app/admin']);
+          } else {
+            this.router.navigate(['/app/profile']);
+          }
+        } catch (e) {
+          this.router.navigate(['/app/profile']);
+        }
       },
       error: (err) => {
         this.isSubmitting = false;

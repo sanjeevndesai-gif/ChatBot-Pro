@@ -1,0 +1,48 @@
+<div class="dashboard">
+  <div class="welcome">
+    <h2>Welcome Back, Admin 👋</h2>
+    <p>Monitor clinics, users and approvals in real time</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="title">Total Clinics</div>
+      <div class="value">{{ metrics.totalClinics }}</div>
+      <div class="meta">Pending: {{ metrics.pendingApprovals }}</div>
+    </div>
+
+    <div class="kpi">
+      <div class="title">Total Users</div>
+      <div class="value">{{ metrics.totalUsers }}</div>
+      <div class="meta">Today's Signups: {{ metrics.todaysSignups }}</div>
+    </div>
+
+    <div class="kpi">
+      <div class="title">Today's Logins</div>
+      <div class="value">{{ metrics.todaysLogins }}</div>
+      <div class="meta">Sign-ins</div>
+    </div>
+
+    <div class="kpi">
+      <div class="title">Subscribed Users</div>
+      <div class="value">{{ metrics.totalSubscribed }}</div>
+      <div class="meta">Approved: {{ metrics.approvedClinics }}</div>
+    </div>
+  </div>
+
+  <div class="pending-approvals">
+    <h3>Pending Clinic Approvals</h3>
+    <div class="table">
+      <div class="row header">
+        <div>Clinic</div>
+        <div>Owner</div>
+        <div>Plan</div>
+        <div>Status</div>
+        <div>Action</div>
+      </div>
+      <div class="row empty">
+        <div colspan="5">No data loaded. Use Approvals page for action.</div>
+      </div>
+    </div>
+  </div>
+</div>

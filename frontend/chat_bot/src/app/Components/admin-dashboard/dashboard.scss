@@ -1,0 +1,13 @@
+.dashboard { }
+.welcome h2 { margin:0; font-size:20px }
+.welcome p { color:#6B7280 }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:16px }
+.kpi { background:#fff; padding:12px; border-radius:8px; border:1px solid #E6EAF0 }
+.kpi .title { color:#6B7280; font-size:12px }
+.kpi .value { font-size:20px; margin-top:6px; font-weight:600 }
+.kpi .meta { color:#10B981; font-size:12px }
+.pending-approvals { margin-top:20px }
+.table { background:#fff; border:1px solid #E6EAF0; border-radius:8px; padding:12px }
+.row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:8px 0; border-bottom:1px solid #F3F4F6 }
+.row.header { font-weight:600; color:#6B7280 }
+.row.empty { color:#9CA3AF }

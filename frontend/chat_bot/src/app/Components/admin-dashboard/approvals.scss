@@ -1,0 +1,7 @@
+.approvals-page h2 { margin-bottom:12px }
+.table { background:#fff; border:1px solid #E6EAF0; border-radius:8px; padding:12px }
+.row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:8px 0; border-bottom:1px solid #F3F4F6; align-items:center }
+.row.header { font-weight:600; color:#6B7280 }
+.row.empty { color:#9CA3AF }
+.actions button { margin-right:6px }
+.status { padding:4px 8px; border-radius:6px; background:#F3F4F6 }
