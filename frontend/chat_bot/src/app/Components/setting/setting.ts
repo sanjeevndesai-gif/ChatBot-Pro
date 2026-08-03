@@ -14,7 +14,7 @@ import { ToastService } from '../../services/toast.service';
 })
 export class Setting implements OnInit {
   // Report settings
-  onDemand = true;
+  onDemand = false;
   scheduledReport = false;
 
   // Message settings
@@ -128,6 +128,8 @@ export class Setting implements OnInit {
       next: (res) => {
         const planName = (res?.planName || '').toString().toUpperCase();
         const planCode = (res?.planTemplate?.planCode || res?.planCode || '').toString().toUpperCase();
+        // Temporary debug log to inspect billing payload during local testing
+        console.debug('[Setting] billing response:', res, 'planName=', planName, 'planCode=', planCode);
         // Allow only STANDARD, PREMIUM, PROPLUS (and any non-BASIC)
         if (planName === 'BASIC' || planCode === 'BASIC' || !planName) {
           this.canEdit = false;
