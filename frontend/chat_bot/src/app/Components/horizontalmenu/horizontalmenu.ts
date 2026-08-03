@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../services/auth.service';
+import { AdminService } from '../../services/admin.service';
 import { QrService } from '../../services/qr.service';
 import { ToastService } from '../../services/toast.service';
 
@@ -25,15 +26,42 @@ interface MenuItem {
   templateUrl: './horizontalmenu.html',
   styleUrls: ['./horizontalmenu.scss']
 })
-export class Horizontalmenu {
+export class Horizontalmenu implements OnInit {
 
   mobileMenuOpen: boolean = false;
   openMobileSubmenus: Set<string> = new Set();
   // Notification indicators (updated by real-time/periodic checks elsewhere)
   hasNewMessages: boolean = false;
   hasServerAlerts: boolean = false;
+  // Admin-specific notification state
+  isAdmin: boolean = false;
+  hasApprovalRequests: boolean = false;
 
-  constructor(public authService: AuthService, private qrService: QrService, private toast: ToastService) {}
+  constructor(public authService: AuthService, private qrService: QrService, private toast: ToastService, private admin: AdminService, private router: Router) {}
+
+  ngOnInit(): void {
+    const user = this.authService.getCurrentUser() as any;
+    const roles: string[] = [];
+    if (user) {
+      if (Array.isArray(user.roles)) user.roles.forEach((r: any) => { if (r) roles.push(r.toString().toLowerCase()); });
+      else if (user.role) roles.push(user.role.toString().toLowerCase());
+    }
+    this.isAdmin = roles.includes('admin');
+
+    // If admin, check for pending approval requests (small, lightweight check)
+    if (this.isAdmin) {
+      this.admin.getApprovals(0, 1).subscribe({
+        next: (res: any) => {
+          const count = (res && res.content && Array.isArray(res.content)) ? res.content.length : 0;
+          this.hasApprovalRequests = count > 0;
+        },
+        error: (err: any) => {
+          console.debug('[Horizontalmenu] approval check failed', err);
+          this.hasApprovalRequests = false;
+        }
+      });
+    }
+  }
 
 
   // Helper to get userId for QR
@@ -141,6 +169,14 @@ export class Horizontalmenu {
 
   showNoAlerts() {
     this.toast.info('There are no server alerts');
+  }
+
+  goToApprovals() {
+    // navigate to admin approvals page
+    this.router.navigate(['/admin/approvals']).catch(() => {
+      // fallback route used in this app: admin dashboard approvals route
+      this.router.navigate(['/admin']).catch(() => {});
+    });
   }
 
 }

@@ -32,14 +32,24 @@
             <!-- NOTIFICATIONS -->
             <div ngbDropdown class="icon-dropdown position-relative">
                 <i class="bi bi-bell" ngbDropdownToggle></i>
-                <span *ngIf="hasNewMessages || hasServerAlerts" class="notif-dot"></span>
+                <span *ngIf="hasApprovalRequests || hasNewMessages || hasServerAlerts" class="notif-dot"></span>
 
                 <ul ngbDropdownMenu>
-                    <li>
+                    <!-- Admin-only approval notification -->
+                    <li *ngIf="isAdmin && hasApprovalRequests">
+                        <button ngbDropdownItem (click)="goToApprovals(); $event.stopPropagation()">New approval request</button>
+                    </li>
+
+                    <li *ngIf="hasNewMessages">
                         <button ngbDropdownItem (click)="showNoMessages(); $event.stopPropagation()">New message</button>
                     </li>
-                    <li>
+
+                    <li *ngIf="hasServerAlerts">
                         <button ngbDropdownItem (click)="showNoAlerts(); $event.stopPropagation()">Server alert</button>
+                    </li>
+
+                    <li *ngIf="!isAdmin && !hasNewMessages && !hasServerAlerts">
+                        <button ngbDropdownItem (click)="showNoMessages(); $event.stopPropagation()">No notifications</button>
                     </li>
                 </ul>
             </div>
