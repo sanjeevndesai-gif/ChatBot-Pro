@@ -30,12 +30,12 @@
                 </div>
                 }
 
-                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="row g-2" novalidate>
+                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="row g-2" novalidate autocomplete="off">
 
                     <!-- Email -->
                     <div class="mb-3">
                         <label for="email" class="visually-hidden">Email</label>
-                        <input id="email" type="email" formControlName="email" class="form-control" placeholder="Email" />
+                        <input id="email" type="email" formControlName="email" class="form-control" placeholder="Email" autocomplete="off" />
                         @if (f['email'].touched && f['email'].invalid) {
                         <div class="text-danger mt-1">
                             @if (f['email'].errors?.['required']) { <div>Email is required.</div> }
@@ -48,7 +48,7 @@
                     <div class="mb-3 position-relative">
                         <label for="password" class="visually-hidden">Password</label>
                         <input id="password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
-                            class="form-control" placeholder="Password" />
+                            class="form-control" placeholder="Password" autocomplete="off" />
 
                         <i class="bi password-toggle" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"
                             (click)="togglePassword()" aria-label="Toggle password visibility"></i>
@@ -97,7 +97,7 @@
                                                 <p>We will send your password to your registered WhatsApp number if the account exists.</p>
                                                 <div class="mb-3">
                                                     <label for="identifier" class="form-label">Email or Phone (as entered above)</label>
-                                                    <input id="identifier" type="text" class="form-control" [value]="loginForm.value.email" readonly />
+                                                    <input id="identifier" type="text" class="form-control" [value]="loginForm.value.email" readonly autocomplete="off" />
                                                 </div>
                                                 <div *ngIf="forgotPasswordMessage" class="alert alert-info py-2">{{ forgotPasswordMessage }}</div>
                                                 <div *ngIf="forgotPasswordError" class="alert alert-danger py-2">{{ forgotPasswordError }}</div>
