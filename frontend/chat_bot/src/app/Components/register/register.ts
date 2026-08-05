@@ -37,7 +37,8 @@ export class Register {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
-    private toast: ToastService
+    private toast: ToastService,
+    private ngZone: NgZone
   ) {
     this.registerForm = this.fb.group(
       {
