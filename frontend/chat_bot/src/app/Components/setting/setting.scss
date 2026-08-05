@@ -8,6 +8,44 @@
   font-family: "Inter", sans-serif;
 }
 
+/* Upgrade banner */
+.upgrade-banner {
+  position: sticky;
+  top: 84px; /* sits below header */
+  z-index: 40;
+  margin-bottom: 12px;
+  padding: 0 30px;
+}
+.upgrade-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, #fff8e6 0%, #fffceb 100%);
+  border-left: 4px solid #ffd54a;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+.upgrade-title {
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 4px;
+}
+.upgrade-sub {
+  color: #475569;
+  font-size: 13px;
+}
+.upgrade-cta .btn-upgrade {
+  background: #0b6914;
+  color: white;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+.upgrade-cta .btn-upgrade:hover { opacity: 0.95; }
+
 /* Card */
 .card {
   width: 48%;
@@ -117,6 +155,9 @@ input:checked + .slider::before {
     flex-direction: column;
     padding: 15px;
   }
+
+  .upgrade-content { padding: 12px 10px; }
+  .upgrade-banner { padding: 0 15px; }
 
   .card {
     width: 100%;

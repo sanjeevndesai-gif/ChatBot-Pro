@@ -1,14 +1,14 @@
 <div class="settings-wrapper">
 
   <!-- Informational banner when editing is blocked for Basic plan -->
-  <div *ngIf="!canEdit" class="mb-3">
-    <div class="alert alert-warning d-flex justify-content-between align-items-center">
-      <div>
-        <strong>You're currently on the Basic plan.</strong>
-        <div class="small">This setting isn't available on your current plan. Upgrade to unlock this feature.</div>
+  <div *ngIf="!canEdit" class="upgrade-banner">
+    <div class="upgrade-content">
+      <div class="upgrade-text">
+        <div class="upgrade-title">You're currently on the Basic plan.</div>
+        <div class="upgrade-sub">This setting isn't available on your current plan. Upgrade to unlock this feature.</div>
       </div>
-      <div>
-        <a href="/app/plan-billing" class="btn btn-sm btn-outline-primary">Upgrade</a>
+      <div class="upgrade-cta">
+        <a href="/app/plan-billing" class="btn btn-upgrade">Upgrade</a>
       </div>
     </div>
   </div>
