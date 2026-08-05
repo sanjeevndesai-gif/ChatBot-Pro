@@ -10,11 +10,11 @@
 
 /* Upgrade banner */
 .upgrade-banner {
-  position: sticky;
+  position: fixed;
   top: 84px; /* sits below header */
-  z-index: 40;
-  margin-bottom: 12px;
-  padding: 0 30px;
+  left: 68px; /* align with content column */
+  z-index: 1100;
+  width: 420px;
 }
 .upgrade-content {
   display: flex;
@@ -157,7 +157,7 @@ input:checked + .slider::before {
   }
 
   .upgrade-content { padding: 12px 10px; }
-  .upgrade-banner { padding: 0 15px; }
+  .upgrade-banner { position: static; width: 100%; padding: 0 15px; }
 
   .card {
     width: 100%;
