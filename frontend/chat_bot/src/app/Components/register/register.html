@@ -72,12 +72,23 @@
             </small>
           </div>
 
+          <!-- Location (optional: human-readable location / city) -->
+          <div class="col-md-6">
+            <input class="form-control" placeholder="Location (City / Area)" formControlName="location">
+          </div>
+
           <!-- Organisation -->
           <div class="col-md-6">
             <input class="form-control" placeholder="Organisation Name" formControlName="orgname">
             <small class="text-danger" *ngIf="f['orgname'].touched && f['orgname'].invalid">
               Organisation name is required
             </small>
+          </div>
+
+          <!-- Google Review Link (optional) -->
+          <div class="col-md-6">
+            <input class="form-control" placeholder="Google review link (optional)" formControlName="googleReviewLink">
+            <small class="text-muted">Optional: paste your Google Maps / review page URL</small>
           </div>
 
           <!-- Services -->
