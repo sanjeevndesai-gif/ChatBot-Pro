@@ -1,17 +1,17 @@
-<div class="settings-wrapper">
-
-  <!-- Informational banner when editing is blocked for Basic plan -->
-  <div *ngIf="!canEdit" class="upgrade-banner">
-    <div class="upgrade-content">
-      <div class="upgrade-text">
-        <div class="upgrade-title">You're currently on the Basic plan.</div>
-        <div class="upgrade-sub">This setting isn't available on your current plan. Upgrade to unlock this feature.</div>
-      </div>
-      <div class="upgrade-cta">
-        <a href="/app/plan-billing" class="btn btn-upgrade">Upgrade</a>
-      </div>
+<!-- Informational banner when editing is blocked for Basic plan -->
+<div *ngIf="!canEdit" class="upgrade-banner">
+  <div class="upgrade-content">
+    <div class="upgrade-text">
+      <div class="upgrade-title">You're currently on the Basic plan.</div>
+      <div class="upgrade-sub">This setting isn't available on your current plan. Upgrade to unlock this feature.</div>
+    </div>
+    <div class="upgrade-cta">
+      <a href="/app/plan-billing" class="btn btn-upgrade">Upgrade</a>
     </div>
   </div>
+</div>
+
+<div class="settings-wrapper">
 
   <!-- Report Setting Card -->
   <div class="card">
