@@ -12,4 +12,6 @@ export const environment = {
     // Configurable phone numbers used by QR generator (changeable from one place)
     supportPhoneNumber: '8867377399',
     clinicPhoneNumber: '125482568'
+    // Add your Google Maps API key here for Places Autocomplete (leave empty to disable)
+    ,googleMapsApiKey: ''
 };

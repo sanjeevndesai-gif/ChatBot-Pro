@@ -72,9 +72,10 @@
             </small>
           </div>
 
-          <!-- Location (optional: human-readable location / city) -->
+          <!-- Location (Google Places Autocomplete if API key provided) -->
           <div class="col-md-6">
-            <input class="form-control" placeholder="Location (City / Area)" formControlName="location">
+            <input id="locationInput" class="form-control" placeholder="Location (city / area)" formControlName="location">
+            <small class="text-muted">Start typing to select a place (Google Places). If not available, enter location manually.</small>
           </div>
 
           <!-- Organisation -->
@@ -90,6 +91,12 @@
             <input class="form-control" placeholder="Google review link (optional)" formControlName="googleReviewLink">
             <small class="text-muted">Optional: paste your Google Maps / review page URL</small>
           </div>
+
+          <!-- Hidden structured location fields saved from Places -->
+          <input type="hidden" formControlName="locationPlaceId">
+          <input type="hidden" formControlName="locationLat">
+          <input type="hidden" formControlName="locationLng">
+          <input type="hidden" formControlName="locationAddress">
 
           <!-- Services -->
           <div class="col-md-6">
