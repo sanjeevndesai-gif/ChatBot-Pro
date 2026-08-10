@@ -66,6 +66,12 @@ Parameters:
     Default: 6379
     Description: Redis port used by the chat service.
 
+  # Optional: specify a customer-managed KMS key ARN to decrypt SecureString SSM params
+  CMKKeyArn:
+    Type: String
+    Default: ''
+    Description: Optional CMK ARN (e.g. arn:aws:kms:region:acct:key/xxxx). If empty, the AWS-managed SSM key alias/aws/ssm will be used.
+
   PrivateRouteTableIdA:
     Type: String
     Default: ''
@@ -104,6 +110,7 @@ Conditions:
   HasPrivateRouteTableB: !Not [!Equals [!Ref PrivateRouteTableIdB, '']]
   HasPrivateRouteTableAInProduction: !And [!Condition IsProduction, !Condition HasPrivateRouteTableA]
   HasPrivateRouteTableBInProduction: !And [!Condition IsProduction, !Condition HasPrivateRouteTableB]
+  HasCMK: !Not [!Equals [!Ref CMKKeyArn, '']]
 
 Resources:
 
@@ -164,44 +171,7 @@ Resources:
         LifecyclePolicyText: |
           {"rules":[{"rulePriority":1,"description":"Keep last 20","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":20},"action":{"type":"expire"}}]}
 
-  # 
-  # SECRETS MANAGER
-  # Store placeholder secrets  update values after deploy with:
-  #   aws secretsmanager put-secret-value --secret-id <name> --secret-string '{"KEY":"value"}'
-  # 
-  SecretJwt:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub "${EcrRepositoryPrefix}/jwt-secret"
-      Description: JWT signing secret shared by all ChatBot-Pro services
-      SecretString: '{"JWT_SECRET":"REPLACE_WITH_STRONG_SECRET"}'
-
-  SecretOAuth2:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub "${EcrRepositoryPrefix}/oauth2"
-      Description: OAuth2 client credentials
-      SecretString: '{"OAUTH2_CLIENT_ID":"chatbot-client","OAUTH2_CLIENT_SECRET":"REPLACE_WITH_STRONG_SECRET"}'
-
-  SecretMongoDB:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub "${EcrRepositoryPrefix}/mongodb"
-      Description: MongoDB Atlas connection URIs per database
-      SecretString: !Sub |
-        {
-          "MONGO_URI_AUTH":    "mongodb+srv://user:pass@cluster.mongodb.net/auth-service",
-          "MONGO_URI_BOOK":    "mongodb+srv://user:pass@cluster.mongodb.net/book_appointment",
-          "MONGO_URI_CHAT":    "mongodb+srv://user:pass@cluster.mongodb.net/chatdb",
-          "MONGO_URI_I18N":    "mongodb+srv://user:pass@cluster.mongodb.net/i18n-service"
-        }
-
-  SecretChat:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub "${EcrRepositoryPrefix}/chat"
-      Description: WhatsApp Cloud API and OpenAI credentials
-      SecretString: '{"WHATSAPP_TOKEN":"REPLACE_WITH_TOKEN","WHATSAPP_PHONE_ID":"REPLACE_WITH_PHONE_ID","OPENAI_API_KEY":"REPLACE_IF_USED"}'
+  # NOTE: Secrets are provided via SSM SecureString parameters. Secrets Manager resources removed.
 
   # 
   # ECS CLUSTER
@@ -231,18 +201,25 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       Policies:
-        - PolicyName: SecretsManagerReadAccess
+        - PolicyName: SecretsAndSSMAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - secretsmanager:GetSecretValue
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
                 Resource:
-                  - !Ref SecretJwt
-                  - !Ref SecretOAuth2
-                  - !Ref SecretMongoDB
-                  - !Ref SecretChat
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/*
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !If
+                    - HasCMK
+                    - !Ref CMKKeyArn
+                    - !Sub 'arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm'
 
   ECSTaskRole:
     Type: AWS::IAM::Role
@@ -329,7 +306,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 8761
           ToPort: 8761
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidr
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
@@ -338,11 +315,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 27017
           ToPort: 27017
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidr
         - IpProtocol: tcp
           FromPort: 6379
           ToPort: 6379
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidr
         - IpProtocol: udp
           FromPort: 53
           ToPort: 53
@@ -513,7 +490,7 @@ Resources:
             - ContainerPort: 8761
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -570,13 +547,13 @@ Resources:
             - ContainerPort: 8082
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
             - Name: OAUTH2_CLIENT_ID
-              ValueFrom: !Sub "${SecretOAuth2}:OAUTH2_CLIENT_ID::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/oauth2-client-id"
             - Name: OAUTH2_CLIENT_SECRET
-              ValueFrom: !Sub "${SecretOAuth2}:OAUTH2_CLIENT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/oauth2-client-secret"
             - Name: SPRING_DATA_MONGODB_URI
-              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_AUTH::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/mongodb-auth"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -632,9 +609,9 @@ Resources:
             - ContainerPort: 9091
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
             - Name: SPRING_DATA_MONGODB_URI
-              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_BOOK::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/mongodb-book"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -690,15 +667,15 @@ Resources:
             - ContainerPort: 9090
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
             - Name: SPRING_DATA_MONGODB_URI
-              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_CHAT::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/mongodb-chat"
             - Name: WHATSAPP_TOKEN
-              ValueFrom: !Sub "${SecretChat}:WHATSAPP_TOKEN::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/whatsapp-token"
             - Name: WHATSAPP_PHONE_ID
-              ValueFrom: !Sub "${SecretChat}:WHATSAPP_PHONE_ID::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/whatsapp-phone-id"
             - Name: OPENAI_API_KEY
-              ValueFrom: !Sub "${SecretChat}:OPENAI_API_KEY::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/openai-api-key"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -758,9 +735,9 @@ Resources:
             - ContainerPort: 9092
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
             - Name: SPRING_DATA_MONGODB_URI
-              ValueFrom: !Sub "${SecretMongoDB}:MONGO_URI_I18N::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/mongodb-i18n"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -816,7 +793,7 @@ Resources:
             - ContainerPort: 8080
           Secrets:
             - Name: JWT_SECRET
-              ValueFrom: !Sub "${SecretJwt}:JWT_SECRET::"
+              ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EcrRepositoryPrefix}/jwt-secret"
           Environment:
             - Name: SPRING_PROFILES_ACTIVE
               Value: prod
@@ -878,7 +855,7 @@ Resources:
 Outputs:
   ClusterArn:
     Description: ECS Cluster ARN
-    Value: !Ref ECSCluster
+    Value: !GetAtt ECSCluster.Arn
     Export:
       Name: !Sub "${EcrRepositoryPrefix}-cluster-arn"
 
@@ -900,13 +877,6 @@ Outputs:
   AuthServiceArn:
     Description: Auth ECS Service ARN
     Value: !Ref AuthService
-
-  SecretJwtArn:
-    Description: ARN of the JWT Secrets Manager secret  update this with your real value
-    Value: !Ref SecretJwt
-
-  SecretMongoDBArn:
-    Description: ARN of the MongoDB Secrets Manager secret  update with your Atlas URIs
-    Value: !Ref SecretMongoDB
+  # Secrets Manager outputs removed — SSM parameters are used for runtime secrets.
 
 
