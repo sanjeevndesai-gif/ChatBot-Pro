@@ -9,7 +9,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 WORKDIR /app
-COPY --from=build /app/target/company-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 RUN chown appuser:appgroup app.jar
 USER appuser
 EXPOSE 8082

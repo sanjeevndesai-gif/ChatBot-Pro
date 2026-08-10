@@ -1,0 +1,29 @@
+name: Deploy Dev
+on:
+  push:
+    branches: ["develop"]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ap-south-1
+      - name: Build and push images
+        run: |
+          echo "Build steps here - build Docker images and push to ECR with GITHUB_SHA tags"
+          # Example:
+          # docker build -t $ECR_URI:${GITHUB_SHA} .
+          # docker push $ECR_URI:${GITHUB_SHA}
+      - name: Deploy Terraform (apply)
+        run: |
+          cd backend/deploy/aws/terraform
+          terraform init -input=false
+          terraform apply -auto-approve -var="environment=dev"

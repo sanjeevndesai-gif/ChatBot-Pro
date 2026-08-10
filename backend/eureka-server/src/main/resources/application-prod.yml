@@ -1,0 +1,18 @@
+spring:
+  profiles: prod
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    prefer-ip-address: true
+
+jwt:
+  secret: ${JWT_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

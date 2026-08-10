@@ -1,0 +1,25 @@
+name: Deploy Prod
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ap-south-1
+      - name: Build and push images
+        run: |
+          echo "Build and push images for prod with GITHUB_SHA tags"
+      - name: Terraform apply prod
+        run: |
+          cd backend/deploy/aws/terraform
+          terraform init -input=false
+          terraform apply -auto-approve -var="environment=prod"
