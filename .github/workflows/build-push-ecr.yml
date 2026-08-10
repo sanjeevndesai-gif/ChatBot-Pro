@@ -4,12 +4,12 @@ on:
   push:
     branches: [ main ]
     paths:
-      - auth-service/**
-      - book_appointment/**
-      - chat/**
-      - gateway/**
-      - eureka-server/**
-      - i18n-service/**
+      - backend/auth-service/**
+      - backend/book_appointment/**
+      - backend/chat/**
+      - backend/gateway/**
+      - backend/eureka-server/**
+      - backend/i18n-service/**
       - .github/workflows/build-push-ecr.yml
   workflow_dispatch:
     inputs:
@@ -78,7 +78,7 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
           REPO_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
-          CONTEXT: ${{ matrix.context }}
+          CONTEXT: backend/${{ matrix.context }}
         run: |
           IMAGE_URI="$REGISTRY/$REPO_NAME"
           docker build -t "$IMAGE_URI:$IMAGE_TAG" -t "$IMAGE_URI:latest" "$CONTEXT"
