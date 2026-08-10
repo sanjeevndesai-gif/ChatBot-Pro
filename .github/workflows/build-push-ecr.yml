@@ -2,7 +2,7 @@ name: Build And Push ECR Images
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - backend/auth-service/**
       - backend/book_appointment/**
