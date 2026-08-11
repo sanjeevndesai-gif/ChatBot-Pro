@@ -12,6 +12,9 @@ provider "aws" {
   region = var.aws_region
 }
 
+# Get current account ID to build SSM ARNs
+data "aws_caller_identity" "current" {}
+
 resource "aws_ecr_repository" "gateway" {
   name = "${var.repo_prefix}-gateway"
   image_scanning_configuration {
@@ -176,6 +179,13 @@ resource "aws_ecs_task_definition" "gateway" {
         {
           containerPort = 8080
           protocol      = "tcp"
+        }
+      ]
+      # Secrets sourced from SSM Parameter Store (SecureString parameters)
+      secrets = [
+        {
+          name = "JWT_SECRET"
+          valueFrom = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.repo_prefix}/jwt-secret"
         }
       ]
       environment = [
