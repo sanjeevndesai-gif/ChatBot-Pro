@@ -1,0 +1,66 @@
+name: Deploy Frontend Static Site
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - frontend/chat_bot/**
+      - .github/workflows/deploy-frontend.yml
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: ap-south-1
+  STATIC_SITE_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy-frontend:
+    name: Build frontend, upload to S3, deploy CloudFront
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials for static site (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.STATIC_SITE_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install frontend deps
+        run: |
+          cd frontend/chat_bot
+          npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        run: |
+          cd frontend/chat_bot
+          npm run build --if-present
+
+      - name: Deploy CloudFormation static site (create bucket, CF distribution)
+        if: ${{ secrets.STATIC_SITE_DOMAIN != '' && secrets.HOSTED_ZONE_ID != '' && secrets.ACM_CERT_ARN != '' }}
+        run: |
+          aws cloudformation deploy \
+            --template-file backend/deploy/aws/cloudfront-static-site.yml \
+            --stack-name chatbot-static-site \
+            --region ${{ env.STATIC_SITE_REGION }} \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides DomainName=${{ secrets.STATIC_SITE_DOMAIN }} HostedZoneId=${{ secrets.HOSTED_ZONE_ID }} CertificateArn=${{ secrets.ACM_CERT_ARN }}
+
+      - name: Sync built frontend to S3 bucket
+        if: ${{ secrets.STATIC_SITE_DOMAIN != '' }}
+        run: |
+          aws s3 sync frontend/chat_bot/dist/chatbot/ s3://${{ secrets.STATIC_SITE_DOMAIN }} --delete --region ${{ env.AWS_REGION }}
+
+      - name: Invalidate CloudFront (best-effort)
+        if: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
