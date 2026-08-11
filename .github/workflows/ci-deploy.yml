@@ -156,15 +156,4 @@ jobs:
             --region ${{ env.AWS_REGION }} \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides $PARAMS
-      - name: Update ECS services (best-effort)
-        if: ${{ vars.ECS_CLUSTER_NAME != '' }}
-        env:
-          CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
-        run: |
-          # Attempt to force a new deployment for each built service; tolerate missing services
-          for svc in ${{ env.SERVICES }}; do
-            SERVICE_NAME="${{ env.ECR_PREFIX }}-${svc}"
-            echo "Updating ECS service: $SERVICE_NAME on cluster $CLUSTER"
-            aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE_NAME" --force-new-deployment --region ${{ env.AWS_REGION }} || \
-              echo "ECS service update skipped for $SERVICE_NAME (service may not exist yet)"
-          done
+      
