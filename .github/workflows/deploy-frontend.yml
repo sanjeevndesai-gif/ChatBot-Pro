@@ -24,6 +24,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required repo vars
+        run: |
+          if [ -z "${{ vars.AWS_ROLE_ARN }}" ]; then
+            echo "ERROR: repository variable AWS_ROLE_ARN is not set. Set it in Settings → Secrets and variables → Actions → Variables.";
+            exit 1
+          fi
+
       - name: Configure AWS credentials for static site (OIDC)
         uses: aws-actions/configure-aws-credentials@v2
         with:
