@@ -41,13 +41,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: frontend/chat_bot/package-lock.json
 
       - name: Install frontend deps
         run: |
           cd frontend/chat_bot
-          npm ci --legacy-peer-deps
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ] || [ -f yarn.lock ]; then
+            npm ci --legacy-peer-deps
+          else
+            echo "No lockfile found; running npm install (will produce a package-lock.json locally)."
+            npm install --legacy-peer-deps
+          fi
 
       - name: Build frontend
         run: |
