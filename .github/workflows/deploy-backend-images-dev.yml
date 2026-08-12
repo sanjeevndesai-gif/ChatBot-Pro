@@ -1,0 +1,94 @@
+name: Deploy Backend Images (dev)
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - backend/auth-service/**
+      - backend/book_appointment/**
+      - backend/chat/**
+      - backend/gateway/**
+      - backend/eureka-server/**
+      - backend/i18n-service/**
+      - .github/workflows/deploy-backend-images-dev.yml
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY_PREFIX: chatbot-app
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push-dev:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth-service
+            context: auth-service
+            repository_suffix: auth-service
+          - service: book-appointment
+            context: book_appointment
+            repository_suffix: book-appointment
+          - service: chat
+            context: chat
+            repository_suffix: chat
+          - service: gateway
+            context: gateway
+            repository_suffix: gateway
+          - service: eureka
+            context: eureka-server
+            repository_suffix: eureka
+          - service: i18n-service
+            context: i18n-service
+            repository_suffix: i18n-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login To ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR Repository Exists
+        env:
+          REPO_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+        run: |
+          aws ecr describe-repositories --repository-names "$REPO_NAME" >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name "$REPO_NAME" >/dev/null
+
+      - name: Build And Push Image (dev tag)
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          REPO_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+          CONTEXT: backend/${{ matrix.context }}
+        run: |
+          IMAGE_URI="$REGISTRY/$REPO_NAME"
+          docker build -t "$IMAGE_URI:$IMAGE_TAG" -t "$IMAGE_URI:latest" -t "$IMAGE_URI:dev-latest" "$CONTEXT"
+          docker push "$IMAGE_URI:$IMAGE_TAG"
+          docker push "$IMAGE_URI:latest"
+          docker push "$IMAGE_URI:dev-latest"
+
+      - name: Update ECS Service (best-effort)
+        if: ${{ vars.ECS_CLUSTER_NAME != '' }}
+        env:
+          SERVICE_NAME: ${{ env.ECR_REPOSITORY_PREFIX }}-${{ matrix.repository_suffix }}
+          CLUSTER: ${{ vars.ECS_CLUSTER_NAME }}
+        run: |
+          aws ecs update-service \
+            --cluster "$CLUSTER" \
+            --service "$SERVICE_NAME" \
+            --force-new-deployment \
+            --region "$AWS_REGION" || echo "ECS service update skipped (service may not exist yet)"
