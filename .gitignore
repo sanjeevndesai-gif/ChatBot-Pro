@@ -25,3 +25,12 @@
 *.zip
 *.tar.gz
 
+# Terraform
+.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Terraform providers (binaries)
+**/.terraform/providers/
+
