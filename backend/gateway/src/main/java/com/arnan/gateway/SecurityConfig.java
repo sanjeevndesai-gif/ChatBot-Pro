@@ -58,10 +58,22 @@ public class SecurityConfig {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsWebFilter corsWebFilter() {
+        // Load allowed origins from environment/property `CORS_ALLOWED_ORIGINS` as comma-separated list.
+        // Fallback preserves the previous localhost defaults.
+        String origins = System.getProperty("CORS_ALLOWED_ORIGINS");
+        if (origins == null) {
+            origins = System.getenv("CORS_ALLOWED_ORIGINS");
+        }
+        if (origins == null || origins.isBlank()) {
+            origins = "http://localhost:4200,http://127.0.0.1:4200";
+        }
+
         CorsConfiguration corsConfig = new CorsConfiguration();
         corsConfig.setAllowCredentials(true);
-        corsConfig.addAllowedOrigin("http://localhost:4200");
-        corsConfig.addAllowedOrigin("http://127.0.0.1:4200");
+        for (String o : origins.split(",")) {
+            String trimmed = o.trim();
+            if (!trimmed.isEmpty()) corsConfig.addAllowedOrigin(trimmed);
+        }
         corsConfig.addAllowedMethod("*");
         corsConfig.addAllowedHeader("*");
         corsConfig.setMaxAge(3600L);
