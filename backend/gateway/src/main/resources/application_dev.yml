@@ -9,6 +9,7 @@ spring:
             allowedOrigins:
               - ${CORS_ALLOWED_ORIGIN_1:http://localhost:4200}
               - ${CORS_ALLOWED_ORIGIN_2:http://127.0.0.1:4200}
+              - ${CORS_ALLOWED_ORIGIN_3:https://dev.tridlio.com}
             allowedMethods:
               - GET
               - POST
