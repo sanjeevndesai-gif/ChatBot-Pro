@@ -7,9 +7,7 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins:
-              - ${CORS_ALLOWED_ORIGIN_1:http://localhost:4200}
-              - ${CORS_ALLOWED_ORIGIN_2:http://127.0.0.1:4200}
-              - ${CORS_ALLOWED_ORIGIN_3:https://dev.tridlio.com}
+               - ${CORS_ALLOWED_ORIGIN_3:https://dev.tridlio.com}
             allowedMethods:
               - GET
               - POST
@@ -36,13 +34,13 @@ spring:
           predicates:
             - Path=/book/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=0
         - id: chat-service
           uri: http://chatbot-app-chat.chatbot-app-local:9090
           predicates:
-             - Path=/api/whatsapp/**
+            - Path=/api/whatsapp/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=0
         - id: i18n-service
           uri: http://chatbot-app-i18n-service.chatbot-app-local:9092
           predicates:
