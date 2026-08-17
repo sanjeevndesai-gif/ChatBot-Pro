@@ -40,7 +40,7 @@ spring:
         - id: chat-service
           uri: http://chatbot-app-chat.chatbot-app-local:9090
           predicates:
-            - Path=/chat/**
+             - Path=/api/whatsapp/**
           filters:
             - StripPrefix=1
         - id: i18n-service

@@ -1,0 +1,59 @@
+{
+  "family": "chatbot-app-gateway-task",
+  "taskRoleArn": "arn:aws:iam::217019991145:role/chatbot-app-ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::217019991145:role/chatbot-app-ecs-exec-role",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "gateway",
+      "image": "217019991145.dkr.ecr.ap-south-1.amazonaws.com/chatbot-app-gateway:dev-latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "CORS_ALLOWED_ORIGIN_1",
+          "value": "https://dev.tridlio.com"
+        },
+        {
+          "name": "CORS_ALLOWED_ORIGINS",
+          "value": "https://dev.tridlio.com"
+        },
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "dev"
+        }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "secrets": [
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:ssm:ap-south-1:217019991145:parameter/chatbot-app/jwt-secret"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/chatbot-app-gateway",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "gateway"
+        }
+      },
+      "systemControls": []
+    }
+  ],
+  "volumes": [],
+  "placementConstraints": [],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "1024"
+}

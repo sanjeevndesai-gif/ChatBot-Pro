@@ -1,0 +1,97 @@
+﻿{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:ap-south-1:217019991145:task-definition/chatbot-app-gateway-task:7",
+        "containerDefinitions": [
+            {
+                "name": "gateway",
+                "image": "217019991145.dkr.ecr.ap-south-1.amazonaws.com/chatbot-app-gateway:dev-latest",
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "containerPort": 8080,
+                        "hostPort": 8080,
+                        "protocol": "tcp"
+                    }
+                ],
+                "essential": true,
+                "environment": [
+                    {
+                        "name": "CORS_ALLOWED_ORIGIN_1",
+                        "value": "https://dev.tridlio.com"
+                    },
+                    {
+                        "name": "CORS_ALLOWED_ORIGINS",
+                        "value": "https://dev.tridlio.com"
+                    }
+                ],
+                "mountPoints": [],
+                "volumesFrom": [],
+                "secrets": [
+                    {
+                        "name": "JWT_SECRET",
+                        "valueFrom": "arn:aws:ssm:ap-south-1:217019991145:parameter/chatbot-app/jwt-secret"
+                    }
+                ],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/ecs/chatbot-app-gateway",
+                        "awslogs-region": "ap-south-1",
+                        "awslogs-stream-prefix": "gateway"
+                    }
+                },
+                "systemControls": []
+            }
+        ],
+        "family": "chatbot-app-gateway-task",
+        "taskRoleArn": "arn:aws:iam::217019991145:role/chatbot-app-ecs-task-role",
+        "executionRoleArn": "arn:aws:iam::217019991145:role/chatbot-app-ecs-exec-role",
+        "networkMode": "awsvpc",
+        "revision": 7,
+        "volumes": [],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "ecs.capability.execution-role-awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.task-iam-role"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "ecs.capability.secrets.ssm.environment-variables"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2",
+            "MANAGED_INSTANCES",
+            "FARGATE"
+        ],
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "cpu": "512",
+        "memory": "1024",
+        "registeredAt": "2026-08-13T18:38:20.825000+05:30",
+        "registeredBy": "arn:aws:iam::217019991145:user/admin"
+    },
+    "tags": []
+}
