@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        - id: book-appointment
+          uri: lb://book_appointment
+          predicates:
+            - Path=/book/**
+          filters:
+            - StripPrefix=1
+        - id: chat-service
+          uri: lb://chat
+          predicates:
+            - Path=/chat/**
+          filters:
+            - StripPrefix=1
+        - id: i18n-service
+          uri: lb://i18n-service
+          predicates:
+            - Path=/i18n/**
+          filters:
+            - StripPrefix=1
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVICE_URL:http://eureka-server:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+oauth2:
+  jwt:
+    secret: ${JWT_SECRET}
